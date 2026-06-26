@@ -776,31 +776,6 @@
 <!-- ========== MAIN APP ========== -->
 <div id="app">
 
-  <!-- FIREBASE SETUP SCREEN -->
-  <div id="screen-firebase" class="screen">
-    <div style="font-size:56px;">🔥</div>
-    <h2>Firebase Setup</h2>
-    <p>Enter your Firebase project credentials to connect Avalon to your database. These are saved locally on this device.</p>
-    <div class="fb-input-group" style="max-width:320px;width:100%;">
-      <label>API Key</label>
-      <input id="fb-api-key" type="text" placeholder="AIzaSy..." autocomplete="off" />
-    </div>
-    <div class="fb-input-group" style="max-width:320px;width:100%;">
-      <label>Auth Domain</label>
-      <input id="fb-auth-domain" type="text" placeholder="your-app.firebaseapp.com" autocomplete="off" />
-    </div>
-    <div class="fb-input-group" style="max-width:320px;width:100%;">
-      <label>Project ID</label>
-      <input id="fb-project-id" type="text" placeholder="your-app-id" autocomplete="off" />
-    </div>
-    <div class="fb-input-group" style="max-width:320px;width:100%;">
-      <label>App ID</label>
-      <input id="fb-app-id" type="text" placeholder="1:123:web:abc..." autocomplete="off" />
-    </div>
-    <button id="btn-save-firebase">Connect to Firebase</button>
-    <span class="dimmed-text">Your credentials are stored only on this device.</span>
-  </div>
-
   <!-- LOGIN SCREEN -->
   <div id="screen-login" class="screen">
     <div class="login-crest">⚔️</div>
@@ -825,6 +800,7 @@
     <button class="btn-primary" id="btn-create-room" style="margin-top:8px;display:none;">
       + Create New Room
     </button>
+    <div style="height:8px;"></div>
   </div>
 
   <!-- LOBBY SCREEN -->
@@ -1142,30 +1118,31 @@ let state = {
 };
 
 /* ============================================================
+   FIREBASE CONFIG
+   Fill in your project credentials here before deploying.
+   ============================================================ */
+const FIREBASE_CONFIG = {
+  apiKey:     "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId:  "YOUR_PROJECT_ID",
+  appId:      "YOUR_APP_ID",
+};
+
+/* ============================================================
    FIREBASE INITIALIZATION
    ============================================================ */
 function initFirebase(config) {
   try {
-    if (!firebase.apps.length) {
-      firebase.initializeApp(config);
+    if (firebase.apps.length) {
+      firebase.apps.forEach(app => app.delete());
     }
+    firebase.initializeApp(config);
     state.db = firebase.firestore();
     return true;
   } catch(e) {
     console.error("Firebase init error:", e);
     return false;
   }
-}
-
-function loadFirebaseConfig() {
-  try {
-    const raw = localStorage.getItem('avalon_fb_config');
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-function saveFirebaseConfig(cfg) {
-  localStorage.setItem('avalon_fb_config', JSON.stringify(cfg));
 }
 
 /* ============================================================
@@ -1184,11 +1161,14 @@ function showScreen(id) {
   });
   state.screen = id;
 
-  // Show/hide FABs
+  // Show/hide FABs — use display directly to avoid inline-style override issues
   const inGame = (id === 'screen-game' || id === 'screen-assassin');
   document.getElementById('fab-history').style.display = inGame ? 'flex' : 'none';
+  const fabAdmin = document.getElementById('fab-admin');
   if (state.isAdmin) {
-    document.getElementById('fab-admin').classList.toggle('visible', inGame);
+    fabAdmin.style.display = inGame ? 'flex' : 'none';
+  } else {
+    fabAdmin.style.display = 'none';
   }
 }
 
@@ -2262,7 +2242,7 @@ function handleGoogleSignIn() {
     const user = { id: u.uid, name: u.displayName || u.email, emoji: '👑', isAdmin };
     state.user = user;
     state.isAdmin = isAdmin;
-    if (isAdmin) document.getElementById('fab-admin').classList.add('visible');
+    if (isAdmin) document.getElementById('fab-admin').style.display = 'flex';
     createRoom(user).then(room => {
       if (!room) return;
       state.room = room;
@@ -2290,10 +2270,12 @@ function bootDemoMode() {
 
   renderLobby();
   showScreen('screen-lobby');
-  document.getElementById('fab-admin').classList.add('visible');
+  // FAB-admin is controlled by showScreen(); force show here since we're in demo/admin
+  document.getElementById('fab-admin').style.display = 'flex';
 }
 
 document.getElementById('demo-player-select').addEventListener('change', e => {
+  if (!DEMO_MODE_ACTIVE) return;
   const idx = parseInt(e.target.value);
   state.user    = DEMO_PLAYERS[idx];
   state.isAdmin = (idx === 0);
@@ -2307,6 +2289,7 @@ document.getElementById('demo-player-select').addEventListener('change', e => {
 });
 
 document.getElementById('btn-bot-all').addEventListener('click', () => {
+  if (!DEMO_MODE_ACTIVE) return;
   // Simulate all pending actions for current phase
   if (state.phase === 'voting') {
     state.players.forEach(p => {
@@ -2335,6 +2318,7 @@ document.getElementById('btn-bot-all').addEventListener('click', () => {
 });
 
 document.getElementById('btn-demo-next').addEventListener('click', () => {
+  if (!DEMO_MODE_ACTIVE) return;
   if (state.screen === 'screen-lobby') {
     startGame();
   } else if (state.phase === 'nomination') {
@@ -2442,27 +2426,6 @@ document.getElementById('guest-nickname').addEventListener('keydown', e => {
 });
 document.getElementById('btn-google-signin').addEventListener('click', handleGoogleSignIn);
 
-document.getElementById('btn-save-firebase').addEventListener('click', () => {
-  const cfg = {
-    apiKey:     document.getElementById('fb-api-key').value.trim(),
-    authDomain: document.getElementById('fb-auth-domain').value.trim(),
-    projectId:  document.getElementById('fb-project-id').value.trim(),
-    appId:      document.getElementById('fb-app-id').value.trim(),
-  };
-  if (!cfg.apiKey || !cfg.authDomain || !cfg.projectId || !cfg.appId) {
-    showToast(GAME_TEXT_CONFIG.errors.fbMissing);
-    return;
-  }
-  saveFirebaseConfig(cfg);
-  if (initFirebase(cfg)) {
-    showToast('Firebase connected ✓');
-    showScreen('screen-login');
-    loadAvailableRooms();
-  } else {
-    showToast('Firebase connection failed. Check credentials.');
-  }
-});
-
 document.getElementById('btn-start-game').addEventListener('click', startGame);
 document.getElementById('btn-leave-lobby').addEventListener('click', () => {
   state.unsubscribes.forEach(u => u());
@@ -2508,33 +2471,28 @@ window.addEventListener('resize', () => {
    BOOT SEQUENCE
    ============================================================ */
 (function boot() {
-  // Always hide FABs initially
   document.getElementById('fab-history').style.display = 'none';
-  document.getElementById('fab-admin').style.display = 'none';
+  document.getElementById('fab-admin').style.display   = 'none';
 
   if (DEMO_MODE_ACTIVE) {
     bootDemoMode();
     return;
   }
 
-  // Live mode: check Firebase config
-  const fbCfg = loadFirebaseConfig();
-  if (fbCfg && initFirebase(fbCfg)) {
+  // Live mode: init with hardcoded config
+  if (initFirebase(FIREBASE_CONFIG)) {
     showScreen('screen-login');
     loadAvailableRooms();
-    document.getElementById('btn-create-room').style.display = 'block';
-    // Listen for auth state
     firebase.auth().onAuthStateChanged(u => {
       if (u) {
         const isAdmin = u.email === 'buenavistaaglinaodanny@gmail.com';
         state.user = { id: u.uid, name: u.displayName || u.email, emoji: '👑', isAdmin };
         state.isAdmin = isAdmin;
-        if (isAdmin) document.getElementById('fab-admin').classList.add('visible');
         document.getElementById('btn-create-room').style.display = 'block';
       }
     });
   } else {
-    showScreen('screen-firebase');
+    console.error('Firebase failed to initialize. Check FIREBASE_CONFIG at the top of the script.');
   }
 })();
 </script>
