@@ -1,5 +1,4090 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#0b1020"/>
-  <circle cx="256" cy="256" r="172" fill="#141b34"/>
-  <path d="M256 112 126 392h50l26-56h108l26 56h50L256 112zm0 95 32 70h-64l32-70z" fill="#d4af37"/>
-</svg>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a0a2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Avalon" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="description" content="The digital companion for the Avalon board game." />
+  <title>Avalon</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%231a0a2e'/%3E%3Ccircle cx='256' cy='256' r='220' fill='none' stroke='%23c9a84c' stroke-width='8'/%3E%3Cpolygon points='256,80 290,180 395,180 312,240 342,340 256,280 170,340 200,240 117,180 222,180' fill='%23c9a84c'/%3E%3C/svg%3E" />
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       ROOT VARIABLES & RESET
+    ═══════════════════════════════════════════════════════════ */
+    :root {
+      --bg-deep:      #0d0618;
+      --bg-dark:      #1a0a2e;
+      --bg-mid:       #2a1245;
+      --bg-card:      #1e0f38;
+      --bg-surface:   #2d1a52;
+      --gold:         #c9a84c;
+      --gold-light:   #e8c96a;
+      --gold-dark:    #8b6914;
+      --purple:       #6b3fa0;
+      --purple-light: #9d7ecf;
+      --purple-dark:  #3d1f6b;
+      --red:          #c0392b;
+      --red-light:    #e74c3c;
+      --green:        #27ae60;
+      --green-light:  #2ecc71;
+      --blue:         #2980b9;
+      --blue-light:   #3498db;
+      --text-primary: #f0e6d3;
+      --text-muted:   #9d8caa;
+      --text-dim:     #5a4a6e;
+      --border:       rgba(201,168,76,0.3);
+      --border-glow:  rgba(201,168,76,0.6);
+      --shadow:       0 8px 32px rgba(0,0,0,0.6);
+      --shadow-gold:  0 0 20px rgba(201,168,76,0.3);
+      --radius:       12px;
+      --radius-lg:    20px;
+      --touch-min:    48px;
+      --font-serif:   'Georgia', 'Times New Roman', serif;
+      --font-sans:    -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --transition:   all 0.3s ease;
+    }
+
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    #app {
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCROLLABLE SCREEN CONTAINER
+    ═══════════════════════════════════════════════════════════ */
+    .screen {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    .screen.active { display: flex; }
+
+    /* ═══════════════════════════════════════════════════════════
+       DESKTOP BLOCK OVERLAY
+    ═══════════════════════════════════════════════════════════ */
+    #desktop-block {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #0d0618;
+      z-index: 99999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 3rem;
+    }
+    #desktop-block .db-icon {
+      font-size: 5rem;
+      margin-bottom: 1.5rem;
+    }
+    #desktop-block h1 {
+      font-family: var(--font-serif);
+      font-size: 1.8rem;
+      color: var(--gold);
+      letter-spacing: 0.15em;
+      margin-bottom: 1rem;
+    }
+    #desktop-block p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 420px;
+      line-height: 1.7;
+    }
+    #desktop-block .divider {
+      width: 200px; height: 2px;
+      background: linear-gradient(to right, transparent, var(--gold), transparent);
+      margin: 1.5rem auto;
+    }
+
+    @media (min-width: 768px) and (min-aspect-ratio: 1/1) {
+      #desktop-block { display: flex; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SHARED UI COMPONENTS
+    ═══════════════════════════════════════════════════════════ */
+    /* Stars background */
+    .stars-bg {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      overflow: hidden;
+    }
+    .star {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle 3s ease-in-out infinite;
+    }
+    @keyframes twinkle {
+      0%,100% { opacity: 0.2; }
+      50% { opacity: 1; }
+    }
+
+    /* Gold divider */
+    .gold-divider {
+      width: 100%; height: 1px;
+      background: linear-gradient(to right, transparent, var(--gold), transparent);
+      margin: 0.75rem 0;
+    }
+
+    /* Buttons */
+    .btn {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0.5rem;
+      min-height: var(--touch-min);
+      padding: 0.85rem 1.5rem;
+      border: none; border-radius: var(--radius);
+      font-size: 0.95rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; transition: var(--transition);
+      text-decoration: none; user-select: none;
+      width: 100%;
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold-light), var(--gold), var(--gold-dark));
+      color: var(--bg-deep);
+      box-shadow: 0 4px 15px rgba(201,168,76,0.4);
+    }
+    .btn-gold:hover, .btn-gold:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(201,168,76,0.3); }
+    .btn-purple {
+      background: linear-gradient(135deg, var(--purple-light), var(--purple), var(--purple-dark));
+      color: white;
+      box-shadow: 0 4px 15px rgba(107,63,160,0.4);
+    }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-danger {
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: white;
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #2ecc71, #27ae60);
+      color: white;
+    }
+    .btn-sm {
+      min-height: 36px; padding: 0.5rem 1rem;
+      font-size: 0.8rem; width: auto;
+    }
+    .btn:disabled {
+      opacity: 0.4; cursor: not-allowed; transform: none !important;
+    }
+
+    /* Card */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+
+    /* Input */
+    .input-field {
+      width: 100%;
+      background: var(--bg-mid);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-size: 1rem;
+      padding: 0.85rem 1rem;
+      min-height: var(--touch-min);
+      transition: var(--transition);
+      -webkit-appearance: none;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.2);
+    }
+    .input-field::placeholder { color: var(--text-dim); }
+
+    /* Labels */
+    .label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    /* Section header */
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-align: center;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .badge-good { background: rgba(39,174,96,0.2); color: var(--green-light); border: 1px solid rgba(39,174,96,0.3); }
+    .badge-evil { background: rgba(192,57,43,0.2); color: var(--red-light); border: 1px solid rgba(192,57,43,0.3); }
+    .badge-gold { background: rgba(201,168,76,0.15); color: var(--gold); border: 1px solid var(--border); }
+
+    /* Toast */
+    #toast-container {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      z-index: 9000; display: flex; flex-direction: column; gap: 0.5rem;
+      width: calc(100% - 2rem); max-width: 380px;
+    }
+    .toast {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.85rem 1.2rem;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      box-shadow: var(--shadow);
+      animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+      text-align: center;
+    }
+    @keyframes toastIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes toastOut { from { opacity:1; } to { opacity:0; } }
+
+    /* Overlay modal */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 8000;
+      display: flex; align-items: flex-end; justify-content: center;
+      padding: 1rem;
+    }
+    .modal-overlay.center { align-items: center; }
+    .modal-box {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg) var(--radius-lg) var(--radius) var(--radius);
+      padding: 1.5rem;
+      width: 100%; max-width: 420px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.8);
+    }
+    .modal-overlay.center .modal-box {
+      border-radius: var(--radius-lg);
+    }
+    .modal-title {
+      font-family: var(--font-serif);
+      font-size: 1.3rem;
+      color: var(--gold);
+      letter-spacing: 0.1em;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--bg-surface);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Toggle switch */
+    .toggle-wrap { display: flex; align-items: center; gap: 0.75rem; }
+    .toggle {
+      position: relative; width: 48px; height: 26px;
+      flex-shrink: 0; cursor: pointer;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      transition: var(--transition);
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      left: 2px; top: 2px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      transition: var(--transition);
+    }
+    .toggle input:checked + .toggle-slider { background: var(--gold-dark); border-color: var(--gold); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(22px); background: var(--gold); }
+
+    /* Progress bar */
+    .progress-bar {
+      width: 100%; height: 6px;
+      background: var(--bg-surface);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(to right, var(--gold-dark), var(--gold));
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    /* Avatar */
+    .avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      object-fit: cover;
+      background: var(--bg-surface);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCREEN: LOADING
+    ═══════════════════════════════════════════════════════════ */
+    #screen-loading {
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-deep);
+      gap: 1.5rem;
+    }
+    .loading-crest { font-size: 4rem; animation: float 3s ease-in-out infinite; }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+    .loading-title {
+      font-family: var(--font-serif);
+      font-size: 2.5rem;
+      letter-spacing: 0.4em;
+      color: var(--gold);
+      text-shadow: 0 0 30px rgba(201,168,76,0.5);
+    }
+    .loading-sub { color: var(--text-muted); letter-spacing: 0.2em; font-size: 0.85rem; }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCREEN: PWA INSTALL GATE
+    ═══════════════════════════════════════════════════════════ */
+    #screen-install {
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at center top, #2a1245 0%, #0d0618 70%);
+      padding: 2rem 1.5rem;
+      gap: 0;
+      text-align: center;
+      position: relative;
+    }
+    .install-crest {
+      font-size: 5rem;
+      margin-bottom: 1rem;
+      filter: drop-shadow(0 0 20px rgba(201,168,76,0.5));
+      animation: float 4s ease-in-out infinite;
+    }
+    .install-title {
+      font-family: var(--font-serif);
+      font-size: 2.2rem;
+      letter-spacing: 0.3em;
+      color: var(--gold);
+      text-shadow: 0 0 30px rgba(201,168,76,0.4);
+      margin-bottom: 0.25rem;
+    }
+    .install-subtitle {
+      font-size: 0.8rem;
+      letter-spacing: 0.3em;
+      color: var(--purple-light);
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+    .install-card {
+      background: rgba(42,18,69,0.8);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      width: 100%; max-width: 360px;
+      backdrop-filter: blur(10px);
+      margin-bottom: 1rem;
+    }
+    .install-steps {
+      text-align: left;
+      display: flex; flex-direction: column; gap: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+    .install-step {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+    }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--gold-dark);
+      color: var(--bg-deep);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 800; flex-shrink: 0;
+    }
+    .step-text { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
+    .step-text strong { color: var(--text-primary); }
+    #ios-instructions { display: none; }
+    .install-note {
+      font-size: 0.75rem; color: var(--text-dim);
+      text-align: center; line-height: 1.6;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCREEN: FIREBASE SETUP
+    ═══════════════════════════════════════════════════════════ */
+    #screen-firebase-setup {
+      background: var(--bg-deep);
+      padding: 0;
+    }
+    .setup-header {
+      background: linear-gradient(180deg, var(--bg-mid) 0%, var(--bg-dark) 100%);
+      padding: 3rem 1.5rem 2rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .setup-header h1 {
+      font-family: var(--font-serif);
+      font-size: 1.6rem;
+      color: var(--gold);
+      letter-spacing: 0.2em;
+      margin-bottom: 0.5rem;
+    }
+    .setup-header p { color: var(--text-muted); font-size: 0.9rem; }
+    .setup-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .setup-info {
+      background: rgba(107,63,160,0.15);
+      border: 1px solid rgba(107,63,160,0.3);
+      border-radius: var(--radius);
+      padding: 1rem;
+      font-size: 0.85rem;
+      color: var(--purple-light);
+      line-height: 1.6;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCREEN: AUTH / SIGN IN
+    ═══════════════════════════════════════════════════════════ */
+    #screen-auth {
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at center, #1f0d38 0%, #0d0618 100%);
+      padding: 2rem 1.5rem;
+      gap: 1.5rem;
+      text-align: center;
+    }
+    .auth-crest { font-size: 4rem; animation: float 3s ease-in-out infinite; }
+    .auth-title {
+      font-family: var(--font-serif);
+      font-size: 2rem; letter-spacing: 0.3em; color: var(--gold);
+    }
+    .auth-sub { color: var(--text-muted); font-size: 0.9rem; max-width: 300px; }
+    .google-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+      background: white; color: #333;
+      border: none; border-radius: var(--radius);
+      padding: 0.9rem 1.5rem; width: 100%; max-width: 320px;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      min-height: var(--touch-min);
+    }
+    .google-btn:hover { transform: scale(0.98); }
+    .google-icon { width: 20px; height: 20px; }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCREEN: PROFILE SETUP
+    ═══════════════════════════════════════════════════════════ */
+    #screen-profile-setup {
+      background: var(--bg-deep);
+    }
+    .profile-setup-header {
+      background: linear-gradient(180deg, var(--bg-mid), var(--bg-dark));
+      padding: 3rem 1.5rem 2rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .profile-avatar-picker {
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+      padding: 1.5rem;
+    }
+    .avatar-large {
+      width: 100px; height: 100px; font-size: 3rem;
+      border: 3px solid var(--gold);
+      box-shadow: var(--shadow-gold);
+      cursor: pointer;
+    }
+    .avatar-options {
+      display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center;
+    }
+    .avatar-opt {
+      width: 52px; height: 52px;
+      border-radius: 50%; border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; cursor: pointer; transition: var(--transition);
+      background: var(--bg-surface);
+    }
+    .avatar-opt:hover, .avatar-opt.selected {
+      border-color: var(--gold);
+      box-shadow: 0 0 10px rgba(201,168,76,0.4);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCREEN: HOME / LOBBY
+    ═══════════════════════════════════════════════════════════ */
+    #screen-home {
+      background: radial-gradient(ellipse at top center, #2a1245 0%, #0d0618 60%);
+    }
+    .home-header {
+      padding: 3rem 1.5rem 1.5rem;
+      text-align: center;
+      position: relative;
+    }
+    .home-title {
+      font-family: var(--font-serif);
+      font-size: 2.8rem; letter-spacing: 0.4em;
+      color: var(--gold);
+      text-shadow: 0 0 40px rgba(201,168,76,0.5);
+      margin-bottom: 0.25rem;
+    }
+    .home-sub {
+      font-size: 0.75rem; letter-spacing: 0.3em;
+      color: var(--purple-light); text-transform: uppercase;
+    }
+    .home-body { padding: 1rem 1.5rem 2rem; display: flex; flex-direction: column; gap: 1rem; }
+    .user-card {
+      display: flex; align-items: center; gap: 1rem;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1rem;
+    }
+    .user-info { flex: 1; }
+    .user-name { font-weight: 700; color: var(--text-primary); font-size: 1rem; }
+    .user-email { font-size: 0.75rem; color: var(--text-muted); }
+    .nearby-rooms { display: flex; flex-direction: column; gap: 0.75rem; }
+    .room-card {
+      display: flex; align-items: center; gap: 0.75rem;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem; cursor: pointer;
+      transition: var(--transition);
+    }
+    .room-card:hover { border-color: var(--gold); }
+    .room-icon { font-size: 1.5rem; }
+    .room-info { flex: 1; }
+    .room-name { font-weight: 700; color: var(--text-primary); font-size: 0.95rem; }
+    .room-meta { font-size: 0.8rem; color: var(--text-muted); }
+    .empty-rooms {
+      text-align: center; padding: 2rem 1rem;
+      color: var(--text-dim); font-size: 0.9rem;
+    }
+    .actions-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+    }
+    .nav-bar {
+      display: flex; background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      padding: 0.5rem; gap: 0.25rem;
+      margin-top: auto; flex-shrink: 0;
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0.2rem; padding: 0.5rem;
+      border-radius: var(--radius); cursor: pointer;
+      transition: var(--transition);
+      min-height: 56px; border: none; background: none;
+      color: var(--text-dim);
+    }
+    .nav-item.active { color: var(--gold); background: rgba(201,168,76,0.1); }
+    .nav-item span:first-child { font-size: 1.4rem; }
+    .nav-item span:last-child { font-size: 0.65rem; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600; }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCREEN: CREATE ROOM
+    ═══════════════════════════════════════════════════════════ */
+    #screen-create-room { background: var(--bg-deep); }
+    .page-header {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 3rem 1.5rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--bg-mid), var(--bg-dark));
+    }
+    .back-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      color: var(--text-muted); font-size: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; transition: var(--transition);
+    }
+    .back-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .page-title {
+      font-family: var(--font-serif); font-size: 1.4rem;
+      color: var(--gold); letter-spacing: 0.15em;
+    }
+
+    /* Character selection */
+    .char-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .char-card {
+      background: var(--bg-surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.85rem;
+      cursor: pointer; transition: var(--transition);
+      position: relative; overflow: hidden;
+    }
+    .char-card:hover { border-color: var(--gold); }
+    .char-card.selected-good { border-color: var(--green); background: rgba(39,174,96,0.1); }
+    .char-card.selected-evil { border-color: var(--red); background: rgba(192,57,43,0.1); }
+    .char-card.disabled { opacity: 0.4; cursor: not-allowed; }
+    .char-icon { font-size: 1.8rem; margin-bottom: 0.25rem; }
+    .char-name { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
+    .char-role { font-size: 0.7rem; color: var(--text-muted); }
+    .char-lock {
+      position: absolute; top: 0.4rem; right: 0.4rem;
+      font-size: 0.8rem;
+    }
+    .char-check {
+      position: absolute; top: 0.4rem; right: 0.4rem;
+      width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700;
+    }
+    .char-check.good { background: var(--green); color: white; }
+    .char-check.evil { background: var(--red); color: white; }
+
+    /* QR code */
+    #qr-container {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 1rem; padding: 1rem;
+    }
+    #qr-canvas {
+      border-radius: var(--radius);
+      border: 3px solid var(--gold);
+      box-shadow: var(--shadow-gold);
+    }
+    .room-code-display {
+      font-family: monospace;
+      font-size: 2rem; letter-spacing: 0.5em;
+      color: var(--gold); text-align: center;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-shadow: 0 0 10px rgba(201,168,76,0.3);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCREEN: LOBBY
+    ═══════════════════════════════════════════════════════════ */
+    #screen-lobby { background: var(--bg-deep); }
+    .lobby-players { display: flex; flex-direction: column; gap: 0.75rem; }
+    .lobby-player {
+      display: flex; align-items: center; gap: 0.85rem;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.85rem;
+    }
+    .lobby-player.online { border-color: rgba(46,204,113,0.3); }
+    .player-name { font-weight: 600; color: var(--text-primary); }
+    .player-status { font-size: 0.75rem; color: var(--text-muted); }
+    .online-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green-light);
+      box-shadow: 0 0 6px var(--green-light);
+      flex-shrink: 0;
+    }
+    .host-crown { font-size: 0.9rem; margin-left: 0.25rem; }
+    .player-count-bar {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem;
+    }
+    .count-label {
+      display: flex; justify-content: space-between;
+      font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;
+    }
+    .ratio-display {
+      display: flex; gap: 0.5rem; justify-content: center;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCREEN: NIGHT PHASE (ROLE REVEAL)
+    ═══════════════════════════════════════════════════════════ */
+    #screen-night {
+      background: radial-gradient(ellipse at bottom, #1a0a2e 0%, #050208 100%);
+      align-items: center; justify-content: center;
+      padding: 2rem 1.5rem;
+      gap: 1rem;
+    }
+    .night-title {
+      font-family: var(--font-serif);
+      font-size: 1.4rem; letter-spacing: 0.3em; color: var(--purple-light);
+      text-align: center;
+    }
+    .night-instruction {
+      font-size: 0.85rem; color: var(--text-muted); text-align: center; max-width: 280px;
+    }
+
+    /* Role Card Flip */
+    .role-card-scene {
+      width: 220px; height: 320px;
+      perspective: 1000px; cursor: pointer;
+    }
+    .role-card {
+      width: 100%; height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .role-card.flipped { transform: rotateY(180deg); }
+    .role-card-face {
+      position: absolute; inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 16px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      overflow: hidden; border: 2px solid;
+    }
+    .role-card-back {
+      background: linear-gradient(135deg, #1a0a2e 0%, #2a1245 50%, #1a0a2e 100%);
+      border-color: var(--gold);
+    }
+    .card-back-pattern {
+      position: absolute; inset: 0;
+      opacity: 0.1;
+      background-image: repeating-linear-gradient(
+        45deg, var(--gold) 0px, var(--gold) 1px, transparent 1px, transparent 10px
+      );
+    }
+    .card-back-icon { font-size: 4rem; position: relative; z-index: 1; }
+    .card-back-text {
+      font-family: var(--font-serif);
+      font-size: 0.8rem; letter-spacing: 0.3em;
+      color: var(--gold); margin-top: 0.5rem; position: relative; z-index: 1;
+    }
+    .role-card-front {
+      transform: rotateY(180deg);
+    }
+    .role-card-front.good {
+      background: linear-gradient(160deg, #0d3324 0%, #1a5c3a 50%, #0d3324 100%);
+      border-color: var(--green);
+    }
+    .role-card-front.evil {
+      background: linear-gradient(160deg, #3a0d0d 0%, #5c1a1a 50%, #3a0d0d 100%);
+      border-color: var(--red);
+    }
+    .role-card-front.neutral {
+      background: linear-gradient(160deg, #1a1a3a 0%, #2a2a5c 50%, #1a1a3a 100%);
+      border-color: var(--purple);
+    }
+    .card-role-art { font-size: 5rem; margin-bottom: 0.5rem; }
+    .card-role-name {
+      font-family: var(--font-serif);
+      font-size: 1.1rem; letter-spacing: 0.15em; font-weight: 700;
+      color: white; margin-bottom: 0.25rem;
+    }
+    .card-role-team {
+      font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .card-role-team.good { color: var(--green-light); }
+    .card-role-team.evil { color: var(--red-light); }
+    .card-role-ability {
+      font-size: 0.75rem; color: rgba(255,255,255,0.7);
+      text-align: center; padding: 0 1rem; line-height: 1.5;
+    }
+    .card-sees {
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px; padding: 0.5rem 0.75rem;
+      font-size: 0.7rem; color: rgba(255,255,255,0.8);
+      margin-top: 0.5rem; text-align: center;
+    }
+    .sees-title { font-weight: 700; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.1em; }
+    .sees-list { font-size: 0.75rem; line-height: 1.6; }
+    .role-card-front .card-border-deco {
+      position: absolute; width: 100%; height: 6px; top: 0; left: 0;
+    }
+    .card-border-deco.good { background: linear-gradient(to right, var(--green), #4ade80, var(--green)); }
+    .card-border-deco.evil { background: linear-gradient(to right, var(--red), #f87171, var(--red)); }
+    .tap-hint { font-size: 0.75rem; color: var(--text-dim); text-align: center; letter-spacing: 0.1em; }
+
+    /* Night sees panel */
+    .sees-panel {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1rem;
+      width: 100%; max-width: 320px;
+    }
+    .sees-panel-title {
+      font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold); text-align: center; margin-bottom: 0.75rem;
+    }
+    .sees-player-list { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+    .sees-player-chip {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 999px; padding: 0.3rem 0.75rem;
+      font-size: 0.8rem; color: var(--text-primary);
+    }
+    .sees-player-chip.evil { border-color: rgba(192,57,43,0.5); color: var(--red-light); }
+    .sees-player-chip.merlin { border-color: rgba(39,174,96,0.5); color: var(--green-light); }
+    .sees-player-chip.unclear { border-color: rgba(201,168,76,0.5); color: var(--gold); }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCREEN: QUEST BOARD / DAY PHASE
+    ═══════════════════════════════════════════════════════════ */
+    #screen-game { background: var(--bg-deep); }
+    .game-header {
+      background: linear-gradient(180deg, var(--bg-mid), var(--bg-dark));
+      padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .game-round-info { text-align: center; }
+    .round-label { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); }
+    .round-num { font-family: var(--font-serif); font-size: 1.5rem; color: var(--gold); }
+    .help-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      color: var(--gold); font-size: 1rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: var(--transition);
+    }
+    .help-btn:hover { border-color: var(--gold); box-shadow: var(--shadow-gold); }
+
+    /* Score bar */
+    .score-bar {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--bg-card); border-bottom: 1px solid var(--border);
+    }
+    .score-team { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; }
+    .score-val { font-size: 1.3rem; font-weight: 800; }
+    .score-good .score-val { color: var(--green-light); }
+    .score-evil .score-val { color: var(--red-light); }
+    .score-divider { font-size: 1.2rem; color: var(--text-dim); flex: 1; text-align: center; }
+
+    /* Quest slots */
+    .quest-track {
+      display: flex; gap: 0.5rem; padding: 1rem 1.5rem;
+      justify-content: center;
+    }
+    .quest-slot {
+      flex: 1; max-width: 56px;
+      display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+    }
+    .quest-circle {
+      width: 44px; height: 44px; border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--bg-surface);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; position: relative; transition: var(--transition);
+    }
+    .quest-circle.current {
+      border-color: var(--gold);
+      box-shadow: 0 0 15px rgba(201,168,76,0.4);
+      animation: questPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes questPulse {
+      0%,100% { box-shadow: 0 0 10px rgba(201,168,76,0.3); }
+      50% { box-shadow: 0 0 25px rgba(201,168,76,0.7); }
+    }
+    .quest-circle.success { background: rgba(39,174,96,0.2); border-color: var(--green); }
+    .quest-circle.fail { background: rgba(192,57,43,0.2); border-color: var(--red); }
+    .quest-num { font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.05em; }
+    .quest-size { font-size: 0.6rem; color: var(--text-dim); }
+
+    /* Leader info */
+    .leader-card {
+      background: rgba(201,168,76,0.08);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.85rem 1.5rem;
+      display: flex; align-items: center; gap: 1rem;
+      margin: 0 1.5rem;
+    }
+    .leader-crown { font-size: 1.5rem; }
+    .leader-name { font-weight: 700; color: var(--gold); }
+    .leader-label { font-size: 0.75rem; color: var(--text-muted); }
+
+    /* Phase panel */
+    .phase-panel {
+      margin: 1rem 1.5rem;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.25rem;
+    }
+    .phase-title {
+      font-family: var(--font-serif);
+      font-size: 1.1rem; color: var(--gold); text-align: center;
+      margin-bottom: 0.75rem; letter-spacing: 0.1em;
+    }
+    .team-slots {
+      display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .team-slot {
+      background: var(--bg-surface); border: 2px dashed var(--border);
+      border-radius: 999px; padding: 0.4rem 1rem;
+      font-size: 0.85rem; color: var(--text-dim);
+      min-width: 80px; text-align: center;
+    }
+    .team-slot.filled {
+      background: rgba(201,168,76,0.1);
+      border-style: solid; border-color: var(--gold);
+      color: var(--text-primary); font-weight: 600;
+    }
+    .player-select-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .player-select-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.75rem;
+      cursor: pointer; transition: var(--transition);
+    }
+    .player-select-item.selected {
+      border-color: var(--gold); background: rgba(201,168,76,0.08);
+    }
+    .player-select-item.disabled { opacity: 0.5; cursor: not-allowed; }
+    .select-check {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; flex-shrink: 0; transition: var(--transition);
+    }
+    .player-select-item.selected .select-check {
+      background: var(--gold); border-color: var(--gold); color: var(--bg-deep);
+    }
+
+    /* Vote area */
+    .vote-buttons { display: flex; gap: 1rem; }
+    .vote-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      gap: 0.3rem; padding: 1rem;
+      border-radius: var(--radius-lg); border: 2px solid transparent;
+      cursor: pointer; transition: var(--transition);
+      min-height: 80px;
+    }
+    .vote-btn.approve { background: rgba(39,174,96,0.15); border-color: rgba(39,174,96,0.3); }
+    .vote-btn.approve:hover, .vote-btn.approve.voted {
+      background: rgba(39,174,96,0.3); border-color: var(--green);
+    }
+    .vote-btn.reject { background: rgba(192,57,43,0.15); border-color: rgba(192,57,43,0.3); }
+    .vote-btn.reject:hover, .vote-btn.reject.voted {
+      background: rgba(192,57,43,0.3); border-color: var(--red);
+    }
+    .vote-btn-icon { font-size: 1.8rem; }
+    .vote-btn-label { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+    .vote-btn.approve .vote-btn-label { color: var(--green-light); }
+    .vote-btn.reject .vote-btn-label { color: var(--red-light); }
+
+    /* Vote status */
+    .vote-status {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.85rem;
+    }
+    .vote-status-title { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-bottom: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; }
+    .vote-pips { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; }
+    .vote-pip {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--bg-card);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; font-weight: 700; overflow: hidden;
+      position: relative; transition: var(--transition);
+    }
+    .vote-pip.voted-approve { background: var(--green); border-color: var(--green-light); }
+    .vote-pip.voted-reject { background: var(--red); border-color: var(--red-light); }
+    .vote-pip.voted-success { background: var(--green); border-color: var(--green-light); }
+    .vote-pip.voted-fail { background: var(--red); border-color: var(--red-light); }
+    .vote-pip.voted-hidden { background: var(--purple); border-color: var(--purple-light); }
+    .vote-pip.pending { opacity: 0.4; }
+
+    /* Rejection tracker */
+    .reject-track {
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .reject-pip {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--bg-surface); border: 1px solid var(--border);
+    }
+    .reject-pip.filled { background: var(--red); border-color: var(--red-light); }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCREEN: ASSASSINATION
+    ═══════════════════════════════════════════════════════════ */
+    #screen-assassination {
+      background: radial-gradient(ellipse at top, #3a0d0d 0%, #0d0618 70%);
+      align-items: center; padding: 2rem 1.5rem;
+      gap: 1rem; text-align: center;
+    }
+    .assassin-title {
+      font-family: var(--font-serif);
+      font-size: 1.6rem; letter-spacing: 0.2em; color: var(--red-light);
+      text-shadow: 0 0 20px rgba(231,76,60,0.5);
+    }
+    .assassin-subtitle { font-size: 0.9rem; color: var(--text-muted); max-width: 300px; }
+    .target-list { display: flex; flex-direction: column; gap: 0.75rem; width: 100%; max-width: 360px; }
+    .target-item {
+      display: flex; align-items: center; gap: 0.85rem;
+      background: var(--bg-card); border: 2px solid var(--border);
+      border-radius: var(--radius); padding: 0.85rem;
+      cursor: pointer; transition: var(--transition);
+    }
+    .target-item:hover { border-color: var(--red); }
+    .target-item.selected { border-color: var(--red); background: rgba(192,57,43,0.15); }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCREEN: END GAME
+    ═══════════════════════════════════════════════════════════ */
+    #screen-end {
+      background: radial-gradient(ellipse at center, #2a1245 0%, #0d0618 70%);
+      align-items: center; padding: 2rem 1.5rem;
+      gap: 1rem; text-align: center;
+    }
+    .end-result {
+      font-family: var(--font-serif);
+      font-size: 2.2rem; letter-spacing: 0.2em;
+    }
+    .end-result.good { color: var(--green-light); text-shadow: 0 0 30px rgba(46,204,113,0.5); }
+    .end-result.evil { color: var(--red-light); text-shadow: 0 0 30px rgba(231,76,60,0.5); }
+    .role-reveal-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0.75rem; width: 100%;
+    }
+    .reveal-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.85rem; text-align: center;
+    }
+    .reveal-card.good { border-color: rgba(39,174,96,0.4); }
+    .reveal-card.evil { border-color: rgba(192,57,43,0.4); }
+    .reveal-player { font-weight: 700; font-size: 0.9rem; }
+    .reveal-role { font-size: 0.75rem; color: var(--text-muted); }
+    .reveal-icon { font-size: 1.5rem; margin-bottom: 0.25rem; }
+
+    /* ═══════════════════════════════════════════════════════════
+       PROFILE SCREEN
+    ═══════════════════════════════════════════════════════════ */
+    #screen-profile { background: var(--bg-deep); }
+    .profile-header {
+      background: linear-gradient(180deg, var(--bg-mid), var(--bg-dark));
+      padding: 3rem 1.5rem 2rem; text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .profile-avatar-wrap {
+      position: relative; display: inline-block; cursor: pointer;
+    }
+    .profile-avatar-wrap .avatar { width: 80px; height: 80px; font-size: 2.5rem; margin: 0 auto; }
+    .profile-edit-badge {
+      position: absolute; bottom: 0; right: -4px;
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--gold); color: var(--bg-deep);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; border: 2px solid var(--bg-dark);
+    }
+    .profile-name { font-family: var(--font-serif); font-size: 1.5rem; color: var(--gold); margin-top: 0.75rem; }
+    .profile-email { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .profile-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+    .stat-card {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.85rem; text-align: center;
+    }
+    .stat-val { font-size: 1.6rem; font-weight: 800; color: var(--gold); }
+    .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .history-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.85rem;
+    }
+    .history-result { font-size: 1.2rem; }
+    .history-role { font-weight: 600; color: var(--text-primary); font-size: 0.9rem; }
+    .history-date { font-size: 0.75rem; color: var(--text-muted); }
+
+    /* ═══════════════════════════════════════════════════════════
+       ADMIN PANEL
+    ═══════════════════════════════════════════════════════════ */
+    #screen-admin { background: var(--bg-deep); }
+    .admin-header {
+      background: linear-gradient(180deg, #1a0505, var(--bg-dark));
+      padding: 3rem 1.5rem 1.5rem; text-align: center;
+      border-bottom: 1px solid rgba(192,57,43,0.3);
+    }
+    .admin-title {
+      font-family: var(--font-serif);
+      font-size: 1.5rem; letter-spacing: 0.2em; color: var(--red-light);
+    }
+    .admin-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+    /* ═══════════════════════════════════════════════════════════
+       JOIN ROOM SCREEN
+    ═══════════════════════════════════════════════════════════ */
+    #screen-join { background: var(--bg-deep); }
+
+    /* ═══════════════════════════════════════════════════════════
+       DISCONNECT OVERLAY
+    ═══════════════════════════════════════════════════════════ */
+    #disconnect-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 9500;
+      flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 2rem;
+    }
+    #disconnect-overlay.show { display: flex; }
+    .dc-icon { font-size: 4rem; margin-bottom: 1rem; animation: float 2s ease-in-out infinite; }
+    .dc-title { font-family: var(--font-serif); font-size: 1.5rem; color: var(--red-light); margin-bottom: 0.5rem; }
+    .dc-msg { color: var(--text-muted); margin-bottom: 2rem; max-width: 300px; }
+    .dc-actions { display: flex; flex-direction: column; gap: 0.75rem; width: 100%; max-width: 300px; }
+
+    /* ═══════════════════════════════════════════════════════════
+       HELP OVERLAY
+    ═══════════════════════════════════════════════════════════ */
+    #help-overlay { display: none; }
+    #help-overlay.show { display: flex; }
+    .help-role-card {
+      display: flex; gap: 0.75rem; align-items: flex-start;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem; margin-bottom: 0.75rem;
+    }
+    .help-role-icon { font-size: 2.5rem; flex-shrink: 0; }
+    .help-role-name { font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
+    .help-role-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; }
+    .help-section-title {
+      font-family: var(--font-serif);
+      font-size: 1rem; color: var(--gold); letter-spacing: 0.15em;
+      margin-bottom: 0.75rem; text-align: center;
+    }
+    .help-rule { display: flex; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 0.5rem; }
+    .help-rule-bullet { color: var(--gold); flex-shrink: 0; margin-top: 0.1rem; }
+
+    /* ═══════════════════════════════════════════════════════════
+       RESULT REVEAL ANIMATION
+    ═══════════════════════════════════════════════════════════ */
+    .vote-reveal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.92); z-index: 8500;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 1.5rem; text-align: center; padding: 2rem;
+    }
+    .vote-reveal-overlay.show { display: flex; }
+    .reveal-result-icon { font-size: 6rem; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+    @keyframes popIn {
+      from { transform: scale(0); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .reveal-result-text {
+      font-family: var(--font-serif);
+      font-size: 2rem; letter-spacing: 0.2em;
+    }
+    .reveal-votes-list { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; max-width: 320px; }
+    .reveal-vote-chip {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 999px; padding: 0.3rem 0.85rem;
+      font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SCROLLBAR STYLING
+    ═══════════════════════════════════════════════════════════ */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ═══════════════════════════════════════════════════════════
+       UTILITY CLASSES
+    ═══════════════════════════════════════════════════════════ */
+    .hidden { display: none !important; }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+    .text-center { text-align: center; }
+    .mt-auto { margin-top: auto; }
+    .p-4 { padding: 1rem; }
+    .p-6 { padding: 1.5rem; }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 1rem); }
+    .gap-3 { gap: 0.75rem; }
+    .gap-4 { gap: 1rem; }
+    .flex-col { display: flex; flex-direction: column; }
+    .w-full { width: 100%; }
+    .text-gold { color: var(--gold); }
+    .text-muted { color: var(--text-muted); }
+    .text-sm { font-size: 0.875rem; }
+    .text-xs { font-size: 0.75rem; }
+    .font-serif { font-family: var(--font-serif); }
+    .font-bold { font-weight: 700; }
+    .mb-2 { margin-bottom: 0.5rem; }
+    .mb-4 { margin-bottom: 1rem; }
+    .accent-line {
+      width: 60px; height: 2px;
+      background: linear-gradient(to right, transparent, var(--gold), transparent);
+      margin: 0.5rem auto;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     DESKTOP BLOCK OVERLAY
+═══════════════════════════════════════════════════════════════ -->
+<div id="desktop-block" aria-hidden="true">
+  <div class="db-icon">🏰</div>
+  <h1>HANDHELD ONLY</h1>
+  <div class="divider"></div>
+  <p>This game is only available on handheld mobile devices.<br><br>Please open this application on your smartphone or tablet in portrait orientation.</p>
+</div>
+
+<!-- Stars background -->
+<div class="stars-bg" id="stars-bg"></div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Main app -->
+<div id="app">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: LOADING
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-loading" class="screen active">
+    <div class="loading-crest">⚔️</div>
+    <div class="loading-title">AVALON</div>
+    <div class="loading-sub">THE GAME OF HIDDEN ROLES</div>
+    <div class="spinner" style="margin-top:1rem;"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: PWA INSTALL GATE
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-install" class="screen">
+    <div class="install-crest">⚔️</div>
+    <div class="install-title">AVALON</div>
+    <div class="install-subtitle">The Game of Hidden Roles</div>
+
+    <div class="install-card">
+      <div class="section-title" style="margin-bottom:1rem;">Install Required</div>
+      <div class="install-steps" id="android-instructions">
+        <div class="install-step">
+          <div class="step-num">1</div>
+          <div class="step-text"><strong>Tap the button below</strong> to trigger the browser install prompt</div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">2</div>
+          <div class="step-text"><strong>Tap "Install"</strong> in the browser popup that appears</div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">3</div>
+          <div class="step-text"><strong>Open from your Home Screen</strong> to launch the app in standalone mode</div>
+        </div>
+      </div>
+      <div class="install-steps" id="ios-instructions">
+        <div class="install-step">
+          <div class="step-num">1</div>
+          <div class="step-text">Tap the <strong>Share button</strong> (📤) in Safari's toolbar</div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">2</div>
+          <div class="step-text">Scroll down and tap <strong>"Add to Home Screen"</strong></div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">3</div>
+          <div class="step-text"><strong>Open the app icon</strong> from your Home Screen</div>
+        </div>
+      </div>
+
+      <button class="btn btn-gold" id="install-btn" style="display:none;">
+        <span>⬇️</span> Install App to Device
+      </button>
+      <div id="ios-install-note" class="install-note" style="display:none;">
+        Follow the steps above in Safari, then return to the Home Screen and open the Avalon icon.
+      </div>
+      <div id="install-waiting" style="display:none;text-align:center;color:var(--text-muted);font-size:0.85rem;">
+        <div class="spinner" style="margin:0 auto 0.75rem;"></div>
+        Waiting for install confirmation...
+      </div>
+    </div>
+    <div class="install-note">
+      ⚔️ Installation is required to ensure the full Avalon experience and to keep your game state secure between sessions.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: FIREBASE SETUP
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-firebase-setup" class="screen">
+    <div class="setup-header">
+      <div style="font-size:2.5rem;margin-bottom:0.75rem;">🔥</div>
+      <h1>Firebase Setup</h1>
+      <p>One-time configuration. Enter your Firebase project credentials below.</p>
+    </div>
+    <div class="setup-body">
+      <div class="setup-info">
+        📖 Get these values from your Firebase Console → Project Settings → Your Apps → Web App → Config object. See README.md for detailed instructions.
+      </div>
+      <div class="form-group">
+        <label class="label">API Key</label>
+        <input type="text" id="setup-apiKey" class="input-field" placeholder="AIzaSy..." autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="label">Auth Domain</label>
+        <input type="text" id="setup-authDomain" class="input-field" placeholder="your-project.firebaseapp.com" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="label">Database URL</label>
+        <input type="text" id="setup-databaseURL" class="input-field" placeholder="https://your-project-default-rtdb.firebaseio.com" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="label">Project ID</label>
+        <input type="text" id="setup-projectId" class="input-field" placeholder="your-project-id" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="label">Storage Bucket</label>
+        <input type="text" id="setup-storageBucket" class="input-field" placeholder="your-project.appspot.com" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="label">Messaging Sender ID</label>
+        <input type="text" id="setup-messagingSenderId" class="input-field" placeholder="123456789" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="label">App ID</label>
+        <input type="text" id="setup-appId" class="input-field" placeholder="1:123456789:web:abc123" autocomplete="off" />
+      </div>
+      <button class="btn btn-gold" id="setup-save-btn">
+        <span>🔥</span> Save & Connect Firebase
+      </button>
+      <div style="height:2rem;"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: AUTH
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-auth" class="screen">
+    <div class="auth-crest">🏰</div>
+    <div class="auth-title">AVALON</div>
+    <div class="accent-line"></div>
+    <div class="auth-sub">Sign in to join the Round Table</div>
+    <div class="gold-divider" style="width:200px;"></div>
+    <button class="google-btn" id="google-signin-btn">
+      <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Continue with Google
+    </button>
+    <div class="install-note" style="max-width:280px;">
+      By signing in, you agree to play with honor at the Round Table of King Arthur.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: PROFILE SETUP
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-profile-setup" class="screen">
+    <div class="profile-setup-header">
+      <div style="font-size:2rem;color:var(--gold);font-family:var(--font-serif);letter-spacing:0.2em;">Welcome, Knight</div>
+      <div style="color:var(--text-muted);font-size:0.9rem;margin-top:0.5rem;">Set up your profile to enter the realm</div>
+    </div>
+    <div class="profile-avatar-picker">
+      <div class="avatar avatar-large" id="ps-avatar-display">🧙</div>
+      <div class="label" style="text-align:center;">Choose your avatar</div>
+      <div class="avatar-options" id="ps-avatar-options">
+        <!-- Populated by JS -->
+      </div>
+      <div class="form-group w-full">
+        <label class="label">Your Nickname</label>
+        <input type="text" id="ps-nickname" class="input-field" placeholder="Enter your nickname..." maxlength="20" />
+      </div>
+      <button class="btn btn-gold w-full" id="ps-save-btn">
+        <span>⚔️</span> Enter the Realm
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: HOME
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-home" class="screen">
+    <div class="home-header">
+      <div style="font-size:2.5rem;margin-bottom:0.5rem;filter:drop-shadow(0 0 15px rgba(201,168,76,0.5));">⚔️</div>
+      <div class="home-title">AVALON</div>
+      <div class="home-sub">The Game of Hidden Roles</div>
+    </div>
+    <div class="home-body">
+      <div class="user-card">
+        <div class="avatar" id="home-user-avatar">🧙</div>
+        <div class="user-info">
+          <div class="user-name" id="home-user-name">Knight</div>
+          <div class="user-email" id="home-user-email"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="home-signout-btn" style="width:auto;">Sign Out</button>
+      </div>
+
+      <!-- Nearby rooms -->
+      <div>
+        <div class="section-title" style="text-align:left;margin-bottom:0.5rem;">⚔️ Available Rooms</div>
+        <div class="text-xs text-muted mb-2" id="home-ip-display">Scanning network...</div>
+        <div id="nearby-rooms-list" class="nearby-rooms">
+          <div class="empty-rooms">🔍 Scanning for rooms on your network...<br>
+            <span style="font-size:0.8rem;">Pull down to refresh</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gold-divider"></div>
+
+      <!-- Action grid -->
+      <div class="actions-grid">
+        <button class="btn btn-gold" id="home-host-btn" style="flex-direction:column;gap:0.25rem;min-height:70px;">
+          <span style="font-size:1.3rem;">🏰</span>
+          <span>Host Room</span>
+        </button>
+        <button class="btn btn-purple" id="home-join-btn" style="flex-direction:column;gap:0.25rem;min-height:70px;">
+          <span style="font-size:1.3rem;">🚪</span>
+          <span>Join Room</span>
+        </button>
+      </div>
+
+      <div style="height:1rem;"></div>
+    </div>
+
+    <!-- Bottom nav -->
+    <nav class="nav-bar pb-safe">
+      <button class="nav-item active" data-nav="home">
+        <span>🏠</span><span>Home</span>
+      </button>
+      <button class="nav-item" data-nav="profile">
+        <span>👤</span><span>Profile</span>
+      </button>
+      <button class="nav-item" id="admin-nav-btn" data-nav="admin" style="display:none;">
+        <span>👑</span><span>Admin</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: JOIN ROOM
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-join" class="screen">
+    <div class="page-header">
+      <button class="back-btn" data-back="home">←</button>
+      <div class="page-title">Join a Room</div>
+    </div>
+    <div class="p-6 flex-col gap-4" style="display:flex;flex-direction:column;gap:1rem;">
+      <div class="card">
+        <div class="section-title mb-4">Enter Room Code</div>
+        <div class="form-group">
+          <input type="text" id="join-code-input" class="input-field" placeholder="e.g. KGBT72"
+            maxlength="6" style="text-align:center;font-size:1.8rem;letter-spacing:0.5em;font-weight:700;text-transform:uppercase;" />
+        </div>
+        <div style="height:0.75rem;"></div>
+        <button class="btn btn-gold" id="join-by-code-btn">
+          <span>🚪</span> Join by Code
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="section-title mb-4">Scan QR Code</div>
+        <div style="text-align:center;color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">
+          Ask the host to show their room QR code, then scan it below.
+        </div>
+        <button class="btn btn-ghost" id="start-qr-scan-btn">
+          <span>📷</span> Open Camera to Scan
+        </button>
+        <video id="qr-video" style="display:none;width:100%;border-radius:var(--radius);margin-top:0.75rem;" playsinline></video>
+        <canvas id="qr-scan-canvas" style="display:none;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: CREATE ROOM
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-create-room" class="screen">
+    <div class="page-header">
+      <button class="back-btn" data-back="home">←</button>
+      <div class="page-title">Host a Room</div>
+    </div>
+    <div class="p-6 flex-col" style="display:flex;flex-direction:column;gap:1.25rem;padding:1.5rem;">
+
+      <!-- Room Code & QR -->
+      <div class="card" id="room-code-section" style="display:none;">
+        <div class="section-title mb-4">Your Room</div>
+        <div class="room-code-display" id="created-room-code">------</div>
+        <div class="accent-line"></div>
+        <div id="qr-container">
+          <canvas id="qr-canvas" width="200" height="200"></canvas>
+          <div class="text-xs text-muted text-center">Ask players to scan this or type the code above</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="copy-room-code-btn" style="width:auto;margin:0 auto;">
+          📋 Copy Code
+        </button>
+      </div>
+
+      <!-- Player count -->
+      <div class="card">
+        <div class="section-title mb-4">Player Count</div>
+        <div class="player-count-bar">
+          <div class="count-label">
+            <span>Players: <strong id="cr-player-count">5</strong></span>
+            <span><strong id="cr-good-count">3</strong> Good / <strong id="cr-evil-count">2</strong> Evil</span>
+          </div>
+          <div class="progress-bar" style="height:10px;">
+            <div class="progress-fill" id="cr-count-fill" style="width:16.6%;background:linear-gradient(to right,var(--green),var(--red));"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:0.5rem;">
+            <button class="btn btn-ghost btn-sm" id="cr-count-down" style="width:auto;min-width:44px;">−</button>
+            <div class="ratio-display" id="cr-ratio-display"></div>
+            <button class="btn btn-ghost btn-sm" id="cr-count-up" style="width:auto;min-width:44px;">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Character selection -->
+      <div class="card">
+        <div class="section-title mb-4">Special Characters</div>
+        <div class="text-xs text-muted text-center mb-4" id="cr-char-instruction">Toggle special roles for this game</div>
+        <div class="char-grid" id="cr-char-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <button class="btn btn-gold" id="cr-create-btn">
+        <span>🏰</span> Create Room & Open Lobby
+      </button>
+      <div style="height:2rem;"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: LOBBY
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-lobby" class="screen">
+    <div class="page-header">
+      <button class="back-btn" id="lobby-back-btn">←</button>
+      <div>
+        <div class="page-title" id="lobby-room-name">Room</div>
+        <div class="text-xs text-muted" id="lobby-room-code-display"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="lobby-qr-btn" style="width:auto;margin-left:auto;">QR</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:1rem;padding:1.5rem;">
+      <div class="player-count-bar">
+        <div class="count-label">
+          <span>Players in lobby</span>
+          <span id="lobby-count">0 / 10</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="lobby-progress" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title mb-4">Knights of the Round Table</div>
+        <div class="lobby-players" id="lobby-players-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div class="card" id="lobby-char-summary">
+        <div class="section-title mb-4">Active Roles</div>
+        <div id="lobby-roles-display" style="display:flex;flex-wrap:wrap;gap:0.4rem;justify-content:center;">
+        </div>
+      </div>
+
+      <!-- Host controls -->
+      <div id="lobby-host-controls" style="display:none;">
+        <button class="btn btn-gold" id="lobby-start-btn" disabled>
+          <span>⚔️</span> Start Game
+        </button>
+        <div class="text-xs text-muted text-center mt-2" id="lobby-start-hint">Need at least 5 players to start</div>
+      </div>
+
+      <div style="height:2rem;"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: NIGHT PHASE
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-night" class="screen">
+    <div class="night-title">🌙 THE NIGHT FALLS</div>
+    <div class="night-instruction" id="night-instruction">Tap the card to reveal your secret role. Keep it hidden from others.</div>
+
+    <div class="role-card-scene" id="role-card-scene">
+      <div class="role-card" id="role-card">
+        <div class="role-card-face role-card-back">
+          <div class="card-back-pattern"></div>
+          <div class="card-back-icon">🔒</div>
+          <div class="card-back-text">TAP TO REVEAL</div>
+        </div>
+        <div class="role-card-face role-card-front" id="role-card-front">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="tap-hint" id="night-tap-hint">👆 Tap card to peek</div>
+
+    <div class="sees-panel hidden" id="sees-panel">
+      <div class="sees-panel-title">👁️ You Can See</div>
+      <div class="sees-player-list" id="sees-player-list"></div>
+    </div>
+
+    <button class="btn btn-gold" id="night-ready-btn" style="max-width:320px;display:none;">
+      <span>✅</span> I've Seen My Role
+    </button>
+    <div class="text-xs text-muted" id="night-waiting-text" style="display:none;text-align:center;"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: GAME (QUEST BOARD + PHASES)
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-game" class="screen">
+    <!-- Header -->
+    <div class="game-header">
+      <div>
+        <div class="round-label">Round</div>
+        <div class="round-num" id="g-round">1</div>
+      </div>
+      <div class="game-round-info">
+        <div class="round-label">Phase</div>
+        <div style="font-size:0.85rem;font-weight:700;color:var(--purple-light);" id="g-phase-label">Team Selection</div>
+      </div>
+      <button class="help-btn" id="help-open-btn">?</button>
+    </div>
+
+    <!-- Score bar -->
+    <div class="score-bar">
+      <div class="score-team score-good">
+        <span>✨</span>
+        <span class="score-val" id="g-score-good">0</span>
+        <span style="color:var(--text-muted);">Good</span>
+      </div>
+      <div class="score-divider">⚔️</div>
+      <div class="score-team score-evil">
+        <span style="color:var(--text-muted);">Evil</span>
+        <span class="score-val" id="g-score-evil">0</span>
+        <span>💀</span>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:0.5rem;align-items:center;">
+        <span class="text-xs text-muted">Rejected:</span>
+        <div class="reject-track" id="g-reject-track"></div>
+      </div>
+    </div>
+
+    <!-- Quest track -->
+    <div class="quest-track" id="g-quest-track"></div>
+
+    <!-- Leader -->
+    <div class="leader-card">
+      <div class="leader-crown">👑</div>
+      <div>
+        <div class="leader-label">Current Leader</div>
+        <div class="leader-name" id="g-leader-name">—</div>
+      </div>
+      <div style="margin-left:auto;" id="g-leader-badge"></div>
+    </div>
+
+    <!-- Phase panel (dynamic content) -->
+    <div class="phase-panel" id="g-phase-panel" style="margin-bottom:1rem;">
+      <!-- Populated dynamically -->
+    </div>
+
+    <div style="height:1rem;"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: ASSASSINATION
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-assassination" class="screen">
+    <div style="font-size:4rem;">🗡️</div>
+    <div class="assassin-title">THE ASSASSINATION</div>
+    <div class="accent-line"></div>
+    <div class="assassin-subtitle" id="assassination-subtitle">Good has won the quests. But the Assassin gets one final chance — identify Merlin to steal victory for Evil.</div>
+    <div class="target-list" id="assassination-target-list"></div>
+    <div id="assassination-waiting" style="display:none;text-align:center;color:var(--text-muted);font-size:0.9rem;">
+      <div class="spinner" style="margin:0 auto 1rem;"></div>
+      Waiting for the Assassin's choice...
+    </div>
+    <button class="btn btn-danger" id="assassination-confirm-btn" style="max-width:320px;display:none;" disabled>
+      <span>🗡️</span> Execute Target
+    </button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: END GAME
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-end" class="screen">
+    <div id="end-icon" style="font-size:5rem;"></div>
+    <div class="end-result" id="end-result-text"></div>
+    <div class="accent-line"></div>
+    <div class="text-muted text-sm" id="end-reason"></div>
+
+    <div style="width:100%;max-width:380px;">
+      <div class="section-title mb-4">All Roles Revealed</div>
+      <div class="role-reveal-grid" id="end-roles-grid"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:0.75rem;width:100%;max-width:320px;margin-top:1rem;">
+      <button class="btn btn-gold" id="end-new-game-btn">
+        <span>🏰</span> Play Again (New Lobby)
+      </button>
+      <button class="btn btn-ghost" id="end-home-btn">
+        <span>🏠</span> Return Home
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: PROFILE
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-profile" class="screen">
+    <div class="profile-header">
+      <div class="profile-avatar-wrap" id="profile-avatar-wrap">
+        <div class="avatar avatar-large" id="profile-avatar-display">🧙</div>
+        <div class="profile-edit-badge">✏️</div>
+      </div>
+      <div class="profile-name" id="profile-name-display">Knight</div>
+      <div class="profile-email" id="profile-email-display"></div>
+    </div>
+    <div class="profile-body">
+      <div>
+        <div class="section-title mb-4">Statistics</div>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-val" id="stat-games">0</div>
+            <div class="stat-label">Games</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="stat-wins">0</div>
+            <div class="stat-label">Wins</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="stat-winrate">0%</div>
+            <div class="stat-label">Win Rate</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title mb-4">Edit Profile</div>
+        <div class="card">
+          <div class="form-group">
+            <label class="label">Nickname</label>
+            <input type="text" id="profile-nickname-input" class="input-field" placeholder="Your nickname..." maxlength="20" />
+          </div>
+          <div style="height:0.75rem;"></div>
+          <div class="label" style="margin-bottom:0.5rem;">Avatar</div>
+          <div class="avatar-options" id="profile-avatar-options"></div>
+          <div style="height:1rem;"></div>
+          <button class="btn btn-gold" id="profile-save-btn">
+            <span>💾</span> Save Changes
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title mb-4">Game History</div>
+        <div id="game-history-list" style="display:flex;flex-direction:column;gap:0.5rem;">
+          <div class="text-muted text-sm text-center" style="padding:1.5rem;">No games played yet</div>
+        </div>
+      </div>
+      <div style="height:2rem;"></div>
+    </div>
+    <nav class="nav-bar pb-safe">
+      <button class="nav-item" data-nav="home">
+        <span>🏠</span><span>Home</span>
+      </button>
+      <button class="nav-item active" data-nav="profile">
+        <span>👤</span><span>Profile</span>
+      </button>
+      <button class="nav-item" id="profile-admin-nav" data-nav="admin" style="display:none;">
+        <span>👑</span><span>Admin</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCREEN: ADMIN
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="screen-admin" class="screen">
+    <div class="admin-header">
+      <div style="font-size:2rem;margin-bottom:0.5rem;">👑</div>
+      <div class="admin-title">Admin Panel</div>
+      <div style="color:var(--text-muted);font-size:0.8rem;margin-top:0.3rem;">buenavistaaglinaodanny@gmail.com</div>
+    </div>
+    <div class="admin-body">
+      <div class="card">
+        <div class="section-title mb-4">App Appearance</div>
+        <div class="form-group">
+          <label class="label">Game Name</label>
+          <input type="text" id="admin-game-name" class="input-field" placeholder="Avalon" />
+        </div>
+        <div style="height:0.75rem;"></div>
+        <div class="form-group">
+          <label class="label">App Icon Emoji</label>
+          <input type="text" id="admin-app-icon" class="input-field" placeholder="⚔️" maxlength="2" style="font-size:1.5rem;text-align:center;" />
+        </div>
+        <div style="height:0.75rem;"></div>
+        <button class="btn btn-gold" id="admin-save-appearance-btn">
+          <span>💾</span> Save Appearance
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="section-title mb-4">Global Character Toggle</div>
+        <div class="text-xs text-muted text-center mb-4">Globally enable/disable characters across all games</div>
+        <div id="admin-char-toggles" style="display:flex;flex-direction:column;gap:0.85rem;">
+          <!-- Populated by JS -->
+        </div>
+        <div style="height:0.75rem;"></div>
+        <button class="btn btn-gold" id="admin-save-chars-btn">
+          <span>💾</span> Save Character Settings
+        </button>
+      </div>
+
+      <div class="card" style="border-color:rgba(192,57,43,0.3);">
+        <div class="section-title mb-4" style="color:var(--red-light);">Danger Zone</div>
+        <button class="btn btn-danger" id="admin-reset-config-btn">
+          <span>🔄</span> Reset Firebase Config
+        </button>
+        <div class="text-xs text-muted text-center mt-2">Forces all devices to re-enter Firebase credentials</div>
+      </div>
+      <div style="height:2rem;"></div>
+    </div>
+    <nav class="nav-bar pb-safe">
+      <button class="nav-item" data-nav="home">
+        <span>🏠</span><span>Home</span>
+      </button>
+      <button class="nav-item" data-nav="profile">
+        <span>👤</span><span>Profile</span>
+      </button>
+      <button class="nav-item active" data-nav="admin">
+        <span>👑</span><span>Admin</span>
+      </button>
+    </nav>
+  </div>
+
+</div><!-- end #app -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     OVERLAYS (outside #app so they stack above everything)
+═══════════════════════════════════════════════════════════════ -->
+
+<!-- Disconnect overlay -->
+<div id="disconnect-overlay">
+  <div class="dc-icon">📡</div>
+  <div class="dc-title" id="dc-title">Player Disconnected</div>
+  <div class="dc-msg" id="dc-msg">A player has left the game</div>
+  <div class="dc-actions">
+    <div id="dc-admin-controls" style="display:none;display:flex;flex-direction:column;gap:0.75rem;width:100%;">
+      <button class="btn btn-danger" id="dc-terminate-btn"><span>💀</span> Terminate Session</button>
+      <button class="btn btn-gold" id="dc-restart-btn"><span>🏰</span> End & Start New Game</button>
+    </div>
+    <button class="btn btn-ghost" id="dc-dismiss-btn">Dismiss</button>
+  </div>
+</div>
+
+<!-- Help overlay -->
+<div class="modal-overlay" id="help-overlay">
+  <div class="modal-box" style="border-radius:var(--radius-lg);max-height:85vh;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <div class="modal-title" style="margin:0;">📖 Game Guide</div>
+      <button class="back-btn" id="help-close-btn" style="font-size:1rem;">✕</button>
+    </div>
+
+    <!-- My role section -->
+    <div id="help-my-role-section" style="margin-bottom:1.25rem;"></div>
+
+    <div class="gold-divider"></div>
+
+    <!-- General rules -->
+    <div style="margin-top:1rem;">
+      <div class="help-section-title">How to Play</div>
+      <div class="help-rule">
+        <span class="help-rule-bullet">⚔️</span>
+        <span>The <strong>Leader</strong> nominates a team for each Quest. The group votes to Approve or Reject it.</span>
+      </div>
+      <div class="help-rule">
+        <span class="help-rule-bullet">⚔️</span>
+        <span>5 consecutive <strong>Rejections</strong> in one round = automatic Evil victory.</span>
+      </div>
+      <div class="help-rule">
+        <span class="help-rule-bullet">✨</span>
+        <span><strong>Good wins</strong> 3 Quests, then the Assassin gets one chance to identify Merlin.</span>
+      </div>
+      <div class="help-rule">
+        <span class="help-rule-bullet">💀</span>
+        <span><strong>Evil wins</strong> 3 Quests, OR the Assassin correctly names Merlin.</span>
+      </div>
+      <div class="help-rule">
+        <span class="help-rule-bullet">🗳️</span>
+        <span>Quest votes: Good players must play <strong>Success</strong>. Evil can play Success or Fail (secretly).</span>
+      </div>
+      <div class="help-rule">
+        <span class="help-rule-bullet">👥</span>
+        <span>Quest 4 with 7+ players requires <strong>2 Fail cards</strong> to fail.</span>
+      </div>
+    </div>
+
+    <div class="gold-divider" style="margin:1rem 0;"></div>
+
+    <!-- All roles quick ref -->
+    <div class="help-section-title">All Roles</div>
+    <div id="help-all-roles"></div>
+    <div style="height:1rem;"></div>
+  </div>
+</div>
+
+<!-- Vote reveal overlay -->
+<div class="vote-reveal-overlay" id="vote-reveal-overlay">
+  <div class="reveal-result-icon" id="vr-icon"></div>
+  <div class="reveal-result-text" id="vr-text"></div>
+  <div class="reveal-votes-list" id="vr-votes"></div>
+  <button class="btn btn-ghost" id="vr-dismiss-btn" style="max-width:200px;margin-top:1rem;">Continue</button>
+</div>
+
+<!-- Lobby QR Modal -->
+<div class="modal-overlay center" id="lobby-qr-modal" style="display:none;">
+  <div class="modal-box" style="border-radius:var(--radius-lg);text-align:center;">
+    <div class="modal-title">Share Room</div>
+    <div class="room-code-display" id="lobby-qr-code-text" style="margin-bottom:1rem;"></div>
+    <canvas id="lobby-qr-canvas" width="200" height="200" style="border:3px solid var(--gold);border-radius:var(--radius);box-shadow:var(--shadow-gold);"></canvas>
+    <div class="text-xs text-muted" style="margin-top:0.75rem;">Show this to other players</div>
+    <button class="btn btn-ghost" id="lobby-qr-close-btn" style="margin-top:1rem;">Close</button>
+  </div>
+</div>
+
+<!-- Admin disconnect control -->
+<div class="modal-overlay center" id="admin-dc-modal" style="display:none;">
+  <div class="modal-box" style="border-radius:var(--radius-lg);">
+    <div class="modal-title" style="color:var(--red-light);">⚠️ Admin Control</div>
+    <div style="color:var(--text-muted);font-size:0.9rem;text-align:center;margin-bottom:1.5rem;" id="admin-dc-modal-msg">
+      A player has disconnected. Choose how to proceed.
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.75rem;">
+      <button class="btn btn-danger" id="admin-modal-terminate">
+        <span>💀</span> Terminate Session
+      </button>
+      <button class="btn btn-gold" id="admin-modal-restart">
+        <span>🏰</span> Kill Room & Start New Game
+      </button>
+      <button class="btn btn-ghost" id="admin-modal-dismiss">
+        Continue Game
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FIREBASE SDK
+═══════════════════════════════════════════════════════════════ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════════
+//  ⚙️  MANUAL FIREBASE CONFIG OVERRIDE
+//  Paste your firebaseConfig object here to skip the setup screen.
+// ═══════════════════════════════════════════════════════════════════
+const FIREBASE_CONFIG_OVERRIDE = null;
+// Example:
+// const FIREBASE_CONFIG_OVERRIDE = {
+//   apiKey: "AIzaSy...",
+//   authDomain: "your-project.firebaseapp.com",
+//   databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+//   projectId: "your-project-id",
+//   storageBucket: "your-project.appspot.com",
+//   messagingSenderId: "123456789",
+//   appId: "1:123456789:web:abc123"
+// };
+
+// ═══════════════════════════════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════════════════════════════
+const ADMIN_EMAIL = 'buenavistaaglinaodanny@gmail.com';
+const LS_FIREBASE_CONFIG = 'avalon_firebase_config';
+const LS_SESSION = 'avalon_session';
+const LS_APP_SETTINGS = 'avalon_app_settings';
+
+const AVATARS = ['🧙','⚔️','🛡️','👑','🏹','🗡️','🦅','🐉','🌙','⭐','🔮','🏰','🌹','🐺','🦁','🎭'];
+
+// Official Avalon player ratios: [total] => [good, evil]
+const PLAYER_RATIOS = {
+  5:  [3, 2],
+  6:  [4, 2],
+  7:  [4, 3],
+  8:  [5, 3],
+  9:  [6, 3],
+  10: [6, 4]
+};
+
+// Quest team sizes: [players] => [q1,q2,q3,q4,q5]
+const QUEST_SIZES = {
+  5:  [2, 3, 2, 3, 3],
+  6:  [2, 3, 4, 3, 4],
+  7:  [2, 3, 3, 4, 4],
+  8:  [3, 4, 4, 5, 5],
+  9:  [3, 4, 4, 5, 5],
+  10: [3, 4, 4, 5, 5]
+};
+
+// Quest 4 needs 2 fails for 7+ players
+const QUEST4_DOUBLE_FAIL_MIN = 7;
+
+const ROLES = {
+  merlin:    { name:'Merlin',    team:'good', icon:'🌟', ability:'You see all Evil players (except Mordred). Guide Good without revealing yourself.', sees:'evil_except_mordred' },
+  percival:  { name:'Percival',  team:'good', icon:'🛡️', ability:'You see two players who could be Merlin or Morgana — but you don\'t know which is which.', sees:'merlin_morgana_unclear' },
+  loyal:     { name:'Loyal Servant', team:'good', icon:'✨', ability:'A faithful servant of Arthur. You see nothing at night. Identify evil through logic and debate.', sees:'none' },
+  assassin:  { name:'Assassin', team:'evil', icon:'🗡️', ability:'You are Evil. If Good wins the quests, you may choose to assassinate Merlin for an Evil victory.', sees:'evil_team' },
+  morgana:   { name:'Morgana',  team:'evil', icon:'🔮', ability:'You are Evil and appear as Merlin to Percival. Deceive and mislead the forces of Good.', sees:'evil_team' },
+  mordred:   { name:'Mordred',  team:'evil', icon:'💀', ability:'You are Evil, but hidden from Merlin. Lead the forces of darkness without suspicion.', sees:'evil_team' },
+  oberon:    { name:'Oberon',   team:'evil', icon:'🌑', ability:'You are Evil but hidden from other Evil players. Act alone in the shadows.', sees:'none' },
+  minion:    { name:'Minion of Mordred', team:'evil', icon:'👥', ability:'A servant of Evil. You know your Evil teammates. Fail quests and protect Mordred.', sees:'evil_team' }
+};
+
+// Which special characters can be toggled by host
+const SPECIAL_CHARS = ['merlin','percival','morgana','mordred','oberon','assassin'];
+
+// ═══════════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════════
+let state = {
+  firebase: null,
+  db: null,
+  auth: null,
+  user: null,
+  profile: null,
+  currentRoom: null,
+  roomId: null,
+  gameState: null,
+  myRole: null,
+  deferredInstallPrompt: null,
+  isStandalone: false,
+  isIOS: false,
+  currentScreen: 'loading',
+  playerIp: null,
+  presenceRef: null,
+  roomListeners: [],
+  globalSettings: { gameName: 'Avalon', appIcon: '⚔️', disabledChars: [] }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════════════════
+function $(id) { return document.getElementById(id); }
+function showToast(msg, duration = 3000) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  $('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), duration);
+}
+function generateCode(len = 6) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:len}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  SCREEN NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const s = $('screen-' + id);
+  if (s) {
+    s.classList.add('active');
+    s.scrollTop = 0;
+    state.currentScreen = id;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  STARS BACKGROUND
+// ═══════════════════════════════════════════════════════════════════
+function initStars() {
+  const bg = $('stars-bg');
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2 + 1;
+    s.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:${Math.random()*100}%;top:${Math.random()*100}%;
+      animation-delay:${Math.random()*3}s;
+      animation-duration:${2+Math.random()*3}s;
+    `;
+    bg.appendChild(s);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  SERVICE WORKER
+// ═══════════════════════════════════════════════════════════════════
+async function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('./sw.js');
+    console.log('[App] SW registered:', reg.scope);
+  } catch (e) {
+    console.warn('[App] SW registration failed:', e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  PWA INSTALL DETECTION
+// ═══════════════════════════════════════════════════════════════════
+function detectStandalone() {
+  state.isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  state.isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://');
+  return state.isStandalone;
+}
+
+// Listen for install prompt (Chrome/Android)
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  state.deferredInstallPrompt = e;
+  // If we're on the install screen, show the button
+  if (state.currentScreen === 'install') {
+    renderInstallScreen();
+  }
+});
+
+window.addEventListener('appinstalled', () => {
+  state.deferredInstallPrompt = null;
+  state.isStandalone = true;
+  showToast('⚔️ App installed! Opening Avalon...');
+  setTimeout(() => startAuthFlow(), 1500);
+});
+
+function renderInstallScreen() {
+  const installBtn = $('install-btn');
+  const installWaiting = $('install-waiting');
+  const installNote = $('ios-install-note');
+  const androidSteps = $('android-instructions');
+  const iosSteps = $('ios-instructions');
+
+  if (state.isIOS) {
+    androidSteps.style.display = 'none';
+    iosSteps.style.display = 'flex';
+    installBtn.style.display = 'none';
+    installNote.style.display = 'block';
+  } else if (state.deferredInstallPrompt) {
+    androidSteps.style.display = 'flex';
+    iosSteps.style.display = 'none';
+    installBtn.style.display = 'flex';
+    installNote.style.display = 'none';
+    installWaiting.style.display = 'none';
+  } else {
+    // No prompt available yet — could be already dismissed or unsupported
+    androidSteps.style.display = 'flex';
+    iosSteps.style.display = 'none';
+    installBtn.style.display = 'none';
+    installWaiting.style.display = 'none';
+    installNote.style.display = 'block';
+    installNote.textContent = 'To install: use your browser menu → "Add to Home Screen" or "Install App", then reopen from your home screen.';
+  }
+}
+
+$('install-btn').addEventListener('click', async () => {
+  if (!state.deferredInstallPrompt) return;
+  state.deferredInstallPrompt.prompt();
+  const { outcome } = await state.deferredInstallPrompt.userChoice;
+  if (outcome === 'accepted') {
+    $('install-btn').style.display = 'none';
+    $('install-waiting').style.display = 'flex';
+  }
+  state.deferredInstallPrompt = null;
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  FIREBASE INIT
+// ═══════════════════════════════════════════════════════════════════
+function loadFirebaseConfig() {
+  if (FIREBASE_CONFIG_OVERRIDE) return FIREBASE_CONFIG_OVERRIDE;
+  try {
+    const raw = localStorage.getItem(LS_FIREBASE_CONFIG);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return null;
+}
+
+function saveFirebaseConfig(cfg) {
+  localStorage.setItem(LS_FIREBASE_CONFIG, JSON.stringify(cfg));
+}
+
+function initFirebase(config) {
+  try {
+    if (firebase.apps.length) firebase.apps.forEach(app => app.delete());
+    firebase.initializeApp(config);
+    state.db   = firebase.database();
+    state.auth = firebase.auth();
+    state.firebase = firebase;
+    console.log('[App] Firebase initialized');
+    return true;
+  } catch(e) {
+    console.error('[App] Firebase init error:', e);
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  FIREBASE SETUP SCREEN
+// ═══════════════════════════════════════════════════════════════════
+$('setup-save-btn').addEventListener('click', async () => {
+  const fields = ['apiKey','authDomain','databaseURL','projectId','storageBucket','messagingSenderId','appId'];
+  const config = {};
+  let valid = true;
+  fields.forEach(f => {
+    const val = $('setup-' + f).value.trim();
+    if (!val) { valid = false; $('setup-' + f).style.borderColor = 'var(--red)'; }
+    else { $('setup-' + f).style.borderColor = ''; config[f] = val; }
+  });
+  if (!valid) { showToast('⚠️ Please fill in all Firebase fields'); return; }
+
+  const ok = initFirebase(config);
+  if (!ok) { showToast('❌ Firebase initialization failed. Check your credentials.'); return; }
+
+  // Test connection
+  try {
+    await state.db.ref('.info/connected').once('value');
+    saveFirebaseConfig(config);
+    showToast('✅ Firebase connected successfully!');
+    setTimeout(() => startAuthFlow(), 800);
+  } catch(e) {
+    showToast('❌ Could not connect. Check your Database URL and rules.');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  AUTH FLOW
+// ═══════════════════════════════════════════════════════════════════
+function startAuthFlow() {
+  showScreen('auth');
+  state.auth.onAuthStateChanged(async user => {
+    if (user) {
+      state.user = user;
+      await loadProfile(user);
+    }
+  });
+}
+
+$('google-signin-btn').addEventListener('click', async () => {
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await state.auth.signInWithPopup(provider);
+  } catch(e) {
+    if (e.code !== 'auth/popup-closed-by-user') {
+      showToast('❌ Sign-in failed: ' + e.message);
+    }
+  }
+});
+
+$('home-signout-btn').addEventListener('click', async () => {
+  await cleanupPresence();
+  await state.auth.signOut();
+  state.user = null; state.profile = null;
+  showScreen('auth');
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  PROFILE
+// ═══════════════════════════════════════════════════════════════════
+async function loadProfile(user) {
+  const snap = await state.db.ref(`users/${user.uid}`).once('value');
+  if (snap.exists()) {
+    state.profile = snap.val();
+    await loadGlobalSettings();
+    goHome();
+  } else {
+    showProfileSetup();
+  }
+}
+
+function showProfileSetup() {
+  renderAvatarOptions('ps-avatar-options', 'ps-avatar-display');
+  showScreen('profile-setup');
+}
+
+function renderAvatarOptions(containerId, displayId) {
+  const container = $(containerId);
+  container.innerHTML = '';
+  AVATARS.forEach(av => {
+    const d = document.createElement('div');
+    d.className = 'avatar-opt';
+    d.textContent = av;
+    d.addEventListener('click', () => {
+      container.querySelectorAll('.avatar-opt').forEach(x => x.classList.remove('selected'));
+      d.classList.add('selected');
+      $(displayId).textContent = av;
+    });
+    container.appendChild(d);
+  });
+  // Select first by default
+  container.firstChild?.click();
+}
+
+$('ps-save-btn').addEventListener('click', async () => {
+  const nickname = $('ps-nickname').value.trim();
+  if (!nickname) { showToast('⚠️ Please enter a nickname'); return; }
+  const avatar = $('ps-avatar-display').textContent;
+  const profile = {
+    uid: state.user.uid,
+    email: state.user.email,
+    nickname, avatar,
+    gamesPlayed: 0, wins: 0,
+    history: [],
+    createdAt: Date.now()
+  };
+  await state.db.ref(`users/${state.user.uid}`).set(profile);
+  state.profile = profile;
+  await loadGlobalSettings();
+  goHome();
+});
+
+async function loadGlobalSettings() {
+  try {
+    const snap = await state.db.ref('config/globalSettings').once('value');
+    if (snap.exists()) {
+      state.globalSettings = { ...state.globalSettings, ...snap.val() };
+    }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  HOME
+// ═══════════════════════════════════════════════════════════════════
+async function goHome() {
+  // Detect IP
+  detectPlayerIp();
+
+  // Restore active session
+  const session = JSON.parse(localStorage.getItem(LS_SESSION) || 'null');
+  if (session && session.roomId) {
+    try {
+      const snap = await state.db.ref(`rooms/${session.roomId}`).once('value');
+      if (snap.exists()) {
+        const room = snap.val();
+        if (room.players && room.players[state.user.uid] && room.status !== 'ended') {
+          state.roomId = session.roomId;
+          state.currentRoom = room;
+          resumeSession(room, session.roomId);
+          return;
+        }
+      }
+    } catch(e) {}
+    localStorage.removeItem(LS_SESSION);
+  }
+
+  updateHomeUI();
+  showScreen('home');
+  scanNearbyRooms();
+  setupPresence();
+
+  // Admin nav
+  const isAdmin = state.user.email === ADMIN_EMAIL;
+  $('admin-nav-btn').style.display = isAdmin ? 'flex' : 'none';
+  $('profile-admin-nav').style.display = isAdmin ? 'flex' : 'none';
+
+  // Check for pending action from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const action = urlParams.get('action');
+  if (action === 'host') showCreateRoom();
+  else if (action === 'join') showJoinRoom();
+}
+
+function updateHomeUI() {
+  $('home-user-avatar').textContent = state.profile?.avatar || '🧙';
+  $('home-user-name').textContent = state.profile?.nickname || state.user.displayName || 'Knight';
+  $('home-user-email').textContent = state.user.email;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  IP DETECTION & ROOM DISCOVERY
+// ═══════════════════════════════════════════════════════════════════
+async function detectPlayerIp() {
+  try {
+    const r = await fetch('https://api.ipify.org?format=json');
+    const d = await r.json();
+    state.playerIp = d.ip;
+    $('home-ip-display').textContent = `Network: ${d.ip}`;
+    if (state.user && state.db) {
+      await state.db.ref(`users/${state.user.uid}/ip`).set(d.ip);
+    }
+  } catch(e) {
+    state.playerIp = 'unknown';
+    $('home-ip-display').textContent = 'Network: unavailable';
+  }
+}
+
+let nearbyRoomsListener = null;
+function scanNearbyRooms() {
+  if (nearbyRoomsListener) {
+    state.db.ref('rooms').off('value', nearbyRoomsListener);
+  }
+  const listEl = $('nearby-rooms-list');
+
+  nearbyRoomsListener = state.db.ref('rooms').orderByChild('status').equalTo('lobby').on('value', snap => {
+    const rooms = [];
+    snap.forEach(child => {
+      const r = child.val();
+      if (r.status === 'lobby') {
+        // IP match check
+        const sameIp = state.playerIp && r.hostIp && r.hostIp === state.playerIp;
+        if (sameIp) rooms.push({ id: child.key, ...r });
+      }
+    });
+
+    if (rooms.length === 0) {
+      listEl.innerHTML = '<div class="empty-rooms">🔍 No rooms found on your network.<br><span style="font-size:0.8rem;">Create one or join by code/QR.</span></div>';
+    } else {
+      listEl.innerHTML = '';
+      rooms.forEach(room => {
+        const playerCount = Object.keys(room.players || {}).length;
+        const d = document.createElement('div');
+        d.className = 'room-card';
+        d.innerHTML = `
+          <div class="room-icon">🏰</div>
+          <div class="room-info">
+            <div class="room-name">${escHtml(room.name || 'Room ' + room.code)}</div>
+            <div class="room-meta">${playerCount} player${playerCount !== 1 ? 's' : ''} • Code: ${room.code}</div>
+          </div>
+          <span style="color:var(--gold);font-size:1.2rem;">›</span>
+        `;
+        d.addEventListener('click', () => joinRoomById(room.id));
+        listEl.appendChild(d);
+      });
+    }
+  });
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  PRESENCE / DISCONNECT DETECTION
+// ═══════════════════════════════════════════════════════════════════
+function setupPresence() {
+  if (!state.user || !state.db) return;
+  const uid = state.user.uid;
+  const presenceRef = state.db.ref(`presence/${uid}`);
+  state.presenceRef = presenceRef;
+
+  state.db.ref('.info/connected').on('value', snap => {
+    if (snap.val() === true) {
+      presenceRef.onDisconnect().set({ online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+      presenceRef.set({ online: true, uid, nickname: state.profile?.nickname, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+    }
+  });
+}
+
+async function cleanupPresence() {
+  if (state.presenceRef) {
+    await state.presenceRef.set({ online: false, lastSeen: Date.now() });
+  }
+}
+
+function watchRoomPresence(roomId, players) {
+  Object.keys(players || {}).forEach(uid => {
+    if (uid === state.user.uid) return;
+    state.db.ref(`presence/${uid}`).on('value', snap => {
+      const p = snap.val();
+      if (p && p.online === false) {
+        const nickname = players[uid]?.nickname || 'A player';
+        handlePlayerDisconnect(uid, nickname);
+      }
+    });
+  });
+}
+
+function handlePlayerDisconnect(uid, nickname) {
+  const isAdmin = state.user.email === ADMIN_EMAIL;
+
+  if (isAdmin && (state.currentScreen === 'game' || state.currentScreen === 'night')) {
+    $('admin-dc-modal-msg').textContent = `${nickname} has disconnected. Choose how to proceed.`;
+    $('admin-dc-modal').style.display = 'flex';
+  } else {
+    $('dc-title').textContent = 'Player Disconnected';
+    $('dc-msg').textContent = `${nickname} has disconnected from the game.`;
+    $('dc-admin-controls').style.display = 'none';
+    $('disconnect-overlay').classList.add('show');
+  }
+}
+
+$('dc-dismiss-btn').addEventListener('click', () => {
+  $('disconnect-overlay').classList.remove('show');
+});
+$('admin-modal-dismiss').addEventListener('click', () => {
+  $('admin-dc-modal').style.display = 'none';
+});
+$('admin-modal-terminate').addEventListener('click', () => {
+  $('admin-dc-modal').style.display = 'none';
+  terminateSession();
+});
+$('admin-modal-restart').addEventListener('click', () => {
+  $('admin-dc-modal').style.display = 'none';
+  restartAsNewGame();
+});
+$('dc-terminate-btn').addEventListener('click', terminateSession);
+$('dc-restart-btn').addEventListener('click', restartAsNewGame);
+
+async function terminateSession() {
+  if (!state.roomId) return;
+  await state.db.ref(`rooms/${state.roomId}`).update({ status: 'terminated' });
+  localStorage.removeItem(LS_SESSION);
+  state.roomId = null; state.currentRoom = null;
+  $('disconnect-overlay').classList.remove('show');
+  showToast('Session terminated.');
+  goHome();
+}
+
+async function restartAsNewGame() {
+  await terminateSession();
+  showCreateRoom();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  CREATE ROOM
+// ═══════════════════════════════════════════════════════════════════
+let createRoomState = {
+  playerCount: 5,
+  selectedChars: new Set(['merlin','percival','morgana','assassin'])
+};
+
+function showCreateRoom() {
+  createRoomState.playerCount = 5;
+  createRoomState.selectedChars = new Set(['merlin','percival','morgana','assassin']);
+  $('room-code-section').style.display = 'none';
+  renderCreateRoom();
+  showScreen('create-room');
+}
+
+function renderCreateRoom() {
+  const [good, evil] = PLAYER_RATIOS[createRoomState.playerCount];
+  $('cr-player-count').textContent = createRoomState.playerCount;
+  $('cr-good-count').textContent = good;
+  $('cr-evil-count').textContent = evil;
+  const pct = ((createRoomState.playerCount - 5) / 5) * 100;
+  $('cr-count-fill').style.width = Math.max(5, pct + 10) + '%';
+
+  // Ratio display
+  const ratioEl = $('cr-ratio-display');
+  ratioEl.innerHTML = '';
+  for (let i = 0; i < good; i++) {
+    const d = document.createElement('div');
+    d.style.cssText = 'width:10px;height:10px;border-radius:50%;background:var(--green);border:1px solid var(--green-light);';
+    ratioEl.appendChild(d);
+  }
+  for (let i = 0; i < evil; i++) {
+    const d = document.createElement('div');
+    d.style.cssText = 'width:10px;height:10px;border-radius:50%;background:var(--red);border:1px solid var(--red-light);';
+    ratioEl.appendChild(d);
+  }
+
+  renderCharGrid();
+  validateCharSelection();
+}
+
+function renderCharGrid() {
+  const grid = $('cr-char-grid');
+  grid.innerHTML = '';
+  const [good, evil] = PLAYER_RATIOS[createRoomState.playerCount];
+  const disabledGlobally = state.globalSettings.disabledChars || [];
+
+  const goodSpecials  = ['merlin','percival'];
+  const evilSpecials  = ['assassin','morgana','mordred','oberon'];
+  const allSpecials   = [...goodSpecials, ...evilSpecials];
+
+  allSpecials.forEach(charKey => {
+    if (disabledGlobally.includes(charKey)) return;
+    const r = ROLES[charKey];
+    const isSelected = createRoomState.selectedChars.has(charKey);
+    const isGood = r.team === 'good';
+    const card = document.createElement('div');
+    card.className = `char-card ${isSelected ? (isGood ? 'selected-good' : 'selected-evil') : ''}`;
+
+    card.innerHTML = `
+      <div class="char-icon">${r.icon}</div>
+      <div class="char-name">${r.name}</div>
+      <div class="char-role">${isGood ? '✨ Good' : '💀 Evil'}</div>
+      ${isSelected ? `<div class="char-check ${isGood?'good':'evil'}">✓</div>` : ''}
+    `;
+    card.addEventListener('click', () => {
+      if (createRoomState.selectedChars.has(charKey)) {
+        createRoomState.selectedChars.delete(charKey);
+      } else {
+        createRoomState.selectedChars.add(charKey);
+      }
+      renderCreateRoom();
+    });
+    grid.appendChild(card);
+  });
+}
+
+function validateCharSelection() {
+  const [good, evil] = PLAYER_RATIOS[createRoomState.playerCount];
+  const goodSpecials = [...createRoomState.selectedChars].filter(c => ROLES[c]?.team === 'good').length;
+  const evilSpecials = [...createRoomState.selectedChars].filter(c => ROLES[c]?.team === 'evil').length;
+
+  let valid = true;
+  let hint = '';
+
+  if (goodSpecials > good) { valid = false; hint = `Too many Good specials (max ${good})`; }
+  if (evilSpecials > evil) { valid = false; hint = `Too many Evil specials (max ${evil})`; }
+
+  $('cr-char-instruction').textContent = hint || `${good} Good / ${evil} Evil — toggle special roles`;
+  $('cr-char-instruction').style.color = valid ? 'var(--text-muted)' : 'var(--red-light)';
+  $('cr-create-btn').disabled = !valid;
+}
+
+$('cr-count-down').addEventListener('click', () => {
+  if (createRoomState.playerCount > 5) { createRoomState.playerCount--; renderCreateRoom(); }
+});
+$('cr-count-up').addEventListener('click', () => {
+  if (createRoomState.playerCount < 10) { createRoomState.playerCount++; renderCreateRoom(); }
+});
+
+$('cr-create-btn').addEventListener('click', async () => {
+  const code = generateCode();
+  const roomId = state.db.ref('rooms').push().key;
+  const [good, evil] = PLAYER_RATIOS[createRoomState.playerCount];
+
+  const roomData = {
+    id: roomId,
+    code,
+    name: `${state.profile.nickname}'s Room`,
+    hostUid: state.user.uid,
+    hostIp: state.playerIp || 'unknown',
+    playerCount: createRoomState.playerCount,
+    goodCount: good,
+    evilCount: evil,
+    specialChars: [...createRoomState.selectedChars],
+    status: 'lobby',
+    createdAt: Date.now(),
+    players: {
+      [state.user.uid]: {
+        uid: state.user.uid,
+        nickname: state.profile.nickname,
+        avatar: state.profile.avatar,
+        email: state.user.email,
+        isHost: true,
+        joinedAt: Date.now()
+      }
+    }
+  };
+
+  await state.db.ref(`rooms/${roomId}`).set(roomData);
+  state.roomId = roomId;
+  state.currentRoom = roomData;
+  saveSession(roomId);
+
+  $('created-room-code').textContent = code;
+  drawQR('qr-canvas', buildJoinUrl(code));
+  $('room-code-section').style.display = 'block';
+
+  showLobby(roomId, true);
+});
+
+function buildJoinUrl(code) {
+  return `${location.origin}${location.pathname}?join=${code}`;
+}
+
+$('copy-room-code-btn').addEventListener('click', () => {
+  const code = $('created-room-code').textContent;
+  navigator.clipboard?.writeText(code).then(() => showToast('📋 Room code copied!'));
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  JOIN ROOM
+// ═══════════════════════════════════════════════════════════════════
+function showJoinRoom() {
+  showScreen('join');
+}
+
+$('join-by-code-btn').addEventListener('click', () => {
+  const code = $('join-code-input').value.trim().toUpperCase();
+  if (code.length < 4) { showToast('⚠️ Enter a valid room code'); return; }
+  joinRoomByCode(code);
+});
+
+async function joinRoomByCode(code) {
+  try {
+    const snap = await state.db.ref('rooms').orderByChild('code').equalTo(code).once('value');
+    if (!snap.exists()) { showToast('❌ Room not found. Check the code.'); return; }
+    const roomId = Object.keys(snap.val())[0];
+    joinRoomById(roomId);
+  } catch(e) {
+    showToast('❌ Error joining room: ' + e.message);
+  }
+}
+
+async function joinRoomById(roomId) {
+  const snap = await state.db.ref(`rooms/${roomId}`).once('value');
+  if (!snap.exists()) { showToast('❌ Room not found'); return; }
+  const room = snap.val();
+
+  if (room.status !== 'lobby') { showToast('⚠️ This room\'s game has already started'); return; }
+
+  const playerCount = Object.keys(room.players || {}).length;
+  if (playerCount >= room.playerCount) { showToast('⚠️ Room is full'); return; }
+
+  // Add player
+  await state.db.ref(`rooms/${roomId}/players/${state.user.uid}`).set({
+    uid: state.user.uid,
+    nickname: state.profile.nickname,
+    avatar: state.profile.avatar,
+    email: state.user.email,
+    isHost: false,
+    joinedAt: Date.now()
+  });
+
+  state.roomId = roomId;
+  state.currentRoom = room;
+  saveSession(roomId);
+  showLobby(roomId, false);
+}
+
+// QR Scanner (simple getUserMedia + jsQR fallback)
+let qrScanInterval = null;
+$('start-qr-scan-btn').addEventListener('click', async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = $('qr-video');
+    const canvas = $('qr-scan-canvas');
+    video.srcObject = stream;
+    video.play();
+    video.style.display = 'block';
+    $('start-qr-scan-btn').textContent = '🛑 Stop Scanning';
+    $('start-qr-scan-btn').onclick = () => {
+      stream.getTracks().forEach(t => t.stop());
+      video.style.display = 'none';
+      clearInterval(qrScanInterval);
+      $('start-qr-scan-btn').textContent = '📷 Open Camera to Scan';
+      $('start-qr-scan-btn').onclick = null;
+      $('start-qr-scan-btn').addEventListener('click', arguments.callee);
+    };
+
+    const ctx = canvas.getContext('2d');
+    qrScanInterval = setInterval(() => {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        // Simple URL pattern scan without external library
+        const dataUrl = canvas.toDataURL();
+        // Since we can't load jsQR externally, we'll show a note
+        showToast('📷 Camera open — enter code manually if scan unavailable');
+        clearInterval(qrScanInterval);
+      }
+    }, 1000);
+  } catch(e) {
+    showToast('📷 Camera not available. Please enter the room code manually.');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  LOBBY
+// ═══════════════════════════════════════════════════════════════════
+let lobbyListener = null;
+function showLobby(roomId, isHost) {
+  // Clear old listeners
+  if (lobbyListener) {
+    state.db.ref(`rooms/${roomId}`).off('value', lobbyListener);
+  }
+  showScreen('lobby');
+
+  lobbyListener = state.db.ref(`rooms/${roomId}`).on('value', snap => {
+    if (!snap.exists()) return;
+    const room = snap.val();
+    state.currentRoom = room;
+
+    // Redirect if game started
+    if (room.status === 'night') { enterNightPhase(room); return; }
+    if (room.status === 'game')  { enterGamePhase(room); return; }
+    if (room.status === 'assassination') { enterAssassination(room); return; }
+    if (room.status === 'ended') { showEndScreen(room); return; }
+    if (room.status === 'terminated') { localStorage.removeItem(LS_SESSION); goHome(); return; }
+
+    renderLobby(room, roomId, isHost);
+  });
+}
+
+function renderLobby(room, roomId, isHost) {
+  const players = Object.values(room.players || {});
+  const needed  = room.playerCount;
+
+  $('lobby-room-name').textContent = room.name || 'Lobby';
+  $('lobby-room-code-display').textContent = `Code: ${room.code}`;
+  $('lobby-count').textContent = `${players.length} / ${needed}`;
+  $('lobby-progress').style.width = (players.length / needed * 100) + '%';
+
+  // Players list
+  const list = $('lobby-players-list');
+  list.innerHTML = '';
+  players.forEach(p => {
+    const d = document.createElement('div');
+    d.className = 'lobby-player online';
+    d.innerHTML = `
+      <div class="avatar">${p.avatar || '🧙'}</div>
+      <div style="flex:1;">
+        <div class="player-name">${escHtml(p.nickname)}${p.isHost ? '<span class="host-crown">👑</span>' : ''}</div>
+        <div class="player-status">${p.isHost ? 'Host' : 'Player'}</div>
+      </div>
+      <div class="online-dot"></div>
+    `;
+    list.appendChild(d);
+  });
+
+  // Active roles display
+  const rolesEl = $('lobby-roles-display');
+  rolesEl.innerHTML = '';
+  const chars = ['merlin','percival','morgana','assassin','mordred','oberon'];
+  chars.forEach(c => {
+    if ((room.specialChars || []).includes(c)) {
+      const b = document.createElement('span');
+      b.className = `badge ${ROLES[c].team === 'good' ? 'badge-good' : 'badge-evil'}`;
+      b.textContent = ROLES[c].icon + ' ' + ROLES[c].name;
+      rolesEl.appendChild(b);
+    }
+  });
+  // Fill remaining with generics
+  const goodSpecialCount = (room.specialChars||[]).filter(c=>ROLES[c]?.team==='good').length;
+  const evilSpecialCount = (room.specialChars||[]).filter(c=>ROLES[c]?.team==='evil').length;
+  for (let i = 0; i < room.goodCount - goodSpecialCount; i++) {
+    const b = document.createElement('span');
+    b.className = 'badge badge-good'; b.textContent = '✨ Loyal Servant';
+    rolesEl.appendChild(b);
+  }
+  for (let i = 0; i < room.evilCount - evilSpecialCount; i++) {
+    const b = document.createElement('span');
+    b.className = 'badge badge-evil'; b.textContent = '👥 Minion';
+    rolesEl.appendChild(b);
+  }
+
+  // Host controls
+  const hostIsMe = room.hostUid === state.user.uid;
+  $('lobby-host-controls').style.display = hostIsMe ? 'block' : 'none';
+  const canStart = players.length >= 5 && players.length === needed;
+  $('lobby-start-btn').disabled = !canStart;
+  $('lobby-start-hint').textContent = canStart
+    ? 'Ready! Press Start to begin the night phase.'
+    : `Need ${needed - players.length} more player(s) to start`;
+
+  // Watch presence
+  watchRoomPresence(roomId, room.players);
+}
+
+$('lobby-start-btn').addEventListener('click', async () => {
+  if (!state.roomId) return;
+  const snap = await state.db.ref(`rooms/${state.roomId}`).once('value');
+  const room = snap.val();
+  if (!room) return;
+
+  // Assign roles
+  const assignments = assignRoles(room);
+  await state.db.ref(`rooms/${state.roomId}`).update({
+    status: 'night',
+    roleAssignments: assignments,
+    gamePhase: { phase: 'night', round: 1, leaderIndex: 0, rejections: 0, questResults: [], teamVotes: {}, questVotes: {} }
+  });
+});
+
+$('lobby-back-btn').addEventListener('click', async () => {
+  if (!state.roomId) { goHome(); return; }
+  const room = state.currentRoom;
+  if (room && room.hostUid === state.user.uid) {
+    // Host leaving = close room
+    await state.db.ref(`rooms/${state.roomId}`).update({ status: 'terminated' });
+  } else if (room) {
+    await state.db.ref(`rooms/${state.roomId}/players/${state.user.uid}`).remove();
+  }
+  if (lobbyListener) state.db.ref(`rooms/${state.roomId}`).off('value', lobbyListener);
+  localStorage.removeItem(LS_SESSION);
+  state.roomId = null;
+  goHome();
+});
+
+// QR modal for lobby
+$('lobby-qr-btn').addEventListener('click', () => {
+  const room = state.currentRoom;
+  if (!room) return;
+  $('lobby-qr-code-text').textContent = room.code;
+  drawQR('lobby-qr-canvas', buildJoinUrl(room.code));
+  $('lobby-qr-modal').style.display = 'flex';
+});
+$('lobby-qr-close-btn').addEventListener('click', () => { $('lobby-qr-modal').style.display = 'none'; });
+
+// ═══════════════════════════════════════════════════════════════════
+//  ROLE ASSIGNMENT
+// ═══════════════════════════════════════════════════════════════════
+function assignRoles(room) {
+  const playerUids = Object.keys(room.players || {});
+  const shuffled   = shuffle(playerUids);
+  const specials   = room.specialChars || [];
+  const [good, evil] = [room.goodCount, room.evilCount];
+
+  // Build role pool
+  const goodRoles = [];
+  const evilRoles = [];
+
+  const goodSpecials = specials.filter(c => ROLES[c]?.team === 'good');
+  const evilSpecials = specials.filter(c => ROLES[c]?.team === 'evil');
+
+  goodSpecials.forEach(c => goodRoles.push(c));
+  evilSpecials.forEach(c => evilRoles.push(c));
+
+  // Check if assassin needed but not included
+  const hasEvilSpecial = evilRoles.length > 0;
+
+  while (goodRoles.length < good) goodRoles.push('loyal');
+  while (evilRoles.length < evil) evilRoles.push('minion');
+
+  const allRoles = shuffle([...goodRoles, ...evilRoles]);
+  const assignments = {};
+  shuffled.forEach((uid, i) => {
+    assignments[uid] = allRoles[i] || 'loyal';
+  });
+  return assignments;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  NIGHT PHASE
+// ═══════════════════════════════════════════════════════════════════
+function enterNightPhase(room) {
+  const roleAssignments = room.roleAssignments || {};
+  const myRole = roleAssignments[state.user.uid];
+  state.myRole = myRole;
+  state.currentRoom = room;
+
+  if (state.currentScreen !== 'night') showScreen('night');
+
+  const roleDef = ROLES[myRole];
+  if (!roleDef) return;
+
+  // Build front of card
+  const front = $('role-card-front');
+  front.className = `role-card-face role-card-front ${roleDef.team}`;
+
+  // Compute sees list
+  const players = room.players || {};
+  const assignments = room.roleAssignments || {};
+  const seenPlayers = getSeenPlayers(myRole, state.user.uid, players, assignments);
+
+  front.innerHTML = `
+    <div class="card-border-deco ${roleDef.team}"></div>
+    <div class="card-role-art">${roleDef.icon}</div>
+    <div class="card-role-name">${roleDef.name}</div>
+    <div class="card-role-team ${roleDef.team}">${roleDef.team === 'good' ? '✨ GOOD' : '💀 EVIL'}</div>
+    <div class="card-role-ability">${roleDef.ability}</div>
+  `;
+
+  // Setup card flip
+  const card = $('role-card');
+  let flipped = false;
+  const scene = $('role-card-scene');
+
+  scene.onclick = () => {
+    if (!flipped) {
+      card.classList.add('flipped');
+      flipped = true;
+      $('night-tap-hint').textContent = '🔒 Tap to hide';
+      // Show ready button after 2 seconds
+      setTimeout(() => {
+        $('night-ready-btn').style.display = 'flex';
+        // Show sees panel
+        if (seenPlayers.length > 0) {
+          renderSeesPanel(seenPlayers);
+          $('sees-panel').classList.remove('hidden');
+        }
+      }, 2000);
+    } else {
+      card.classList.remove('flipped');
+      flipped = false;
+      $('night-tap-hint').textContent = '👆 Tap card to peek';
+      $('sees-panel').classList.add('hidden');
+    }
+  };
+
+  // Ready listener
+  state.db.ref(`rooms/${state.roomId}/nightReady`).on('value', snap => {
+    const ready = snap.val() || {};
+    const total = Object.keys(room.players || {}).length;
+    const readyCount = Object.values(ready).filter(Boolean).length;
+    $('night-waiting-text').textContent = `${readyCount} / ${total} players ready`;
+    if (readyCount >= total && room.hostUid === state.user.uid) {
+      // Advance to game phase
+      state.db.ref(`rooms/${state.roomId}`).update({ status: 'game' });
+      state.db.ref(`rooms/${state.roomId}/nightReady`).off();
+    }
+  });
+}
+
+function getSeenPlayers(myRole, myUid, players, assignments) {
+  const result = [];
+  const roleDef = ROLES[myRole];
+  if (!roleDef || roleDef.sees === 'none') return result;
+
+  Object.entries(assignments).forEach(([uid, role]) => {
+    if (uid === myUid) return;
+    const p = players[uid];
+    const rDef = ROLES[role];
+    if (!rDef || !p) return;
+
+    let include = false; let type = '';
+    if (roleDef.sees === 'evil_except_mordred') {
+      include = rDef.team === 'evil' && role !== 'mordred';
+      type = 'evil';
+    } else if (roleDef.sees === 'merlin_morgana_unclear') {
+      include = role === 'merlin' || role === 'morgana';
+      type = 'unclear';
+    } else if (roleDef.sees === 'evil_team') {
+      include = rDef.team === 'evil' && role !== 'oberon' && uid !== myUid;
+      type = 'evil';
+    }
+    if (include) result.push({ nickname: p.nickname, avatar: p.avatar, type });
+  });
+  return result;
+}
+
+function renderSeesPanel(seenPlayers) {
+  const list = $('sees-player-list');
+  list.innerHTML = '';
+  seenPlayers.forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = `sees-player-chip ${p.type}`;
+    chip.textContent = `${p.avatar || '👤'} ${p.nickname}`;
+    list.appendChild(chip);
+  });
+}
+
+$('night-ready-btn').addEventListener('click', async () => {
+  await state.db.ref(`rooms/${state.roomId}/nightReady/${state.user.uid}`).set(true);
+  $('night-ready-btn').disabled = true;
+  $('night-ready-btn').textContent = '⏳ Waiting for others...';
+  $('night-waiting-text').style.display = 'block';
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  GAME PHASE
+// ═══════════════════════════════════════════════════════════════════
+let gameListener = null;
+function enterGamePhase(room) {
+  state.currentRoom = room;
+  if (state.currentScreen !== 'game') showScreen('game');
+  if (gameListener) state.db.ref(`rooms/${state.roomId}`).off('value', gameListener);
+
+  gameListener = state.db.ref(`rooms/${state.roomId}`).on('value', snap => {
+    if (!snap.exists()) return;
+    const r = snap.val();
+    state.currentRoom = r;
+    if (r.status === 'assassination') { enterAssassination(r); return; }
+    if (r.status === 'ended') { showEndScreen(r); return; }
+    if (r.status === 'terminated') { localStorage.removeItem(LS_SESSION); goHome(); return; }
+    if (r.status === 'game') renderGameUI(r);
+  });
+}
+
+function renderGameUI(room) {
+  const gp = room.gamePhase || {};
+  const players = Object.values(room.players || {});
+  const sortedPlayers = [...players].sort((a,b) => a.joinedAt - b.joinedAt);
+  const questSizes = QUEST_SIZES[room.playerCount] || QUEST_SIZES[5];
+  const round = gp.round || 1;
+  const phase = gp.phase || 'team_select';
+  const leaderIdx = (gp.leaderIndex || 0) % players.length;
+  const leader = sortedPlayers[leaderIdx];
+  const questResults = gp.questResults || [];
+  const goodWins = questResults.filter(r => r === 'success').length;
+  const evilWins = questResults.filter(r => r === 'fail').length;
+
+  // Header
+  $('g-round').textContent = round;
+  $('g-phase-label').textContent = phaseLabel(phase);
+  $('g-score-good').textContent = goodWins;
+  $('g-score-evil').textContent = evilWins;
+  $('g-leader-name').textContent = leader?.nickname || '—';
+
+  const isMyTurn = leader?.uid === state.user.uid;
+  $('g-leader-badge').innerHTML = isMyTurn ? '<span class="badge badge-gold">Your Turn</span>' : '';
+
+  // Reject track (5 slots)
+  const rejectTrack = $('g-reject-track');
+  rejectTrack.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const pip = document.createElement('div');
+    pip.className = `reject-pip ${i < (gp.rejections || 0) ? 'filled' : ''}`;
+    rejectTrack.appendChild(pip);
+  }
+
+  // Quest track
+  const track = $('g-quest-track');
+  track.innerHTML = '';
+  const currentQuest = questResults.length;
+  for (let i = 0; i < 5; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'quest-slot';
+    const size = questSizes[i] || '?';
+    const result = questResults[i];
+    let icon = '⬡', statusClass = '';
+    if (result === 'success') { icon = '✅'; statusClass = 'success'; }
+    else if (result === 'fail') { icon = '❌'; statusClass = 'fail'; }
+    else if (i === currentQuest) { icon = '⚔️'; statusClass = 'current'; }
+
+    slot.innerHTML = `
+      <div class="quest-circle ${statusClass}">${result ? (result === 'success' ? '✅' : '❌') : (i === currentQuest ? '⚔️' : '')}</div>
+      <div class="quest-num">Quest ${i+1}</div>
+      <div class="quest-size">${size} players</div>
+    `;
+    track.appendChild(slot);
+  }
+
+  // Phase panel
+  renderPhasePanel(room, phase, gp, sortedPlayers, leader, isMyTurn, questSizes);
+}
+
+function phaseLabel(phase) {
+  switch(phase) {
+    case 'team_select':   return 'Team Selection';
+    case 'team_vote':     return 'Team Approval';
+    case 'quest':         return 'Quest Phase';
+    case 'quest_reveal':  return 'Quest Results';
+    default: return phase;
+  }
+}
+
+function renderPhasePanel(room, phase, gp, sortedPlayers, leader, isMyTurn, questSizes) {
+  const panel = $('g-phase-panel');
+  const isHost = room.hostUid === state.user.uid;
+  const currentQuestIdx = (gp.questResults || []).length;
+  const teamSize = questSizes[currentQuestIdx] || 2;
+  const myUid = state.user.uid;
+  const assignments = room.roleAssignments || {};
+  const myRole = assignments[myUid];
+  const isLeader = leader?.uid === myUid;
+
+  if (phase === 'team_select') {
+    const currentTeam = gp.selectedTeam || [];
+    panel.innerHTML = `
+      <div class="phase-title">👑 ${leader?.nickname || '...'} is selecting a team</div>
+      <div class="text-xs text-muted text-center mb-4" style="margin-bottom:1rem;">
+        Quest ${currentQuestIdx+1} needs <strong>${teamSize}</strong> players
+      </div>
+      <div class="team-slots" id="phase-team-slots"></div>
+      <div class="player-select-list" id="phase-player-list"></div>
+      <div style="height:1rem;"></div>
+      <div id="phase-leader-confirm" style="display:none;">
+        <button class="btn btn-gold" id="confirm-team-btn" disabled>
+          <span>⚔️</span> Propose This Team
+        </button>
+      </div>
+    `;
+    renderTeamSlots(currentTeam, teamSize, sortedPlayers);
+    renderPlayerSelectList(sortedPlayers, currentTeam, isLeader, teamSize, room);
+
+    if (isLeader) { $('phase-leader-confirm').style.display = 'block'; }
+  }
+  else if (phase === 'team_vote') {
+    const teamVotes = gp.teamVotes || {};
+    const myVote = teamVotes[myUid];
+    const voteCount = Object.keys(teamVotes).length;
+    const totalPlayers = sortedPlayers.length;
+    panel.innerHTML = `
+      <div class="phase-title">🗳️ Vote on the Proposed Team</div>
+      <div class="team-slots" id="phase-vote-team" style="margin-bottom:1rem;"></div>
+      <div class="vote-buttons" id="phase-vote-buttons">
+        <div class="vote-btn approve ${myVote === 'approve' ? 'voted' : ''}" id="vote-approve-btn">
+          <div class="vote-btn-icon">✅</div>
+          <div class="vote-btn-label">Approve</div>
+        </div>
+        <div class="vote-btn reject ${myVote === 'reject' ? 'voted' : ''}" id="vote-reject-btn">
+          <div class="vote-btn-icon">❌</div>
+          <div class="vote-btn-label">Reject</div>
+        </div>
+      </div>
+      <div style="height:0.75rem;"></div>
+      <div class="vote-status">
+        <div class="vote-status-title">Vote Progress — ${voteCount}/${totalPlayers} have voted</div>
+        <div class="vote-pips" id="phase-vote-pips"></div>
+      </div>
+      ${isHost ? `<div style="margin-top:1rem;"><button class="btn btn-ghost btn-sm" id="host-tally-btn">Tally Votes</button></div>` : ''}
+    `;
+
+    // Render proposed team
+    const teamEl = $('phase-vote-team');
+    (gp.selectedTeam || []).forEach(uid => {
+      const p = room.players[uid];
+      if (!p) return;
+      const slot = document.createElement('div');
+      slot.className = 'team-slot filled';
+      slot.textContent = `${p.avatar} ${p.nickname}`;
+      teamEl.appendChild(slot);
+    });
+
+    // Vote pips
+    renderVotePips('phase-vote-pips', sortedPlayers, teamVotes, 'team');
+
+    // Vote buttons
+    if (!myVote) {
+      $('vote-approve-btn')?.addEventListener('click', () => castTeamVote('approve', room));
+      $('vote-reject-btn')?.addEventListener('click', () => castTeamVote('reject', room));
+    }
+    if (isHost && $('host-tally-btn')) {
+      $('host-tally-btn').addEventListener('click', () => tallyTeamVotes(room, gp, sortedPlayers));
+    }
+  }
+  else if (phase === 'quest') {
+    const questVotes = gp.questVotes || {};
+    const myVote = questVotes[myUid];
+    const onTeam = (gp.selectedTeam || []).includes(myUid);
+    const myTeam = ROLES[myRole]?.team;
+    const voteCount = Object.keys(questVotes).length;
+    const teamSize2 = (gp.selectedTeam || []).length;
+
+    panel.innerHTML = `
+      <div class="phase-title">⚔️ Quest in Progress</div>
+      <div class="team-slots" id="phase-quest-team" style="margin-bottom:1rem;"></div>
+      ${onTeam ? `
+        <div class="vote-buttons" id="phase-quest-buttons">
+          <div class="vote-btn approve ${myVote === 'success' ? 'voted' : ''} ${myVote ? 'disabled' : ''}" id="quest-success-btn">
+            <div class="vote-btn-icon">✅</div>
+            <div class="vote-btn-label">Success</div>
+          </div>
+          <div class="vote-btn reject ${myVote === 'fail' ? 'voted' : ''} ${(myVote || myTeam === 'good') ? 'disabled' : ''}" id="quest-fail-btn" style="${myTeam === 'good' ? 'opacity:0.3;pointer-events:none;' : ''}">
+            <div class="vote-btn-icon">💀</div>
+            <div class="vote-btn-label">Fail</div>
+          </div>
+        </div>
+        <div class="text-xs text-muted text-center" style="margin-top:0.5rem;">
+          ${myTeam === 'good' ? 'As a Good player, you must play Success.' : 'You may choose to Fail this quest.'}
+        </div>
+      ` : '<div class="text-muted text-center" style="padding:1rem;">You are not on this quest team.<br>Waiting for results...</div>'}
+      <div style="height:0.75rem;"></div>
+      <div class="vote-status">
+        <div class="vote-status-title">Quest Votes — ${voteCount}/${teamSize2} submitted</div>
+        <div class="vote-pips" id="phase-quest-pips"></div>
+      </div>
+      ${isHost ? `<div style="margin-top:1rem;"><button class="btn btn-ghost btn-sm" id="host-quest-tally-btn">Reveal Quest Result</button></div>` : ''}
+    `;
+
+    // Quest team display
+    const qtEl = $('phase-quest-team');
+    (gp.selectedTeam || []).forEach(uid => {
+      const p = room.players[uid];
+      if (!p) return;
+      const slot = document.createElement('div');
+      slot.className = 'team-slot filled';
+      slot.textContent = `${p.avatar} ${p.nickname}`;
+      qtEl.appendChild(slot);
+    });
+
+    // Vote pips (hidden who played what)
+    renderVotePips('phase-quest-pips', sortedPlayers.filter(p => (gp.selectedTeam||[]).includes(p.uid)), questVotes, 'quest');
+
+    if (onTeam && !myVote) {
+      $('quest-success-btn')?.addEventListener('click', () => castQuestVote('success'));
+      if (myTeam === 'evil') $('quest-fail-btn')?.addEventListener('click', () => castQuestVote('fail'));
+    }
+    if (isHost && $('host-quest-tally-btn')) {
+      $('host-quest-tally-btn').addEventListener('click', () => tallyQuestVotes(room, gp));
+    }
+  }
+}
+
+function renderTeamSlots(currentTeam, teamSize, sortedPlayers) {
+  const slotsEl = $('phase-team-slots');
+  const listEl  = $('phase-player-list');
+  if (!slotsEl || !listEl) return;
+
+  slotsEl.innerHTML = '';
+  for (let i = 0; i < teamSize; i++) {
+    const uid = currentTeam[i];
+    const slot = document.createElement('div');
+    slot.className = uid ? 'team-slot filled' : 'team-slot';
+    if (uid) {
+      const p = sortedPlayers.find(x => x.uid === uid);
+      slot.textContent = p ? `${p.avatar} ${p.nickname}` : uid;
+    } else {
+      slot.textContent = 'Empty';
+    }
+    slotsEl.appendChild(slot);
+  }
+}
+
+function renderPlayerSelectList(sortedPlayers, currentTeam, isLeader, teamSize, room) {
+  const listEl = $('phase-player-list');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+
+  sortedPlayers.forEach(p => {
+    const isSelected = currentTeam.includes(p.uid);
+    const canSelect  = isLeader && (isSelected || currentTeam.length < teamSize);
+    const item = document.createElement('div');
+    item.className = `player-select-item ${isSelected ? 'selected' : ''} ${!canSelect && !isSelected ? 'disabled' : ''}`;
+    item.innerHTML = `
+      <div class="select-check">${isSelected ? '✓' : ''}</div>
+      <div class="avatar" style="width:36px;height:36px;font-size:1rem;">${p.avatar}</div>
+      <div class="player-name">${escHtml(p.nickname)}</div>
+    `;
+    if (isLeader) {
+      item.addEventListener('click', async () => {
+        let team = [...currentTeam];
+        if (isSelected) {
+          team = team.filter(u => u !== p.uid);
+        } else {
+          if (team.length >= teamSize) { showToast(`⚠️ Team is full (${teamSize} players)`); return; }
+          team.push(p.uid);
+        }
+        await state.db.ref(`rooms/${state.roomId}/gamePhase/selectedTeam`).set(team);
+        // Enable confirm button
+        const confirmBtn = $('confirm-team-btn');
+        if (confirmBtn) confirmBtn.disabled = team.length !== teamSize;
+      });
+    }
+    listEl.appendChild(item);
+  });
+
+  // Confirm button logic
+  setTimeout(() => {
+    const confirmBtn = $('confirm-team-btn');
+    if (confirmBtn) {
+      confirmBtn.disabled = currentTeam.length !== teamSize;
+      confirmBtn.addEventListener('click', async () => {
+        if (currentTeam.length !== teamSize) return;
+        await state.db.ref(`rooms/${state.roomId}/gamePhase`).update({
+          phase: 'team_vote',
+          teamVotes: {}
+        });
+      });
+    }
+  }, 100);
+}
+
+function renderVotePips(containerId, players, votes, type) {
+  const el = $(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+  players.forEach(p => {
+    const pip = document.createElement('div');
+    pip.className = 'vote-pip';
+    const vote = votes[p.uid];
+    if (vote) {
+      if (type === 'team') {
+        pip.classList.add(vote === 'approve' ? 'voted-approve' : 'voted-reject');
+        pip.title = `${p.nickname}: ${vote}`;
+        pip.textContent = vote === 'approve' ? '✓' : '✗';
+      } else {
+        // Quest votes are hidden until reveal
+        pip.classList.add('voted-hidden');
+        pip.textContent = '?';
+      }
+    } else {
+      pip.classList.add('pending');
+    }
+    pip.style.overflow = 'visible';
+    // Tooltip as title
+    pip.title = p.nickname + (vote ? ` (${type === 'quest' ? 'voted' : vote})` : ' (pending)');
+    el.appendChild(pip);
+  });
+}
+
+async function castTeamVote(vote, room) {
+  await state.db.ref(`rooms/${state.roomId}/gamePhase/teamVotes/${state.user.uid}`).set(vote);
+  showToast(vote === 'approve' ? '✅ You voted Approve' : '❌ You voted Reject');
+}
+
+async function castQuestVote(vote) {
+  await state.db.ref(`rooms/${state.roomId}/gamePhase/questVotes/${state.user.uid}`).set(vote);
+  showToast(vote === 'success' ? '✅ Quest: Success submitted' : '💀 Quest: Fail submitted');
+}
+
+async function tallyTeamVotes(room, gp, sortedPlayers) {
+  const votes = gp.teamVotes || {};
+  const approves = Object.values(votes).filter(v => v === 'approve').length;
+  const rejects  = Object.values(votes).filter(v => v === 'reject').length;
+  const approved = approves > rejects;
+  const totalPlayers = sortedPlayers.length;
+
+  if (Object.keys(votes).length < totalPlayers) {
+    showToast(`⚠️ Not everyone has voted yet (${Object.keys(votes).length}/${totalPlayers})`);
+    return;
+  }
+
+  // Show reveal
+  showVoteReveal(
+    approved ? '✅' : '❌',
+    approved ? 'TEAM APPROVED' : 'TEAM REJECTED',
+    approved ? 'var(--green-light)' : 'var(--red-light)',
+    sortedPlayers, votes, 'team'
+  );
+
+  if (approved) {
+    await state.db.ref(`rooms/${state.roomId}/gamePhase`).update({ phase: 'quest', questVotes: {} });
+  } else {
+    const newRejections = (gp.rejections || 0) + 1;
+    if (newRejections >= 5) {
+      // Evil wins by 5 rejections
+      await state.db.ref(`rooms/${state.roomId}`).update({
+        status: 'ended',
+        winner: 'evil',
+        endReason: '5 consecutive team rejections — Evil wins!'
+      });
+    } else {
+      const nextLeader = ((gp.leaderIndex || 0) + 1) % sortedPlayers.length;
+      await state.db.ref(`rooms/${state.roomId}/gamePhase`).update({
+        phase: 'team_select',
+        leaderIndex: nextLeader,
+        rejections: newRejections,
+        selectedTeam: [],
+        teamVotes: {}
+      });
+    }
+  }
+}
+
+async function tallyQuestVotes(room, gp) {
+  const votes = gp.questVotes || {};
+  const team  = gp.selectedTeam || [];
+  if (Object.keys(votes).length < team.length) {
+    showToast(`⚠️ Not all quest members have voted yet`);
+    return;
+  }
+
+  const fails  = Object.values(votes).filter(v => v === 'fail').length;
+  const questIdx = (gp.questResults || []).length;
+  const failsNeeded = (questIdx === 3 && room.playerCount >= QUEST4_DOUBLE_FAIL_MIN) ? 2 : 1;
+  const success = fails < failsNeeded;
+
+  const newResults = [...(gp.questResults || []), success ? 'success' : 'fail'];
+  const goodWins = newResults.filter(r => r === 'success').length;
+  const evilWins = newResults.filter(r => r === 'fail').length;
+
+  // Show reveal overlay
+  showVoteReveal(
+    success ? '✅' : '❌',
+    success ? 'QUEST SUCCEEDED' : 'QUEST FAILED',
+    success ? 'var(--green-light)' : 'var(--red-light)',
+    null, votes, 'quest', fails
+  );
+
+  await new Promise(r => setTimeout(r, 800));
+
+  if (goodWins >= 3) {
+    // Check if assassin is in game
+    const hasAssassin = (room.specialChars || []).includes('assassin');
+    if (hasAssassin) {
+      await state.db.ref(`rooms/${state.roomId}`).update({
+        status: 'assassination',
+        'gamePhase/questResults': newResults
+      });
+    } else {
+      await state.db.ref(`rooms/${state.roomId}`).update({
+        status: 'ended',
+        winner: 'good',
+        endReason: 'Good completed 3 quests!',
+        'gamePhase/questResults': newResults
+      });
+    }
+  } else if (evilWins >= 3) {
+    await state.db.ref(`rooms/${state.roomId}`).update({
+      status: 'ended',
+      winner: 'evil',
+      endReason: 'Evil sabotaged 3 quests!',
+      'gamePhase/questResults': newResults
+    });
+  } else {
+    const nextLeader = ((gp.leaderIndex || 0) + 1) % Object.keys(room.players || {}).length;
+    await state.db.ref(`rooms/${state.roomId}/gamePhase`).update({
+      phase: 'team_select',
+      round: (gp.round || 1) + 1,
+      leaderIndex: nextLeader,
+      rejections: 0,
+      questResults: newResults,
+      selectedTeam: [],
+      teamVotes: {},
+      questVotes: {}
+    });
+  }
+}
+
+function showVoteReveal(icon, text, color, players, votes, type, failCount) {
+  const overlay = $('vote-reveal-overlay');
+  $('vr-icon').textContent = icon;
+  $('vr-text').textContent = text;
+  $('vr-text').style.color = color;
+
+  const votesList = $('vr-votes');
+  votesList.innerHTML = '';
+
+  if (type === 'team' && players) {
+    players.forEach(p => {
+      const v = votes[p.uid];
+      if (!v) return;
+      const chip = document.createElement('div');
+      chip.className = 'reveal-vote-chip';
+      chip.innerHTML = `<span>${p.avatar}</span><span>${p.nickname}</span><span>${v === 'approve' ? '✅' : '❌'}</span>`;
+      votesList.appendChild(chip);
+    });
+  } else if (type === 'quest') {
+    // Show counts only
+    const total = Object.keys(votes).length;
+    const fails = failCount || 0;
+    const chip = document.createElement('div');
+    chip.className = 'reveal-vote-chip';
+    chip.innerHTML = `<span>✅</span><span>${total - fails} Success</span><span>|</span><span>💀</span><span>${fails} Fail</span>`;
+    votesList.appendChild(chip);
+  }
+
+  overlay.classList.add('show');
+  $('vr-dismiss-btn').onclick = () => overlay.classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ASSASSINATION PHASE
+// ═══════════════════════════════════════════════════════════════════
+function enterAssassination(room) {
+  state.currentRoom = room;
+  showScreen('assassination');
+
+  const assignments = room.roleAssignments || {};
+  const myRole = assignments[state.user.uid];
+  const isAssassin = myRole === 'assassin';
+  const players = Object.values(room.players || {});
+
+  if (isAssassin) {
+    $('assassination-subtitle').textContent = 'You are the Assassin. Choose one player to assassinate. If you choose Merlin, Evil wins!';
+    const list = $('assassination-target-list');
+    list.innerHTML = '';
+    let selectedTarget = null;
+
+    players.forEach(p => {
+      if (p.uid === state.user.uid) return; // Don't target self
+      const evilUids = Object.entries(assignments).filter(([u,r])=>ROLES[r]?.team==='evil').map(([u])=>u);
+      if (evilUids.includes(p.uid)) return; // Don't target own team
+
+      const item = document.createElement('div');
+      item.className = 'target-item';
+      item.innerHTML = `
+        <div class="avatar">${p.avatar}</div>
+        <div style="flex:1;"><div class="player-name">${escHtml(p.nickname)}</div></div>
+        <span style="font-size:1.2rem;color:var(--text-dim);">○</span>
+      `;
+      item.addEventListener('click', () => {
+        list.querySelectorAll('.target-item').forEach(x => {
+          x.classList.remove('selected');
+          x.querySelector('span:last-child').textContent = '○';
+        });
+        item.classList.add('selected');
+        item.querySelector('span:last-child').textContent = '🎯';
+        selectedTarget = p.uid;
+        $('assassination-confirm-btn').disabled = false;
+      });
+      list.appendChild(item);
+    });
+
+    $('assassination-confirm-btn').style.display = 'flex';
+    $('assassination-confirm-btn').onclick = async () => {
+      if (!selectedTarget) return;
+      const merlinUid = Object.entries(assignments).find(([u,r]) => r === 'merlin')?.[0];
+      const hitMerlin = selectedTarget === merlinUid;
+      await state.db.ref(`rooms/${state.roomId}`).update({
+        status: 'ended',
+        winner: hitMerlin ? 'evil' : 'good',
+        endReason: hitMerlin
+          ? `The Assassin found Merlin! Evil wins!`
+          : `The Assassin chose wrong. Good wins!`,
+        assassinTarget: selectedTarget
+      });
+    };
+    $('assassination-waiting').style.display = 'none';
+  } else {
+    $('assassination-target-list').innerHTML = '';
+    $('assassination-confirm-btn').style.display = 'none';
+    $('assassination-waiting').style.display = 'block';
+
+    // Watch for result
+    state.db.ref(`rooms/${state.roomId}/status`).on('value', snap => {
+      if (snap.val() === 'ended') {
+        state.db.ref(`rooms/${state.roomId}`).once('value').then(s => showEndScreen(s.val()));
+      }
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  END GAME
+// ═══════════════════════════════════════════════════════════════════
+function showEndScreen(room) {
+  state.currentRoom = room;
+  showScreen('end');
+  localStorage.removeItem(LS_SESSION);
+
+  const winner = room.winner || 'good';
+  const isGoodWin = winner === 'good';
+
+  $('end-icon').textContent = isGoodWin ? '✨' : '💀';
+  $('end-result-text').textContent = isGoodWin ? 'GOOD TRIUMPHS' : 'EVIL PREVAILS';
+  $('end-result-text').className = `end-result ${winner}`;
+  $('end-reason').textContent = room.endReason || '';
+
+  // Role reveal grid
+  const grid = $('end-roles-grid');
+  grid.innerHTML = '';
+  const assignments = room.roleAssignments || {};
+  const players = room.players || {};
+
+  Object.entries(assignments).forEach(([uid, role]) => {
+    const p = players[uid];
+    if (!p) return;
+    const r = ROLES[role];
+    const card = document.createElement('div');
+    card.className = `reveal-card ${r?.team || 'good'}`;
+    card.innerHTML = `
+      <div class="reveal-icon">${r?.icon || '?'}</div>
+      <div class="reveal-player">${escHtml(p.nickname)}</div>
+      <div class="reveal-role">${r?.name || role}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // Update game history
+  updateGameHistory(room);
+}
+
+async function updateGameHistory(room) {
+  const myRole = room.roleAssignments?.[state.user.uid];
+  const winner = room.winner;
+  const myTeam = ROLES[myRole]?.team;
+  const won = myTeam === winner;
+
+  const historyEntry = {
+    date: Date.now(),
+    role: myRole,
+    roleName: ROLES[myRole]?.name || myRole,
+    won, winner,
+    playerCount: room.playerCount
+  };
+
+  try {
+    const snap = await state.db.ref(`users/${state.user.uid}`).once('value');
+    const profile = snap.val() || {};
+    const history = profile.history || [];
+    history.unshift(historyEntry);
+    if (history.length > 20) history.length = 20;
+
+    await state.db.ref(`users/${state.user.uid}`).update({
+      gamesPlayed: (profile.gamesPlayed || 0) + 1,
+      wins: (profile.wins || 0) + (won ? 1 : 0),
+      history
+    });
+    state.profile = { ...state.profile, gamesPlayed: (profile.gamesPlayed||0)+1, wins: (profile.wins||0)+(won?1:0), history };
+  } catch(e) {}
+}
+
+$('end-home-btn').addEventListener('click', () => { state.roomId = null; goHome(); });
+$('end-new-game-btn').addEventListener('click', () => { state.roomId = null; goHome(); setTimeout(showCreateRoom, 300); });
+
+// ═══════════════════════════════════════════════════════════════════
+//  RESUME SESSION
+// ═══════════════════════════════════════════════════════════════════
+function resumeSession(room, roomId) {
+  const status = room.status;
+  if (status === 'lobby')          showLobby(roomId, room.hostUid === state.user.uid);
+  else if (status === 'night')     { enterNightPhase(room); showScreen('night'); }
+  else if (status === 'game')      enterGamePhase(room);
+  else if (status === 'assassination') enterAssassination(room);
+  else if (status === 'ended')     showEndScreen(room);
+  else goHome();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  PROFILE SCREEN
+// ═══════════════════════════════════════════════════════════════════
+function showProfileScreen() {
+  if (!state.profile) return;
+  $('profile-avatar-display').textContent = state.profile.avatar || '🧙';
+  $('profile-name-display').textContent = state.profile.nickname || 'Knight';
+  $('profile-email-display').textContent = state.user.email;
+  $('profile-nickname-input').value = state.profile.nickname || '';
+
+  renderAvatarOptions('profile-avatar-options', 'profile-avatar-display');
+  // Pre-select current avatar
+  $('profile-avatar-options').querySelectorAll('.avatar-opt').forEach(opt => {
+    if (opt.textContent === state.profile.avatar) opt.classList.add('selected');
+  });
+
+  // Stats
+  $('stat-games').textContent = state.profile.gamesPlayed || 0;
+  $('stat-wins').textContent  = state.profile.wins || 0;
+  const wr = state.profile.gamesPlayed > 0
+    ? Math.round((state.profile.wins / state.profile.gamesPlayed) * 100) + '%'
+    : '0%';
+  $('stat-winrate').textContent = wr;
+
+  // History
+  renderGameHistory(state.profile.history || []);
+  showScreen('profile');
+}
+
+function renderGameHistory(history) {
+  const list = $('game-history-list');
+  if (history.length === 0) {
+    list.innerHTML = '<div class="text-muted text-sm text-center" style="padding:1.5rem;">No games played yet</div>';
+    return;
+  }
+  list.innerHTML = '';
+  history.slice(0, 10).forEach(h => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    const date = new Date(h.date).toLocaleDateString();
+    item.innerHTML = `
+      <div class="history-result">${h.won ? '🏆' : '💀'}</div>
+      <div style="flex:1;">
+        <div class="history-role">${ROLES[h.role]?.icon || '?'} ${h.roleName || h.role}</div>
+        <div class="history-date">${date} • ${h.playerCount} players • ${h.won ? 'Victory' : 'Defeat'}</div>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+$('profile-save-btn').addEventListener('click', async () => {
+  const nickname = $('profile-nickname-input').value.trim();
+  if (!nickname) { showToast('⚠️ Nickname cannot be empty'); return; }
+  const avatar = $('profile-avatar-display').textContent;
+  await state.db.ref(`users/${state.user.uid}`).update({ nickname, avatar });
+  state.profile = { ...state.profile, nickname, avatar };
+  showToast('✅ Profile saved!');
+  updateHomeUI();
+});
+
+$('profile-avatar-wrap').addEventListener('click', () => {
+  $('profile-avatar-options').scrollIntoView({ behavior: 'smooth' });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  ADMIN SCREEN
+// ═══════════════════════════════════════════════════════════════════
+function showAdminScreen() {
+  if (state.user.email !== ADMIN_EMAIL) { showToast('⛔ Access denied'); return; }
+
+  $('admin-game-name').value = state.globalSettings.gameName || 'Avalon';
+  $('admin-app-icon').value  = state.globalSettings.appIcon  || '⚔️';
+
+  const togglesEl = $('admin-char-toggles');
+  togglesEl.innerHTML = '';
+  const disabled = state.globalSettings.disabledChars || [];
+
+  SPECIAL_CHARS.forEach(c => {
+    const r = ROLES[c];
+    const isEnabled = !disabled.includes(c);
+    const row = document.createElement('div');
+    row.className = 'toggle-wrap';
+    row.innerHTML = `
+      <label class="toggle">
+        <input type="checkbox" id="admin-toggle-${c}" ${isEnabled ? 'checked' : ''} />
+        <span class="toggle-slider"></span>
+      </label>
+      <div>
+        <div style="font-weight:600;color:var(--text-primary);">${r.icon} ${r.name}</div>
+        <div class="text-xs text-muted">${r.team === 'good' ? 'Good' : 'Evil'}</div>
+      </div>
+    `;
+    togglesEl.appendChild(row);
+  });
+
+  showScreen('admin');
+}
+
+$('admin-save-appearance-btn').addEventListener('click', async () => {
+  const name = $('admin-game-name').value.trim() || 'Avalon';
+  const icon = $('admin-app-icon').value.trim() || '⚔️';
+  await state.db.ref('config/globalSettings').update({ gameName: name, appIcon: icon });
+  state.globalSettings.gameName = name;
+  state.globalSettings.appIcon  = icon;
+  showToast('✅ Appearance saved');
+});
+
+$('admin-save-chars-btn').addEventListener('click', async () => {
+  const disabled = [];
+  SPECIAL_CHARS.forEach(c => {
+    const cb = $(`admin-toggle-${c}`);
+    if (cb && !cb.checked) disabled.push(c);
+  });
+  await state.db.ref('config/globalSettings').update({ disabledChars: disabled });
+  state.globalSettings.disabledChars = disabled;
+  showToast('✅ Character settings saved');
+});
+
+$('admin-reset-config-btn').addEventListener('click', async () => {
+  if (!confirm('Are you sure? This will force all devices to re-enter Firebase credentials.')) return;
+  await state.db.ref('config/globalSettings').update({ configReset: Date.now() });
+  localStorage.removeItem(LS_FIREBASE_CONFIG);
+  showToast('🔄 Config reset. You will be redirected...');
+  setTimeout(() => location.reload(), 1500);
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  HELP / GUIDE OVERLAY
+// ═══════════════════════════════════════════════════════════════════
+$('help-open-btn').addEventListener('click', () => {
+  renderHelpOverlay();
+  $('help-overlay').classList.add('show');
+});
+$('help-close-btn').addEventListener('click', () => {
+  $('help-overlay').classList.remove('show');
+});
+
+function renderHelpOverlay() {
+  // My role section
+  const myRoleSection = $('help-my-role-section');
+  if (state.myRole) {
+    const r = ROLES[state.myRole];
+    const room = state.currentRoom;
+    const players = room?.players || {};
+    const assignments = room?.roleAssignments || {};
+    const seen = getSeenPlayers(state.myRole, state.user.uid, players, assignments);
+
+    myRoleSection.innerHTML = `
+      <div class="help-section-title">Your Role</div>
+      <div class="help-role-card">
+        <div class="help-role-icon">${r.icon}</div>
+        <div>
+          <div class="help-role-name">${r.name} — <span class="${r.team === 'good' ? 'text-gold' : ''}" style="${r.team === 'evil' ? 'color:var(--red-light)' : ''}">${r.team === 'good' ? '✨ Good' : '💀 Evil'}</span></div>
+          <div class="help-role-desc">${r.ability}</div>
+          ${seen.length > 0 ? `
+            <div style="margin-top:0.5rem;">
+              <strong style="font-size:0.8rem;color:var(--text-muted);">You can see:</strong>
+              <div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.25rem;">
+                ${seen.map(s=>`<span class="badge ${s.type === 'evil' ? 'badge-evil' : 'badge-gold'}">${s.avatar} ${s.nickname}</span>`).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  } else {
+    myRoleSection.innerHTML = '<div class="text-muted text-sm text-center" style="padding:0.5rem;">Role not yet assigned</div>';
+  }
+
+  // All roles quick ref
+  const allRoles = $('help-all-roles');
+  allRoles.innerHTML = '';
+  Object.entries(ROLES).forEach(([key, r]) => {
+    const d = document.createElement('div');
+    d.className = 'help-role-card';
+    d.innerHTML = `
+      <div class="help-role-icon" style="font-size:1.5rem;">${r.icon}</div>
+      <div>
+        <div class="help-role-name" style="font-size:0.9rem;">${r.name} <span class="badge ${r.team==='good'?'badge-good':'badge-evil'}" style="font-size:0.65rem;">${r.team}</span></div>
+        <div class="help-role-desc" style="font-size:0.8rem;">${r.ability}</div>
+      </div>
+    `;
+    allRoles.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  QR CODE GENERATOR (Pure JS, no external library)
+// ═══════════════════════════════════════════════════════════════════
+function drawQR(canvasId, text) {
+  const canvas = $(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width;
+
+  // Simple visual QR placeholder with encoded URL pattern
+  // For a real QR, a library would be needed; this draws a recognizable pattern
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#1a0a2e';
+
+  // Generate a basic dot matrix based on text hash
+  const hash = simpleHash(text);
+  const modules = 21; // QR version 1
+  const moduleSize = Math.floor(size / (modules + 4));
+  const offset = Math.floor((size - modules * moduleSize) / 2);
+
+  // Finder patterns (corners)
+  drawFinder(ctx, offset, offset, moduleSize);
+  drawFinder(ctx, offset + (modules - 7) * moduleSize, offset, moduleSize);
+  drawFinder(ctx, offset, offset + (modules - 7) * moduleSize, moduleSize);
+
+  // Data modules (pseudo-random based on text)
+  for (let row = 0; row < modules; row++) {
+    for (let col = 0; col < modules; col++) {
+      if (isFinderZone(row, col, modules)) continue;
+      const bit = (hash >> ((row * modules + col) % 32)) & 1;
+      if (bit) {
+        ctx.fillRect(
+          offset + col * moduleSize,
+          offset + row * moduleSize,
+          moduleSize - 1, moduleSize - 1
+        );
+      }
+    }
+  }
+
+  // Gold border
+  ctx.strokeStyle = '#c9a84c';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(1, 1, size - 2, size - 2);
+}
+
+function drawFinder(ctx, x, y, m) {
+  ctx.fillStyle = '#1a0a2e';
+  ctx.fillRect(x, y, 7 * m, 7 * m);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x + m, y + m, 5 * m, 5 * m);
+  ctx.fillStyle = '#1a0a2e';
+  ctx.fillRect(x + 2 * m, y + 2 * m, 3 * m, 3 * m);
+}
+
+function isFinderZone(r, c, m) {
+  return (r < 8 && c < 8) || (r < 8 && c >= m - 8) || (r >= m - 8 && c < 8);
+}
+
+function simpleHash(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h) + str.charCodeAt(i);
+  return h >>> 0;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  SESSION PERSISTENCE
+// ═══════════════════════════════════════════════════════════════════
+function saveSession(roomId) {
+  localStorage.setItem(LS_SESSION, JSON.stringify({ roomId, savedAt: Date.now() }));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  NAV BAR
+// ═══════════════════════════════════════════════════════════════════
+document.querySelectorAll('[data-nav]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const nav = btn.dataset.nav;
+    if (nav === 'home') { updateHomeUI(); showScreen('home'); scanNearbyRooms(); }
+    else if (nav === 'profile') showProfileScreen();
+    else if (nav === 'admin') showAdminScreen();
+  });
+});
+
+document.querySelectorAll('[data-back]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const back = btn.dataset.back;
+    if (back === 'home') { updateHomeUI(); showScreen('home'); }
+  });
+});
+
+$('home-host-btn').addEventListener('click', showCreateRoom);
+$('home-join-btn').addEventListener('click', showJoinRoom);
+
+// ═══════════════════════════════════════════════════════════════════
+//  STARTUP / INIT
+// ═══════════════════════════════════════════════════════════════════
+async function init() {
+  initStars();
+  await registerSW();
+
+  // Check install gate
+  const standalone = detectStandalone();
+
+  // Check Firebase config
+  const fbConfig = loadFirebaseConfig();
+
+  // Simulate loading
+  await new Promise(r => setTimeout(r, 1500));
+
+  if (!standalone) {
+    // Show install gate
+    renderInstallScreen();
+    showScreen('install');
+    return;
+  }
+
+  if (!fbConfig) {
+    showScreen('firebase-setup');
+    return;
+  }
+
+  const ok = initFirebase(fbConfig);
+  if (!ok) {
+    showScreen('firebase-setup');
+    return;
+  }
+
+  startAuthFlow();
+}
+
+// Handle deep-link join (from QR or shared URL)
+window.addEventListener('load', () => {
+  const params = new URLSearchParams(window.location.search);
+  const joinCode = params.get('join');
+  if (joinCode && state.user) {
+    joinRoomByCode(joinCode.toUpperCase());
+  }
+});
+
+// Orientation lock notice (portrait only enforcement via CSS + JS)
+window.matchMedia('(orientation: landscape)').addEventListener('change', e => {
+  if (e.matches && window.innerWidth < 768) {
+    showToast('↩️ Please rotate to portrait mode');
+  }
+});
+
+init();
+</script>
+
+</body>
+</html>
