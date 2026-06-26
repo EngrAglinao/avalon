@@ -1,14 +1,14 @@
 {
   "name": "The Resistance: Avalon",
   "short_name": "Avalon",
-  "description": "Mobile-first PWA tabletop companion for The Resistance: Avalon — hidden role strategy game for 5–10 players.",
-  "start_url": "./index.html",
+  "description": "A mobile-first PWA for the social deduction tabletop game The Resistance: Avalon. Play with friends using live Firebase multiplayer, immersive role reveals, and full game-phase management.",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#11141a",
   "theme_color": "#11141a",
-  "lang": "en",
-  "scope": "./",
+  "lang": "en-US",
+  "categories": ["games", "entertainment", "social"],
   "icons": [
     {
       "src": "./icons/app_icon.png",
@@ -23,17 +23,17 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["games", "entertainment", "social"],
+  "screenshots": [],
   "shortcuts": [
     {
-      "name": "Join a Room",
-      "short_name": "Join",
-      "description": "Jump directly to the lobby to join or create a room",
-      "url": "./index.html#lobby",
-      "icons": [{ "src": "./icons/team_shield.png", "sizes": "192x192" }]
+      "name": "New Game",
+      "short_name": "Play",
+      "description": "Quickly create a new Avalon game room",
+      "url": "/?shortcut=new-game",
+      "icons": [{ "src": "./icons/team_shield.png", "sizes": "96x96" }]
     }
   ],
-  "screenshots": [],
   "prefer_related_applications": false,
-  "related_applications": []
+  "related_applications": [],
+  "scope": "/"
 }

@@ -1,27 +1,32 @@
 /**
- * ╔══════════════════════════════════════════════════════════════╗
- * ║         THE RESISTANCE: AVALON — Service Worker              ║
- * ║         PWA Offline Cache & Background Sync Engine           ║
- * ╚══════════════════════════════════════════════════════════════╝
- *
+ * ============================================================
+ * THE RESISTANCE: AVALON — Service Worker (sw.js)
+ * PWA Background Cache & Offline Support Engine
+ * ============================================================
  * Strategy: Cache-First for static assets, Network-First for
- * Firebase API calls, Stale-While-Revalidate for Google Fonts.
+ * Firebase API calls and live game data.
+ * ============================================================
  */
 
 'use strict';
 
-const CACHE_VERSION = 'avalon-v1.0.0';
-const STATIC_CACHE  = `${CACHE_VERSION}-static`;
-const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
-const FONT_CACHE    = `${CACHE_VERSION}-fonts`;
+/* ── Cache Configuration ──────────────────────────────────── */
+const CACHE_VERSION   = 'avalon-v1.0.0';
+const STATIC_CACHE    = `${CACHE_VERSION}-static`;
+const DYNAMIC_CACHE   = `${CACHE_VERSION}-dynamic`;
+const ASSET_CACHE     = `${CACHE_VERSION}-assets`;
 
-/* ── Static assets to pre-cache on install ── */
-const STATIC_ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
+/** Files cached on Service Worker install (App Shell) */
+const PRECACHE_URLS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  /* Google Fonts — cached at runtime on first fetch */
+  /* Firebase SDKs — network-first, not precached */
+];
 
-  /* ── Card Assets (./cards/) ── */
+/** Local card & icon assets to cache when first accessed */
+const CARD_ASSETS = [
   './cards/merlin.png',
   './cards/percival.png',
   './cards/good_generic.png',
@@ -34,8 +39,9 @@ const STATIC_ASSETS = [
   './cards/evil_generic_alt.png',
   './cards/quest_success.png',
   './cards/quest_fail.png',
+];
 
-  /* ── Icon Assets (./icons/) ── */
+const ICON_ASSETS = [
   './icons/vote_approve.png',
   './icons/vote_reject.png',
   './icons/leader_token.png',
@@ -47,233 +53,245 @@ const STATIC_ASSETS = [
   './icons/app_icon.png',
 ];
 
-/* ── External CDN URLs to cache dynamically ── */
-const CDN_PATTERNS = [
-  'cdn.jsdelivr.net',
-  'fonts.googleapis.com',
-  'fonts.gstatic.com',
-  'www.gstatic.com/firebasejs',
+/** Patterns that should always use Network-First strategy */
+const NETWORK_FIRST_PATTERNS = [
+  /firestore\.googleapis\.com/,
+  /firebase\.googleapis\.com/,
+  /identitytoolkit\.googleapis\.com/,
+  /securetoken\.googleapis\.com/,
+  /googleapis\.com\/identitytoolkit/,
 ];
 
-/* ── Firebase/Firestore domains (Network-First, no cache) ── */
-const NETWORK_ONLY_PATTERNS = [
-  'firestore.googleapis.com',
-  'firebase.googleapis.com',
-  'identitytoolkit.googleapis.com',
-  'securetoken.googleapis.com',
-  'firebasestorage.googleapis.com',
+/** Patterns that should use Cache-First strategy */
+const CACHE_FIRST_PATTERNS = [
+  /fonts\.googleapis\.com/,
+  /fonts\.gstatic\.com/,
+  /cdn\.jsdelivr\.net/,
+  /www\.gstatic\.com\/firebasejs/,
 ];
 
-/* ══════════════════════════════════════════════════════════════
-   INSTALL — Pre-cache all static assets
-══════════════════════════════════════════════════════════════ */
-self.addEventListener('install', (event) => {
-  console.log(`[SW] Installing ${CACHE_VERSION}`);
+/* ── Install Event ────────────────────────────────────────── */
+self.addEventListener('install', event => {
+  console.log('[SW] Installing Avalon Service Worker:', CACHE_VERSION);
   event.waitUntil(
-    caches.open(STATIC_CACHE).then(async (cache) => {
-      // Cache assets individually so one failure doesn't break all
-      const results = await Promise.allSettled(
-        STATIC_ASSETS.map(url => cache.add(url).catch(e => {
-          console.warn(`[SW] Failed to cache: ${url}`, e.message);
-        }))
+    caches.open(STATIC_CACHE).then(async cache => {
+      try {
+        await cache.addAll(PRECACHE_URLS);
+        console.log('[SW] App shell cached successfully.');
+      } catch (err) {
+        console.warn('[SW] Precache partial failure (some files may not exist yet):', err.message);
+      }
+      // Attempt to pre-cache local game assets (fail gracefully)
+      const assetCache = await caches.open(ASSET_CACHE);
+      const allAssets  = [...CARD_ASSETS, ...ICON_ASSETS];
+      await Promise.allSettled(
+        allAssets.map(url =>
+          fetch(url).then(res => {
+            if (res.ok) return assetCache.put(url, res);
+          }).catch(() => { /* asset not yet added — skip silently */ })
+        )
       );
-      console.log(`[SW] Pre-cache complete. ${results.filter(r=>r.status==='fulfilled').length}/${STATIC_ASSETS.length} assets cached.`);
-    })
+    }).then(() => self.skipWaiting())
   );
-  // Activate immediately without waiting for old SW to retire
-  self.skipWaiting();
 });
 
-/* ══════════════════════════════════════════════════════════════
-   ACTIVATE — Clean up old caches
-══════════════════════════════════════════════════════════════ */
-self.addEventListener('activate', (event) => {
-  console.log(`[SW] Activating ${CACHE_VERSION}`);
+/* ── Activate Event ───────────────────────────────────────── */
+self.addEventListener('activate', event => {
+  console.log('[SW] Activating Avalon Service Worker:', CACHE_VERSION);
   event.waitUntil(
-    caches.keys().then(async (cacheNames) => {
-      const deletions = cacheNames
-        .filter(name => name.startsWith('avalon-') && name !== STATIC_CACHE && name !== DYNAMIC_CACHE && name !== FONT_CACHE)
-        .map(name => {
-          console.log(`[SW] Deleting old cache: ${name}`);
-          return caches.delete(name);
-        });
-      await Promise.all(deletions);
-      // Take control of all open clients immediately
-      await self.clients.claim();
-      console.log('[SW] Active and controlling all clients.');
-    })
+    caches.keys().then(cacheNames => {
+      const validCaches = [STATIC_CACHE, DYNAMIC_CACHE, ASSET_CACHE];
+      return Promise.all(
+        cacheNames
+          .filter(name => name.startsWith('avalon-') && !validCaches.includes(name))
+          .map(name => {
+            console.log('[SW] Deleting stale cache:', name);
+            return caches.delete(name);
+          })
+      );
+    }).then(() => self.clients.claim())
   );
 });
 
-/* ══════════════════════════════════════════════════════════════
-   FETCH — Intercept all network requests
-══════════════════════════════════════════════════════════════ */
-self.addEventListener('fetch', (event) => {
+/* ── Fetch Event (Main Router) ────────────────────────────── */
+self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests (POST, PUT, DELETE — Firebase writes)
+  // Skip non-GET requests
   if (request.method !== 'GET') return;
 
-  // Skip chrome-extension and non-http(s) schemes
-  if (!request.url.startsWith('http')) return;
+  // Skip chrome-extension and other non-http schemes
+  if (!url.protocol.startsWith('http')) return;
 
-  /* ── Strategy 1: Network-Only for Firebase APIs ── */
-  if (NETWORK_ONLY_PATTERNS.some(p => url.hostname.includes(p))) {
-    event.respondWith(fetch(request).catch(() => {
-      return new Response(
-        JSON.stringify({ error: 'offline', message: 'No network connection available.' }),
-        { status: 503, headers: { 'Content-Type': 'application/json' } }
-      );
-    }));
+  // Route: Network-First for Firebase live data
+  if (NETWORK_FIRST_PATTERNS.some(p => p.test(request.url))) {
+    event.respondWith(networkFirst(request, DYNAMIC_CACHE));
     return;
   }
 
-  /* ── Strategy 2: Stale-While-Revalidate for Google Fonts & CDN ── */
-  if (CDN_PATTERNS.some(p => url.hostname.includes(p))) {
-    event.respondWith(staleWhileRevalidate(request, FONT_CACHE));
+  // Route: Cache-First for CDN fonts and Firebase SDK scripts
+  if (CACHE_FIRST_PATTERNS.some(p => p.test(request.url))) {
+    event.respondWith(cacheFirst(request, DYNAMIC_CACHE));
     return;
   }
 
-  /* ── Strategy 3: Cache-First for local static assets ── */
-  if (url.origin === self.location.origin) {
-    event.respondWith(cacheFirst(request, STATIC_CACHE));
+  // Route: Cache-First for local card and icon assets
+  if (request.url.includes('/cards/') || request.url.includes('/icons/')) {
+    event.respondWith(cacheFirst(request, ASSET_CACHE));
     return;
   }
 
-  /* ── Strategy 4: Network-First for everything else ── */
+  // Route: Cache-First for app shell (HTML, manifest, SW itself)
+  if (request.url.endsWith('.html') || request.url.endsWith('/') ||
+      request.url.endsWith('manifest.json')) {
+    event.respondWith(staleWhileRevalidate(request, STATIC_CACHE));
+    return;
+  }
+
+  // Default: Network with dynamic cache fallback
   event.respondWith(networkFirst(request, DYNAMIC_CACHE));
 });
 
-/* ══════════════════════════════════════════════════════════════
-   CACHING STRATEGIES
-══════════════════════════════════════════════════════════════ */
+/* ── Caching Strategies ───────────────────────────────────── */
 
 /**
- * Cache-First: Serve from cache, fallback to network, then cache the response.
- * Best for: Static assets that rarely change (images, fonts, app shell).
+ * Cache-First: Serve from cache, fall back to network.
+ * Best for: static assets, fonts, CDN scripts.
  */
 async function cacheFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
+  const cached = await caches.match(request);
   if (cached) return cached;
-
   try {
     const response = await fetch(request);
     if (response.ok) {
+      const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
     }
     return response;
-  } catch (e) {
-    // Return offline fallback for HTML pages
-    if (request.headers.get('Accept')?.includes('text/html')) {
-      const fallback = await cache.match('./index.html');
-      if (fallback) return fallback;
-    }
-    return new Response('Offline — Asset not available.', { status: 503 });
+  } catch {
+    return offlineFallback(request);
   }
 }
 
 /**
- * Network-First: Try network, fallback to cache.
- * Best for: API calls and dynamic content that should be fresh when online.
+ * Network-First: Try network, fall back to cache.
+ * Best for: API calls, live game data.
  */
 async function networkFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
   try {
     const response = await fetch(request);
     if (response.ok) {
+      const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
     }
     return response;
-  } catch (e) {
-    const cached = await cache.match(request);
-    if (cached) return cached;
-    return new Response('Offline — Content not cached.', { status: 503 });
+  } catch {
+    const cached = await caches.match(request);
+    return cached || offlineFallback(request);
   }
 }
 
 /**
- * Stale-While-Revalidate: Serve from cache immediately, update cache in background.
- * Best for: CDN assets like fonts and libraries — fast loads + eventual freshness.
+ * Stale-While-Revalidate: Serve cached version immediately,
+ * then update cache in the background.
+ * Best for: HTML pages, frequently-updated content.
  */
 async function staleWhileRevalidate(request, cacheName) {
-  const cache = await caches.open(cacheName);
+  const cache  = await caches.open(cacheName);
   const cached = await cache.match(request);
 
-  const networkPromise = fetch(request).then(response => {
-    if (response.ok) {
-      cache.put(request, response.clone());
-    }
+  const fetchPromise = fetch(request).then(response => {
+    if (response.ok) cache.put(request, response.clone());
     return response;
-  }).catch(() => null);
+  }).catch(() => cached);
 
-  return cached || await networkPromise || new Response('Offline', { status: 503 });
+  return cached || fetchPromise;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   BACKGROUND SYNC — Queue offline Firebase writes
-══════════════════════════════════════════════════════════════ */
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'avalon-sync-votes') {
-    console.log('[SW] Background sync: avalon-sync-votes');
-    // Votes are handled by Firebase SDK's offline persistence
-    // This hook exists for custom queued actions if needed
+/**
+ * Offline Fallback: Return a minimal offline response.
+ */
+function offlineFallback(request) {
+  const url = new URL(request.url);
+  if (request.headers.get('accept')?.includes('text/html')) {
+    return new Response(
+      `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Avalon — Offline</title>
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <style>body{background:#11141a;color:#f2e6ce;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;padding:2rem}</style>
+      </head><body>
+      <div>
+        <div style="font-size:4rem;margin-bottom:1rem">⚔️</div>
+        <h1 style="color:#d4af37;font-size:1.4rem;margin-bottom:0.5rem">You Are Offline</h1>
+        <p style="color:#c8b89a;font-size:0.9rem;line-height:1.6">
+          Reconnect to continue your quest.<br>
+          The Round Table awaits your return.
+        </p>
+        <button onclick="location.reload()" style="margin-top:1.5rem;background:#d4af37;color:#0a0c10;border:none;padding:0.8rem 2rem;border-radius:30px;font-size:0.9rem;cursor:pointer;font-weight:700">
+          🔄 Retry Connection
+        </button>
+      </div>
+      </body></html>`,
+      { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+    );
   }
-});
+  // For image assets — return a transparent 1x1 PNG fallback
+  if (request.url.includes('/cards/') || request.url.includes('/icons/')) {
+    const TRANSPARENT_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    return new Response(
+      Uint8Array.from(atob(TRANSPARENT_PNG), c => c.charCodeAt(0)),
+      { headers: { 'Content-Type': 'image/png' } }
+    );
+  }
+  return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+}
 
-/* ══════════════════════════════════════════════════════════════
-   PUSH NOTIFICATIONS (reserved for future use)
-══════════════════════════════════════════════════════════════ */
-self.addEventListener('push', (event) => {
-  const data = event.data?.json() || {};
-  const title = data.title || 'The Resistance: Avalon';
-  const options = {
-    body: data.body || 'It\'s your turn!',
-    icon: './icons/app_icon.png',
-    badge: './icons/app_icon.png',
-    data: data.url || './',
-    vibrate: [200, 100, 200],
-    actions: [
-      { action: 'open', title: 'Open Game' },
-      { action: 'dismiss', title: 'Dismiss' }
-    ]
-  };
-  event.waitUntil(self.registration.showNotification(title, options));
-});
-
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  if (event.action === 'dismiss') return;
+/* ── Push Notification Handler (future use) ───────────────── */
+self.addEventListener('push', event => {
+  if (!event.data) return;
+  const data = event.data.json();
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
-      const existing = clients.find(c => c.url.includes('index.html'));
-      if (existing) { existing.focus(); }
-      else { self.clients.openWindow('./index.html'); }
+    self.registration.showNotification(data.title || 'Avalon', {
+      body:    data.body  || 'A quest awaits you at the Round Table.',
+      icon:    './icons/app_icon.png',
+      badge:   './icons/app_icon.png',
+      vibrate: [200, 100, 200],
+      data:    { url: data.url || '/' },
     })
   );
 });
 
-/* ══════════════════════════════════════════════════════════════
-   MESSAGE HANDLER — Communication from main thread
-══════════════════════════════════════════════════════════════ */
-self.addEventListener('message', (event) => {
-  const { type, payload } = event.data || {};
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url.includes(self.registration.scope) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      return clients.openWindow(event.notification.data?.url || '/');
+    })
+  );
+});
 
-  switch (type) {
-    case 'SKIP_WAITING':
-      self.skipWaiting();
-      break;
-    case 'GET_VERSION':
-      event.source.postMessage({ type: 'VERSION', version: CACHE_VERSION });
-      break;
-    case 'CLEAR_CACHE':
-      caches.keys().then(names => Promise.all(names.map(n => caches.delete(n))))
-        .then(() => event.source.postMessage({ type: 'CACHE_CLEARED' }));
-      break;
-    default:
-      console.log('[SW] Unknown message type:', type);
+/* ── Background Sync (future reconnect use) ───────────────── */
+self.addEventListener('sync', event => {
+  if (event.tag === 'avalon-reconnect') {
+    console.log('[SW] Background sync: attempting reconnect to game room.');
   }
 });
 
-console.log(`[SW] ${CACHE_VERSION} script loaded.`);
+/* ── Message Handler ──────────────────────────────────────── */
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  if (event.data?.type === 'CACHE_ASSET') {
+    const { url } = event.data;
+    caches.open(ASSET_CACHE).then(cache => cache.add(url)).catch(() => {});
+  }
+  if (event.data?.type === 'CLEAR_CACHE') {
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
+  }
+});
