@@ -1,14 +1,14 @@
 {
   "name": "The Resistance: Avalon",
   "short_name": "Avalon",
-  "description": "A mobile-first PWA for the social deduction tabletop game The Resistance: Avalon. Play with friends using live Firebase multiplayer, immersive role reveals, and full game-phase management.",
-  "start_url": "/",
+  "description": "A mobile-first progressive web app for the social deduction game The Resistance: Avalon.",
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#11141a",
   "theme_color": "#11141a",
-  "lang": "en-US",
-  "categories": ["games", "entertainment", "social"],
+  "scope": "./",
+  "lang": "en",
   "icons": [
     {
       "src": "./icons/app_icon.png",
@@ -24,16 +24,6 @@
     }
   ],
   "screenshots": [],
-  "shortcuts": [
-    {
-      "name": "New Game",
-      "short_name": "Play",
-      "description": "Quickly create a new Avalon game room",
-      "url": "/?shortcut=new-game",
-      "icons": [{ "src": "./icons/team_shield.png", "sizes": "96x96" }]
-    }
-  ],
-  "prefer_related_applications": false,
-  "related_applications": [],
-  "scope": "/"
+  "categories": ["games", "entertainment"],
+  "prefer_related_applications": false
 }
