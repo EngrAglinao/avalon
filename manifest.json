@@ -1,0 +1,1490 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>AVALON</title>
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#0b1020" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      background: radial-gradient(circle at top, #1a233f 0%, #090d18 45%, #05070f 100%);
+      min-height: 100svh;
+    }
+    .aura {
+      box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.35), 0 12px 40px rgba(0, 0, 0, 0.45);
+    }
+    .btn-main {
+      background: linear-gradient(180deg, #d4af37, #9f7d1a);
+      color: #121212;
+      font-weight: 800;
+      border-radius: 14px;
+      min-height: 52px;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+    .btn-main:active {
+      transform: scale(0.98);
+      filter: brightness(0.95);
+    }
+    .phase-pulse {
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 rgba(212, 175, 55, 0); }
+      50% { box-shadow: 0 0 24px rgba(212, 175, 55, 0.4); }
+    }
+    .flip {
+      transform-style: preserve-3d;
+      animation: flipIn 0.7s ease;
+    }
+    @keyframes flipIn {
+      from { transform: rotateY(90deg) scale(0.95); opacity: 0; }
+      to { transform: rotateY(0deg) scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="text-slate-100">
+  <div id="deviceLock" class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/95 p-8 text-center">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-300">Handheld Only</h1>
+      <p class="mt-3 text-base text-slate-200">This game is only available on handheld mobile devices.</p>
+      <p class="mt-2 text-sm text-slate-400">Use a phone or tablet in portrait mode.</p>
+    </div>
+  </div>
+
+  <div id="installGate" class="fixed inset-0 z-[70] hidden bg-slate-950/95">
+    <div class="mx-auto flex min-h-svh w-full max-w-md flex-col items-center justify-center px-6 text-center">
+      <p class="text-xs uppercase tracking-[0.35em] text-amber-200">AVALON</p>
+      <h2 class="mt-4 text-3xl font-black text-amber-300">Install To Enter</h2>
+      <p class="mt-4 text-slate-200">You must install this app on your device before sign-in and gameplay are enabled.</p>
+      <button id="installBtn" class="btn-main mt-8 w-full max-w-xs">Install App to Device</button>
+      <p id="installHint" class="mt-4 text-sm text-slate-400"></p>
+    </div>
+  </div>
+
+  <div id="app" class="mx-auto min-h-svh w-full max-w-md px-4 pb-8 pt-4">
+    <header class="sticky top-0 z-30 -mx-4 mb-4 border-b border-amber-500/20 bg-slate-950/80 px-4 py-3 backdrop-blur">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div id="brandIcon" class="text-2xl">⚔️</div>
+          <div>
+            <p id="brandName" class="text-lg font-black tracking-wide text-amber-300">AVALON</p>
+            <p id="subline" class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Realtime Court Chamber</p>
+          </div>
+        </div>
+        <button id="openGuideBtn" class="rounded-lg border border-amber-500/40 px-3 py-2 text-xs font-semibold text-amber-200">Instructions</button>
+      </div>
+    </header>
+
+    <main id="screenRoot" class="space-y-4"></main>
+  </div>
+
+  <div id="overlayRoot" class="pointer-events-none fixed inset-0 z-[90]"></div>
+
+  <script>
+    const ADMIN_EMAIL = "buenavistaaglinaodanny@gmail.com";
+    const STORAGE_KEYS = {
+      firebaseConfig: "avalon.firebaseConfig",
+      roomId: "avalon.roomId"
+    };
+
+    const MANUAL_FIREBASE_CONFIG = {
+      apiKey: "",
+      authDomain: "",
+      databaseURL: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: ""
+    };
+
+    const DEFAULT_GLOBAL_CONFIG = {
+      gameName: "AVALON",
+      appIcon: "⚔️",
+      rolesEnabled: {
+        Merlin: true,
+        Percival: true,
+        Morgana: true,
+        Mordred: true,
+        Oberon: true,
+        Assassin: true
+      }
+    };
+
+    const ROLE_META = {
+      Merlin: { team: "Good", desc: "Sees Evil players except Mordred." },
+      Percival: { team: "Good", desc: "Sees Merlin and Morgana but cannot tell who is Merlin." },
+      LoyalServant: { team: "Good", desc: "No special night power. Help Good win 3 quests." },
+      Morgana: { team: "Evil", desc: "Appears as Merlin to Percival." },
+      Mordred: { team: "Evil", desc: "Hidden from Merlin." },
+      Oberon: { team: "Evil", desc: "Unknown to other Evil players and sees none of them." },
+      Assassin: { team: "Evil", desc: "May assassinate Merlin if Good wins 3 quests." },
+      Minion: { team: "Evil", desc: "Work with Evil team to fail 3 quests." }
+    };
+
+    const PLAYER_RULES = {
+      5: { good: 3, evil: 2, teamSizes: [2, 3, 2, 3, 3], twoFailsOnQuest: -1 },
+      6: { good: 4, evil: 2, teamSizes: [2, 3, 4, 3, 4], twoFailsOnQuest: -1 },
+      7: { good: 4, evil: 3, teamSizes: [2, 3, 3, 4, 4], twoFailsOnQuest: 4 },
+      8: { good: 5, evil: 3, teamSizes: [3, 4, 4, 5, 5], twoFailsOnQuest: 4 },
+      9: { good: 6, evil: 3, teamSizes: [3, 4, 4, 5, 5], twoFailsOnQuest: 4 },
+      10: { good: 6, evil: 4, teamSizes: [3, 4, 4, 5, 5], twoFailsOnQuest: 4 }
+    };
+
+    const appState = {
+      standalone: false,
+      deferredPrompt: null,
+      firebaseReady: false,
+      authReady: false,
+      user: null,
+      profile: null,
+      globalConfig: { ...DEFAULT_GLOBAL_CONFIG },
+      networkHash: "unknown",
+      roomId: localStorage.getItem(STORAGE_KEYS.roomId) || null,
+      room: null,
+      availableRooms: [],
+      listeners: [],
+      toasts: [],
+      guideOpen: false,
+      showRoleCard: true,
+      roleCardFlipped: false,
+      qrScannerOpen: false,
+      qrStream: null,
+      qrScanLoop: null,
+      disconnectSeen: {},
+      adminDialogPlayer: null
+    };
+
+    let auth = null;
+    let db = null;
+
+    const el = {
+      app: document.getElementById("app"),
+      screenRoot: document.getElementById("screenRoot"),
+      overlayRoot: document.getElementById("overlayRoot"),
+      installGate: document.getElementById("installGate"),
+      installBtn: document.getElementById("installBtn"),
+      installHint: document.getElementById("installHint"),
+      deviceLock: document.getElementById("deviceLock"),
+      brandName: document.getElementById("brandName"),
+      brandIcon: document.getElementById("brandIcon"),
+      openGuideBtn: document.getElementById("openGuideBtn")
+    };
+
+    function uid() {
+      return appState.user ? appState.user.uid : null;
+    }
+
+    function isAdmin() {
+      return appState.user && appState.user.email === ADMIN_EMAIL;
+    }
+
+    function isHost() {
+      return appState.room && appState.room.hostUid === uid();
+    }
+
+    function isStandalone() {
+      return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    }
+
+    function isMobileDevice() {
+      const ua = navigator.userAgent || "";
+      const mobileUa = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(ua);
+      const coarse = window.matchMedia("(pointer: coarse)").matches;
+      return mobileUa || coarse;
+    }
+
+    function checkDeviceLock() {
+      const portrait = window.innerHeight >= window.innerWidth;
+      const handheld = isMobileDevice() && Math.min(window.innerWidth, window.innerHeight) <= 1024;
+      const blocked = !portrait || !handheld;
+      el.deviceLock.classList.toggle("hidden", !blocked);
+      el.deviceLock.classList.toggle("flex", blocked);
+      return blocked;
+    }
+
+    function showInstallGate(message) {
+      el.installGate.classList.remove("hidden");
+      el.installHint.textContent = message || "";
+    }
+
+    function hideInstallGate() {
+      el.installGate.classList.add("hidden");
+      el.installHint.textContent = "";
+    }
+
+    function sanitizeConfig(config) {
+      const keys = ["apiKey", "authDomain", "databaseURL", "projectId", "storageBucket", "messagingSenderId", "appId"];
+      const cleaned = {};
+      for (const key of keys) cleaned[key] = (config[key] || "").trim();
+      const valid = keys.every((k) => cleaned[k]);
+      return valid ? cleaned : null;
+    }
+
+    function toast(message) {
+      const id = crypto.randomUUID();
+      appState.toasts.push({ id, message });
+      renderOverlays();
+      setTimeout(() => {
+        appState.toasts = appState.toasts.filter((t) => t.id !== id);
+        renderOverlays();
+      }, 3000);
+    }
+
+    function clearListeners() {
+      appState.listeners.forEach((fn) => fn());
+      appState.listeners = [];
+    }
+
+    async function sha1(text) {
+      const buf = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+    }
+
+    async function detectLocalIp() {
+      return new Promise((resolve) => {
+        const RTCPeer = window.RTCPeerConnection || window.webkitRTCPeerConnection;
+        if (!RTCPeer) return resolve(null);
+        const pc = new RTCPeer({ iceServers: [] });
+        const timeout = setTimeout(() => {
+          pc.close();
+          resolve(null);
+        }, 1300);
+        pc.createDataChannel("x");
+        pc.createOffer().then((offer) => pc.setLocalDescription(offer)).catch(() => resolve(null));
+        pc.onicecandidate = (ev) => {
+          if (!ev || !ev.candidate || !ev.candidate.candidate) return;
+          const match = ev.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+          if (!match) return;
+          const ip = match[1];
+          if (/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(ip)) {
+            clearTimeout(timeout);
+            pc.close();
+            resolve(ip);
+          }
+        };
+      });
+    }
+
+    async function deriveNetworkHash() {
+      let source = "unknown";
+      const localIp = await detectLocalIp();
+      if (localIp) {
+        const parts = localIp.split(".");
+        source = `${parts[0]}.${parts[1]}.${parts[2]}.x`;
+      } else {
+        try {
+          const res = await fetch("https://api64.ipify.org?format=json", { cache: "no-store" });
+          const data = await res.json();
+          source = data.ip || "unknown";
+        } catch (_err) {
+          source = `${navigator.userAgent}|${Intl.DateTimeFormat().resolvedOptions().timeZone || "tz"}`;
+        }
+      }
+      appState.networkHash = await sha1(source);
+    }
+
+    async function initFirebase() {
+      const manual = sanitizeConfig(MANUAL_FIREBASE_CONFIG);
+      const stored = sanitizeConfig(JSON.parse(localStorage.getItem(STORAGE_KEYS.firebaseConfig) || "{}"));
+      const config = manual || stored;
+      if (!config) return false;
+
+      if (!firebase.apps.length) firebase.initializeApp(config);
+      auth = firebase.auth();
+      db = firebase.database();
+      appState.firebaseReady = true;
+      return true;
+    }
+
+    function saveFirebaseConfigFromForm(formData) {
+      const cfg = sanitizeConfig(Object.fromEntries(formData.entries()));
+      if (!cfg) {
+        toast("Fill all Firebase config fields.");
+        return;
+      }
+      localStorage.setItem(STORAGE_KEYS.firebaseConfig, JSON.stringify(cfg));
+      window.location.reload();
+    }
+
+    function bindPresence(roomId) {
+      const myUid = uid();
+      if (!myUid || !roomId) return;
+      const connRef = db.ref(".info/connected");
+      const presenceRef = db.ref(`rooms/${roomId}/players/${myUid}`);
+      const cb = connRef.on("value", (snap) => {
+        if (!snap.val()) return;
+        presenceRef.onDisconnect().update({ connected: false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+        presenceRef.update({ connected: true, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+      });
+      appState.listeners.push(() => connRef.off("value", cb));
+    }
+
+    function setupAuthListener() {
+      auth.onAuthStateChanged(async (user) => {
+        clearListeners();
+        appState.user = user || null;
+        if (!user) {
+          appState.profile = null;
+          appState.room = null;
+          appState.roomId = null;
+          localStorage.removeItem(STORAGE_KEYS.roomId);
+          render();
+          return;
+        }
+        await ensureProfile(user);
+        attachGlobalConfigListener();
+        await deriveNetworkHash();
+        let joinedFromQuery = false;
+        const roomCodeFromQuery = new URLSearchParams(location.search).get("room");
+        if (roomCodeFromQuery && !appState.roomId) {
+          await joinRoomByCode(roomCodeFromQuery);
+          joinedFromQuery = true;
+        }
+        if (appState.roomId && !joinedFromQuery) attachRoomListener(appState.roomId);
+        attachAvailableRoomsListener();
+        render();
+      });
+    }
+
+    async function ensureProfile(user) {
+      const profileRef = db.ref(`profiles/${user.uid}`);
+      const snap = await profileRef.once("value");
+      const existing = snap.val();
+      const base = {
+        nickname: user.displayName || "Knight",
+        photoURL: user.photoURL || "",
+        email: user.email,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      };
+      if (!existing) {
+        await profileRef.set({ ...base, createdAt: firebase.database.ServerValue.TIMESTAMP, history: {} });
+        appState.profile = { ...base, history: {} };
+      } else {
+        appState.profile = existing;
+      }
+    }
+
+    function attachGlobalConfigListener() {
+      const ref = db.ref("appConfig/global");
+      const cb = ref.on("value", async (snap) => {
+        const cfg = snap.val();
+        if (!cfg && isAdmin()) {
+          await ref.set(DEFAULT_GLOBAL_CONFIG);
+          return;
+        }
+        appState.globalConfig = { ...DEFAULT_GLOBAL_CONFIG, ...(cfg || {}) };
+        el.brandName.textContent = appState.globalConfig.gameName || "AVALON";
+        el.brandIcon.textContent = appState.globalConfig.appIcon || "⚔️";
+        render();
+      });
+      appState.listeners.push(() => ref.off("value", cb));
+    }
+
+    function attachAvailableRoomsListener() {
+      if (!db || !appState.user) return;
+      const query = db.ref("rooms").orderByChild("networkHash").equalTo(appState.networkHash);
+      const cb = query.on("value", (snap) => {
+        const all = snap.val() || {};
+        appState.availableRooms = Object.entries(all)
+          .map(([id, room]) => ({ id, ...room }))
+          .filter((r) => r.status === "lobby")
+          .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+        render();
+      });
+      appState.listeners.push(() => query.off("value", cb));
+    }
+
+    function attachRoomListener(roomId) {
+      if (!roomId || !db) return;
+      appState.roomId = roomId;
+      localStorage.setItem(STORAGE_KEYS.roomId, roomId);
+      const ref = db.ref(`rooms/${roomId}`);
+      const cb = ref.on("value", (snap) => {
+        const room = snap.val();
+        if (!room) {
+          toast("Room ended.");
+          appState.room = null;
+          appState.roomId = null;
+          localStorage.removeItem(STORAGE_KEYS.roomId);
+          render();
+          return;
+        }
+        appState.room = room;
+        detectDisconnects(room.players || {});
+        if (!room.players || !room.players[uid()]) {
+          appState.room = null;
+          appState.roomId = null;
+          localStorage.removeItem(STORAGE_KEYS.roomId);
+        }
+        maybeArchiveHistory(roomId, room);
+        render();
+      });
+      appState.listeners.push(() => ref.off("value", cb));
+      bindPresence(roomId);
+    }
+
+    function detectDisconnects(players) {
+      for (const [pid, p] of Object.entries(players)) {
+        const prev = appState.disconnectSeen[pid];
+        const now = p.connected !== false;
+        if (prev !== undefined && prev === true && now === false) {
+          toast(`${p.nickname || "Player"} has disconnected.`);
+          if (isAdmin() && appState.room && appState.room.phase !== "lobby" && appState.room.phase !== "end") {
+            appState.adminDialogPlayer = p.nickname || "Player";
+          }
+        }
+        appState.disconnectSeen[pid] = now;
+      }
+    }
+
+    async function maybeArchiveHistory(roomId, room) {
+      if (room.phase !== "end" || room.historyArchived) return;
+      if (!isHost()) return;
+      const updates = {};
+      const players = room.players || {};
+      const roles = room.roleAssignments || {};
+      for (const [pid, p] of Object.entries(players)) {
+        updates[`profiles/${pid}/history/${roomId}`] = {
+          roomCode: room.code,
+          result: room.winner || "Unknown",
+          role: roles[pid] || "Unknown",
+          at: firebase.database.ServerValue.TIMESTAMP,
+          nickname: p.nickname || "Knight"
+        };
+      }
+      updates[`rooms/${roomId}/historyArchived`] = true;
+      await db.ref().update(updates);
+    }
+
+    async function signInGoogle() {
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await auth.signInWithPopup(provider);
+      } catch (_err) {
+        toast("Google sign-in popup blocked. Try again.");
+      }
+    }
+
+    async function signOut() {
+      await auth.signOut();
+      clearListeners();
+      closeQrScanner();
+      appState.room = null;
+      appState.roomId = null;
+      localStorage.removeItem(STORAGE_KEYS.roomId);
+      render();
+    }
+
+    function randomCode() {
+      return Math.random().toString(36).slice(2, 8).toUpperCase();
+    }
+
+    async function createRoom() {
+      const myUid = uid();
+      const prof = appState.profile;
+      if (!myUid || !prof) return;
+      const roomRef = db.ref("rooms").push();
+      const code = randomCode();
+      const roomData = {
+        code,
+        hostUid: myUid,
+        hostEmail: appState.user.email || "",
+        networkHash: appState.networkHash,
+        status: "lobby",
+        phase: "lobby",
+        round: 1,
+        questIndex: 0,
+        goodScore: 0,
+        evilScore: 0,
+        rejectCount: 0,
+        questResults: [null, null, null, null, null],
+        leaderIndex: 0,
+        teamNomination: [],
+        votes: { teamApproval: {}, quest: {} },
+        selectedRoles: { ...(appState.globalConfig.rolesEnabled || DEFAULT_GLOBAL_CONFIG.rolesEnabled) },
+        players: {
+          [myUid]: {
+            uid: myUid,
+            email: appState.user.email,
+            nickname: prof.nickname,
+            photoURL: prof.photoURL,
+            isHost: true,
+            connected: true,
+            joinedAt: firebase.database.ServerValue.TIMESTAMP,
+            lastSeen: firebase.database.ServerValue.TIMESTAMP
+          }
+        },
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      };
+      await roomRef.set(roomData);
+      attachRoomListener(roomRef.key);
+    }
+
+    async function joinRoomByCode(codeRaw) {
+      const code = (codeRaw || "").trim().toUpperCase();
+      if (!code) return;
+      const snap = await db.ref("rooms").orderByChild("code").equalTo(code).once("value");
+      const rooms = snap.val() || {};
+      const found = Object.entries(rooms)[0];
+      if (!found) return toast("Room code not found.");
+      const [roomId, room] = found;
+      if (room.phase === "end") return toast("This room has already ended.");
+      const playerCount = Object.keys(room.players || {}).length;
+      if (playerCount >= 10 && !(room.players || {})[uid()]) return toast("Room is full.");
+      await db.ref(`rooms/${roomId}/players/${uid()}`).update({
+        uid: uid(),
+        email: appState.user.email,
+        nickname: appState.profile.nickname,
+        photoURL: appState.profile.photoURL,
+        isHost: false,
+        connected: true,
+        joinedAt: firebase.database.ServerValue.TIMESTAMP,
+        lastSeen: firebase.database.ServerValue.TIMESTAMP
+      });
+      await db.ref(`rooms/${roomId}/updatedAt`).set(firebase.database.ServerValue.TIMESTAMP);
+      attachRoomListener(roomId);
+    }
+
+    async function leaveRoom() {
+      if (!appState.roomId) return;
+      const roomId = appState.roomId;
+      await db.ref(`rooms/${roomId}/players/${uid()}`).remove();
+      appState.room = null;
+      appState.roomId = null;
+      localStorage.removeItem(STORAGE_KEYS.roomId);
+      render();
+    }
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function buildRolePool(playerCount, selectedRoles) {
+      const rules = PLAYER_RULES[playerCount];
+      const goodTarget = rules.good;
+      const evilTarget = rules.evil;
+      const evil = [];
+      const good = [];
+
+      if (selectedRoles.Assassin && evil.length < evilTarget) evil.push("Assassin");
+      if (selectedRoles.Morgana && evil.length < evilTarget) evil.push("Morgana");
+      if (selectedRoles.Mordred && evil.length < evilTarget) evil.push("Mordred");
+      if (selectedRoles.Oberon && evil.length < evilTarget) evil.push("Oberon");
+      while (evil.length < evilTarget) evil.push("Minion");
+
+      if (selectedRoles.Merlin && good.length < goodTarget) good.push("Merlin");
+      if (selectedRoles.Percival && good.length < goodTarget) good.push("Percival");
+      while (good.length < goodTarget) good.push("LoyalServant");
+
+      return shuffle([...good, ...evil]);
+    }
+
+    function getRoleIntel(role, roleByUid, players) {
+      const namesByUid = {};
+      for (const [pid, p] of Object.entries(players || {})) namesByUid[pid] = p.nickname || "Knight";
+      const entries = Object.entries(roleByUid || {});
+      const evilUids = entries.filter(([, r]) => ["Morgana", "Mordred", "Oberon", "Assassin", "Minion"].includes(r)).map(([id]) => id);
+      const intel = [];
+
+      if (role === "Merlin") {
+        entries.forEach(([id, r]) => {
+          if (["Morgana", "Assassin", "Minion", "Oberon"].includes(r)) intel.push(namesByUid[id]);
+        });
+      }
+      if (role === "Percival") {
+        entries.forEach(([id, r]) => {
+          if (["Merlin", "Morgana"].includes(r)) intel.push(namesByUid[id]);
+        });
+      }
+      if (["Morgana", "Mordred", "Assassin", "Minion"].includes(role)) {
+        evilUids.forEach((id) => {
+          const r = roleByUid[id];
+          if (id !== uid() && r !== "Oberon") intel.push(namesByUid[id]);
+        });
+      }
+      if (role === "Oberon") {
+        return "You are hidden from other Evil players and you see no allies.";
+      }
+      if (!intel.length) return "No special visibility information.";
+      return `You can identify: ${intel.join(", ")}.`;
+    }
+
+    async function startGame() {
+      if (!appState.room || !isHost()) return;
+      const players = Object.entries(appState.room.players || {});
+      const count = players.length;
+      if (count < 5 || count > 10) return toast("Avalon requires 5 to 10 players.");
+      const roles = buildRolePool(count, appState.room.selectedRoles || {});
+      const shuffledPlayers = shuffle(players.map(([pid]) => pid));
+      const assign = {};
+      shuffledPlayers.forEach((pid, i) => { assign[pid] = roles[i]; });
+      await db.ref(`rooms/${appState.roomId}`).update({
+        status: "in_game",
+        phase: "night",
+        roleAssignments: assign,
+        leaderIndex: 0,
+        round: 1,
+        questIndex: 0,
+        goodScore: 0,
+        evilScore: 0,
+        rejectCount: 0,
+        votes: { teamApproval: {}, quest: {} },
+        teamNomination: [],
+        questResults: [null, null, null, null, null],
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+
+    function currentLeaderUid(room) {
+      const ids = Object.keys(room.players || {});
+      if (!ids.length) return null;
+      return ids[room.leaderIndex % ids.length];
+    }
+
+    function missionSize(room) {
+      const count = Object.keys(room.players || {}).length;
+      const rules = PLAYER_RULES[count] || PLAYER_RULES[5];
+      return rules.teamSizes[room.questIndex || 0] || 2;
+    }
+
+    async function submitNomination(selectedUids) {
+      if (!appState.room) return;
+      if (selectedUids.length !== missionSize(appState.room)) return toast("Team size mismatch.");
+      await db.ref(`rooms/${appState.roomId}`).update({
+        teamNomination: selectedUids,
+        phase: "team_vote",
+        votes: { teamApproval: {}, quest: {} },
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+
+    async function castTeamVote(value) {
+      await db.ref(`rooms/${appState.roomId}/votes/teamApproval/${uid()}`).set(value);
+      await db.ref(`rooms/${appState.roomId}/players/${uid()}/lastSeen`).set(firebase.database.ServerValue.TIMESTAMP);
+    }
+
+    async function castQuestVote(value) {
+      const myRole = (appState.room.roleAssignments || {})[uid()];
+      if (["Merlin", "Percival", "LoyalServant"].includes(myRole) && value === "fail") return toast("Good roles cannot play Fail.");
+      await db.ref(`rooms/${appState.roomId}/votes/quest/${uid()}`).set(value);
+      await db.ref(`rooms/${appState.roomId}/players/${uid()}/lastSeen`).set(firebase.database.ServerValue.TIMESTAMP);
+    }
+
+    async function hostContinue() {
+      if (!appState.room || !isHost()) return;
+      const room = appState.room;
+      const players = Object.keys(room.players || {});
+      const rules = PLAYER_RULES[players.length];
+      if (!rules) return;
+
+      if (room.phase === "night") {
+        return db.ref(`rooms/${appState.roomId}`).update({ phase: "day", updatedAt: firebase.database.ServerValue.TIMESTAMP });
+      }
+
+      if (room.phase === "team_vote") {
+        const votes = room.votes && room.votes.teamApproval ? room.votes.teamApproval : {};
+        if (Object.keys(votes).length < players.length) return toast("Waiting for all votes.");
+        const approvals = Object.values(votes).filter((v) => v === "approve").length;
+        if (approvals > players.length / 2) {
+          return db.ref(`rooms/${appState.roomId}`).update({ phase: "quest_vote", votes: { teamApproval: votes, quest: {} } });
+        }
+        const nextReject = (room.rejectCount || 0) + 1;
+        if (nextReject >= 5) {
+          return db.ref(`rooms/${appState.roomId}`).update({ phase: "end", status: "ended", winner: "Evil", winReason: "Five consecutive rejected teams." });
+        }
+        return db.ref(`rooms/${appState.roomId}`).update({
+          phase: "day",
+          rejectCount: nextReject,
+          leaderIndex: ((room.leaderIndex || 0) + 1) % players.length,
+          votes: { teamApproval: {}, quest: {} },
+          teamNomination: [],
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        });
+      }
+
+      if (room.phase === "quest_vote") {
+        const team = room.teamNomination || [];
+        const questVotes = room.votes && room.votes.quest ? room.votes.quest : {};
+        if (Object.keys(questVotes).length < team.length) return toast("Waiting for mission team votes.");
+        const fails = Object.values(questVotes).filter((v) => v === "fail").length;
+        const questNumber = (room.questIndex || 0) + 1;
+        const requiresTwoFails = rules.twoFailsOnQuest === questNumber;
+        const missionFailed = requiresTwoFails ? fails >= 2 : fails >= 1;
+        const questResults = (room.questResults || [null, null, null, null, null]).slice();
+        questResults[room.questIndex || 0] = missionFailed ? "Fail" : "Success";
+        const goodScore = (room.goodScore || 0) + (missionFailed ? 0 : 1);
+        const evilScore = (room.evilScore || 0) + (missionFailed ? 1 : 0);
+
+        if (goodScore >= 3) {
+          const hasAssassin = Object.values(room.roleAssignments || {}).includes("Assassin");
+          if (hasAssassin) {
+            return db.ref(`rooms/${appState.roomId}`).update({
+              phase: "assassination",
+              goodScore,
+              evilScore,
+              questResults,
+              votes: { teamApproval: {}, quest: {} },
+              updatedAt: firebase.database.ServerValue.TIMESTAMP
+            });
+          }
+          return db.ref(`rooms/${appState.roomId}`).update({
+            phase: "end",
+            status: "ended",
+            winner: "Good",
+            winReason: "Good completed 3 successful quests.",
+            goodScore,
+            evilScore,
+            questResults,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+          });
+        }
+
+        if (evilScore >= 3) {
+          return db.ref(`rooms/${appState.roomId}`).update({
+            phase: "end",
+            status: "ended",
+            winner: "Evil",
+            winReason: "Evil failed 3 quests.",
+            goodScore,
+            evilScore,
+            questResults,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+          });
+        }
+
+        return db.ref(`rooms/${appState.roomId}`).update({
+          phase: "day",
+          round: (room.round || 1) + 1,
+          questIndex: (room.questIndex || 0) + 1,
+          goodScore,
+          evilScore,
+          questResults,
+          rejectCount: 0,
+          teamNomination: [],
+          votes: { teamApproval: {}, quest: {} },
+          leaderIndex: ((room.leaderIndex || 0) + 1) % players.length,
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        });
+      }
+    }
+
+    async function performAssassination(targetUid) {
+      const roles = appState.room.roleAssignments || {};
+      const targetRole = roles[targetUid];
+      const winner = targetRole === "Merlin" ? "Evil" : "Good";
+      const reason = targetRole === "Merlin" ? "Assassin eliminated Merlin." : "Assassin failed to find Merlin.";
+      await db.ref(`rooms/${appState.roomId}`).update({
+        phase: "end",
+        status: "ended",
+        winner,
+        winReason: reason,
+        assassinationTarget: targetUid,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+
+    async function adminTerminateSession() {
+      if (!appState.roomId) return;
+      await db.ref(`rooms/${appState.roomId}`).update({
+        phase: "end",
+        status: "ended",
+        winner: "Terminated",
+        winReason: "Session force-terminated by admin after disconnection.",
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+      appState.adminDialogPlayer = null;
+    }
+
+    async function adminResetLobby() {
+      if (!appState.roomId) return;
+      await db.ref(`rooms/${appState.roomId}`).update({
+        phase: "lobby",
+        status: "lobby",
+        roleAssignments: null,
+        winner: null,
+        winReason: null,
+        assassinationTarget: null,
+        round: 1,
+        questIndex: 0,
+        goodScore: 0,
+        evilScore: 0,
+        rejectCount: 0,
+        teamNomination: [],
+        votes: { teamApproval: {}, quest: {} },
+        questResults: [null, null, null, null, null],
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+      appState.adminDialogPlayer = null;
+    }
+
+    async function saveProfile(formData) {
+      if (!uid()) return;
+      const nickname = (formData.get("nickname") || "").trim() || "Knight";
+      const photoURL = (formData.get("photoURL") || "").trim();
+      await db.ref(`profiles/${uid()}`).update({ nickname, photoURL, updatedAt: firebase.database.ServerValue.TIMESTAMP });
+      appState.profile.nickname = nickname;
+      appState.profile.photoURL = photoURL;
+      if (appState.roomId) {
+        await db.ref(`rooms/${appState.roomId}/players/${uid()}`).update({ nickname, photoURL });
+      }
+      toast("Profile updated.");
+      render();
+    }
+
+    async function saveAdminConfig(formData) {
+      if (!isAdmin()) return;
+      const gameName = (formData.get("gameName") || "AVALON").trim();
+      const appIcon = (formData.get("appIcon") || "⚔️").trim() || "⚔️";
+      const rolesEnabled = {
+        Merlin: formData.get("Merlin") === "on",
+        Percival: formData.get("Percival") === "on",
+        Morgana: formData.get("Morgana") === "on",
+        Mordred: formData.get("Mordred") === "on",
+        Oberon: formData.get("Oberon") === "on",
+        Assassin: formData.get("Assassin") === "on"
+      };
+      await db.ref("appConfig/global").set({ gameName, appIcon, rolesEnabled });
+      toast("Admin settings saved.");
+    }
+
+    async function setRoomRoleToggle(role, enabled) {
+      if (!isHost()) return;
+      await db.ref(`rooms/${appState.roomId}/selectedRoles/${role}`).set(enabled);
+      await db.ref(`rooms/${appState.roomId}/updatedAt`).set(firebase.database.ServerValue.TIMESTAMP);
+    }
+
+    function roleOfMe() {
+      if (!appState.room || !uid()) return null;
+      return (appState.room.roleAssignments || {})[uid()] || null;
+    }
+
+    function openGuide() {
+      appState.guideOpen = true;
+      renderOverlays();
+    }
+
+    function closeGuide() {
+      appState.guideOpen = false;
+      renderOverlays();
+    }
+
+    function closeQrScanner() {
+      appState.qrScannerOpen = false;
+      if (appState.qrScanLoop) {
+        cancelAnimationFrame(appState.qrScanLoop);
+        appState.qrScanLoop = null;
+      }
+      if (appState.qrStream) {
+        appState.qrStream.getTracks().forEach((t) => t.stop());
+        appState.qrStream = null;
+      }
+      renderOverlays();
+    }
+
+    async function openQrScanner() {
+      if (!window.BarcodeDetector) return toast("QR scanner is not supported on this browser.");
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return toast("Camera API unavailable.");
+      appState.qrScannerOpen = true;
+      renderOverlays();
+      const video = document.getElementById("qrVideo");
+      if (!video) return;
+      try {
+        appState.qrStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false
+        });
+        video.srcObject = appState.qrStream;
+        await video.play();
+      } catch (_err) {
+        toast("Camera permission denied.");
+        return closeQrScanner();
+      }
+
+      const detector = new BarcodeDetector({ formats: ["qr_code"] });
+      const tick = async () => {
+        if (!appState.qrScannerOpen) return;
+        try {
+          const found = await detector.detect(video);
+          if (found.length) {
+            const raw = found[0].rawValue || "";
+            let code = raw.trim();
+            try {
+              const url = new URL(raw);
+              code = url.searchParams.get("room") || code;
+            } catch (_err) {}
+            if (code) {
+              closeQrScanner();
+              joinRoomByCode(code);
+              return;
+            }
+          }
+        } catch (_err) {}
+        appState.qrScanLoop = requestAnimationFrame(tick);
+      };
+      tick();
+    }
+
+    function renderFirebaseSetup() {
+      el.screenRoot.innerHTML = `
+        <section class="aura rounded-2xl border border-amber-500/30 bg-slate-900/70 p-4">
+          <h2 class="text-xl font-bold text-amber-200">First Launch Firebase Setup</h2>
+          <p class="mt-2 text-sm text-slate-300">Paste your Firebase Web config. This saves locally on this device.</p>
+          <form id="firebaseForm" class="mt-4 grid gap-3">
+            ${["apiKey","authDomain","databaseURL","projectId","storageBucket","messagingSenderId","appId"].map((k) => `
+              <label class="text-xs uppercase tracking-wide text-slate-400">${k}
+                <input name="${k}" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm" required />
+              </label>
+            `).join("")}
+            <button class="btn-main mt-2 w-full">Save Configuration</button>
+          </form>
+        </section>
+      `;
+      document.getElementById("firebaseForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        saveFirebaseConfigFromForm(new FormData(e.target));
+      });
+    }
+
+    function renderAuth() {
+      el.screenRoot.innerHTML = `
+        <section class="aura rounded-2xl border border-amber-500/30 bg-slate-900/75 p-4 text-center">
+          <h2 class="text-2xl font-black text-amber-300">Enter The Court</h2>
+          <p class="mt-2 text-slate-300">Sign in with Google to create or join your realm.</p>
+          <button id="googleSignIn" class="btn-main mt-6 w-full">Sign In With Google</button>
+        </section>
+      `;
+      document.getElementById("googleSignIn").addEventListener("click", signInGoogle);
+    }
+
+    function renderHome() {
+      const profile = appState.profile || {};
+      const avatar = profile.photoURL ? `<img src="${profile.photoURL}" class="h-12 w-12 rounded-full border border-amber-400/40 object-cover" alt="avatar">` : `<div class="flex h-12 w-12 items-center justify-center rounded-full border border-amber-400/40 bg-slate-800">🛡️</div>`;
+      const roomCards = appState.availableRooms.length ? appState.availableRooms.map((room) => {
+        const players = Object.keys(room.players || {}).length;
+        return `
+          <button data-room-id="${room.id}" class="join-room-btn w-full rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-3 text-left">
+            <p class="text-sm font-bold text-amber-200">Code ${room.code}</p>
+            <p class="text-xs text-slate-300">${players}/10 players on this network</p>
+          </button>
+        `;
+      }).join("") : `<p class="text-sm text-slate-400">No open local-network rooms found yet.</p>`;
+
+      el.screenRoot.innerHTML = `
+        <section class="aura rounded-2xl border border-slate-700 bg-slate-900/70 p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              ${avatar}
+              <div>
+                <p class="text-sm text-slate-400">Signed in</p>
+                <p class="font-bold">${profile.nickname || "Knight"}</p>
+                <p class="text-xs text-slate-400">${appState.user.email}</p>
+              </div>
+            </div>
+            <button id="logoutBtn" class="rounded-lg border border-slate-600 px-3 py-2 text-xs">Sign Out</button>
+          </div>
+        </section>
+
+        <section class="grid gap-3">
+          <button id="createRoomBtn" class="btn-main w-full">Create Room</button>
+          <form id="joinByCodeForm" class="flex gap-2">
+            <input name="code" maxlength="6" placeholder="Room Code" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 uppercase" required>
+            <button class="rounded-xl border border-amber-500/50 px-4 font-bold text-amber-200">Join</button>
+          </form>
+          <button id="scanQrBtn" class="rounded-xl border border-slate-600 bg-slate-900/60 px-4 py-3">Scan Host QR Code</button>
+          <button id="profileBtn" class="rounded-xl border border-slate-600 bg-slate-900/60 px-4 py-3">Profile & History</button>
+          ${isAdmin() ? `<button id="adminBtn" class="rounded-xl border border-amber-500/50 bg-slate-900/60 px-4 py-3 text-amber-200">Admin Settings</button>` : ""}
+        </section>
+
+        <section class="aura rounded-2xl border border-slate-700 bg-slate-900/70 p-4">
+          <h3 class="text-sm font-bold uppercase tracking-[0.15em] text-amber-200">Available Rooms To Join</h3>
+          <div class="mt-3 grid gap-2">${roomCards}</div>
+        </section>
+      `;
+
+      document.getElementById("logoutBtn").addEventListener("click", signOut);
+      document.getElementById("createRoomBtn").addEventListener("click", createRoom);
+      document.getElementById("joinByCodeForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        joinRoomByCode(new FormData(e.target).get("code"));
+      });
+      document.getElementById("scanQrBtn").addEventListener("click", openQrScanner);
+      document.getElementById("profileBtn").addEventListener("click", () => renderProfile());
+      if (isAdmin()) document.getElementById("adminBtn").addEventListener("click", () => renderAdmin());
+      document.querySelectorAll(".join-room-btn").forEach((btn) => {
+        btn.addEventListener("click", () => joinRoomByCode((appState.availableRooms.find((r) => r.id === btn.dataset.roomId) || {}).code));
+      });
+    }
+
+    function renderProfile() {
+      const profile = appState.profile || {};
+      const history = Object.values(profile.history || {}).sort((a, b) => (b.at || 0) - (a.at || 0));
+      el.screenRoot.innerHTML = `
+        <button id="backHome" class="mb-2 rounded-lg border border-slate-600 px-3 py-2 text-xs">Back</button>
+        <section class="aura rounded-2xl border border-slate-700 bg-slate-900/70 p-4">
+          <h2 class="text-lg font-bold text-amber-200">Profile Directory</h2>
+          <form id="profileForm" class="mt-3 grid gap-3">
+            <label class="text-xs text-slate-400">Nickname
+              <input name="nickname" value="${profile.nickname || ""}" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3" required>
+            </label>
+            <label class="text-xs text-slate-400">Profile Photo URL
+              <input name="photoURL" value="${profile.photoURL || ""}" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3">
+            </label>
+            <button class="btn-main w-full">Save Profile</button>
+          </form>
+        </section>
+
+        <section class="aura mt-4 rounded-2xl border border-slate-700 bg-slate-900/70 p-4">
+          <h3 class="text-sm font-bold uppercase tracking-[0.15em] text-amber-200">Personal Game History</h3>
+          <div class="mt-3 space-y-2">
+            ${history.length ? history.map((h) => `<div class="rounded-lg border border-slate-700 p-2 text-sm"><p class="font-semibold">${h.result}</p><p class="text-xs text-slate-400">Role: ${h.role} | Room: ${h.roomCode}</p></div>`).join("") : `<p class="text-sm text-slate-400">No games yet.</p>`}
+          </div>
+        </section>
+      `;
+      document.getElementById("backHome").addEventListener("click", renderHome);
+      document.getElementById("profileForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        saveProfile(new FormData(e.target));
+      });
+    }
+
+    function renderAdmin() {
+      const cfg = appState.globalConfig || DEFAULT_GLOBAL_CONFIG;
+      const roleChecks = ["Merlin","Percival","Morgana","Mordred","Oberon","Assassin"].map((role) => `
+        <label class="flex items-center justify-between rounded-lg border border-slate-700 px-3 py-2 text-sm">
+          <span>${role}</span>
+          <input name="${role}" type="checkbox" ${cfg.rolesEnabled && cfg.rolesEnabled[role] ? "checked" : ""}>
+        </label>
+      `).join("");
+
+      el.screenRoot.innerHTML = `
+        <button id="backHome" class="mb-2 rounded-lg border border-slate-600 px-3 py-2 text-xs">Back</button>
+        <section class="aura rounded-2xl border border-amber-500/30 bg-slate-900/75 p-4">
+          <h2 class="text-lg font-bold text-amber-200">Admin Settings Panel</h2>
+          <form id="adminForm" class="mt-3 grid gap-3">
+            <label class="text-xs text-slate-400">Game Name
+              <input name="gameName" value="${cfg.gameName || "AVALON"}" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3" required>
+            </label>
+            <label class="text-xs text-slate-400">App Icon (emoji or short text)
+              <input name="appIcon" maxlength="3" value="${cfg.appIcon || "⚔️"}" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3">
+            </label>
+            <div class="grid gap-2">${roleChecks}</div>
+            <button class="btn-main w-full">Save Global Settings</button>
+          </form>
+        </section>
+      `;
+      document.getElementById("backHome").addEventListener("click", renderHome);
+      document.getElementById("adminForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        saveAdminConfig(new FormData(e.target));
+      });
+    }
+
+    function renderLobby(room) {
+      const players = Object.values(room.players || {});
+      const count = players.length;
+      const canStart = count >= 5 && count <= 10;
+      const roles = room.selectedRoles || {};
+      const roleSwitches = ["Merlin","Percival","Morgana","Mordred","Oberon","Assassin"].map((role) => {
+        const allowed = (appState.globalConfig.rolesEnabled || {})[role] !== false;
+        return `
+          <label class="flex items-center justify-between rounded-lg border ${allowed ? "border-slate-700" : "border-slate-800 opacity-40"} px-3 py-2 text-sm">
+            <span>${role}</span>
+            <input data-room-role="${role}" type="checkbox" ${roles[role] ? "checked" : ""} ${isHost() && allowed ? "" : "disabled"}>
+          </label>
+        `;
+      }).join("");
+
+      const joinUrl = `${location.origin}${location.pathname}?room=${room.code}`;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(joinUrl)}`;
+      el.screenRoot.innerHTML = `
+        <section class="aura rounded-2xl border border-amber-500/35 bg-slate-900/75 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Room Code</p>
+              <p class="text-2xl font-black text-amber-300">${room.code}</p>
+            </div>
+            <button id="leaveRoomBtn" class="rounded-lg border border-slate-600 px-3 py-2 text-xs">Leave</button>
+          </div>
+          <p class="mt-2 text-xs text-slate-400">Network cluster hash: ${appState.networkHash}</p>
+          <img src="${qrUrl}" alt="room qr" class="mt-3 w-40 rounded-lg border border-slate-700 bg-white p-1" />
+        </section>
+
+        <section class="aura rounded-2xl border border-slate-700 bg-slate-900/70 p-4">
+          <h3 class="text-sm font-bold uppercase tracking-[0.15em] text-amber-200">Lobby (${count}/10)</h3>
+          <div class="mt-3 grid gap-2">
+            ${players.map((p) => `<div class="flex items-center justify-between rounded-lg border border-slate-700 px-3 py-2"><span>${p.nickname || "Knight"}</span><span class="text-xs ${p.connected === false ? "text-rose-300" : "text-emerald-300"}">${p.connected === false ? "Offline" : "Online"}</span></div>`).join("")}
+          </div>
+        </section>
+
+        <section class="aura rounded-2xl border border-slate-700 bg-slate-900/70 p-4">
+          <h3 class="text-sm font-bold uppercase tracking-[0.15em] text-amber-200">Characters For This Match</h3>
+          <div class="mt-3 grid gap-2">${roleSwitches}</div>
+          ${isHost() ? `<button id="startGameBtn" class="btn-main mt-4 w-full ${canStart ? "" : "opacity-50"}" ${canStart ? "" : "disabled"}>Start Game</button>` : "<p class='mt-3 text-sm text-slate-400'>Waiting for host to begin.</p>"}
+          <p class="mt-2 text-xs text-slate-400">Official player ratios are enforced for 5-10 players.</p>
+        </section>
+      `;
+
+      document.getElementById("leaveRoomBtn").addEventListener("click", leaveRoom);
+      if (isHost() && canStart) document.getElementById("startGameBtn").addEventListener("click", startGame);
+      document.querySelectorAll("input[data-room-role]").forEach((input) => {
+        input.addEventListener("change", () => setRoomRoleToggle(input.dataset.roomRole, input.checked));
+      });
+    }
+
+    function renderQuestBoard(room) {
+      const results = room.questResults || [null, null, null, null, null];
+      const leader = room.players[currentLeaderUid(room)] || {};
+      return `
+        <section class="phase-pulse aura rounded-2xl border border-amber-500/35 bg-slate-900/75 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Phase</p>
+              <p class="text-lg font-black text-amber-300">${room.phase.replace("_", " ")}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs text-slate-400">Leader</p>
+              <p class="text-sm font-bold">${leader.nickname || "-"}</p>
+            </div>
+          </div>
+          <div class="mt-3 grid grid-cols-5 gap-2">
+            ${results.map((r, i) => `<div class="rounded-lg border border-slate-700 py-2 text-center text-xs ${r === "Success" ? "bg-emerald-900/40 text-emerald-300" : r === "Fail" ? "bg-rose-900/40 text-rose-300" : "bg-slate-900 text-slate-500"}">Q${i + 1}<br>${r || "-"}</div>`).join("")}
+          </div>
+          <p class="mt-3 text-sm">Good: <span class="font-bold text-emerald-300">${room.goodScore || 0}</span> | Evil: <span class="font-bold text-rose-300">${room.evilScore || 0}</span></p>
+        </section>
+      `;
+    }
+
+    function renderNightPhase(room) {
+      const myRole = roleOfMe();
+      const intel = getRoleIntel(myRole, room.roleAssignments || {}, room.players || {});
+      return `
+        ${renderQuestBoard(room)}
+        <section class="aura rounded-2xl border border-slate-700 bg-slate-900/75 p-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-bold text-amber-200">Role Peek</h3>
+            <button id="toggleRoleBtn" class="rounded-lg border border-slate-600 px-3 py-2 text-xs">${appState.showRoleCard ? "Hide" : "Show"}</button>
+          </div>
+          ${appState.showRoleCard ? `
+            <div class="flip mt-3 rounded-xl border border-amber-500/30 bg-gradient-to-b from-slate-800 to-slate-950 p-4">
+              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Your Role</p>
+              <p class="mt-1 text-2xl font-black text-amber-300">${myRole || "Unknown"}</p>
+              <p class="mt-2 text-sm text-slate-200">${ROLE_META[myRole] ? ROLE_META[myRole].desc : ""}</p>
+              <p class="mt-2 text-xs text-slate-300">${intel}</p>
+            </div>
+          ` : `<p class="mt-3 text-sm text-slate-400">Role card hidden.</p>`}
+          ${isHost() ? `<button id="hostContinueBtn" class="btn-main mt-4 w-full">Host Continue</button>` : `<p class="mt-3 text-sm text-slate-400">Waiting for host...</p>`}
+        </section>
+      `;
+    }
+
+    function renderDayPhase(room) {
+      const leaderUid = currentLeaderUid(room);
+      const iAmLeader = leaderUid === uid();
+      const size = missionSize(room);
+      const players = Object.values(room.players || {});
+      return `
+        ${renderQuestBoard(room)}
+        <section class="aura rounded-2xl border border-slate-700 bg-slate-900/75 p-4">
+          <p class="text-sm text-slate-300">Nominate <span class="font-bold text-amber-300">${size}</span> players for the next quest.</p>
+          ${iAmLeader ? `
+            <form id="nominationForm" class="mt-3 grid gap-2">
+              ${players.map((p) => `<label class="flex items-center justify-between rounded-lg border border-slate-700 px-3 py-2"><span>${p.nickname}</span><input type="checkbox" name="team" value="${p.uid}"></label>`).join("")}
+              <button class="btn-main mt-2 w-full">Submit Team</button>
+            </form>
+          ` : `<p class="mt-3 rounded-lg border border-slate-700 p-3 text-sm">Leader ${room.players[leaderUid] ? room.players[leaderUid].nickname : "-"} is nominating the team.</p>`}
+          ${isHost() ? `<button id="hostContinueBtn" class="mt-3 w-full rounded-xl border border-slate-600 py-3 text-sm">Host Continue</button>` : ""}
+        </section>
+      `;
+    }
+
+    function renderTeamVotePhase(room) {
+      const votes = room.votes && room.votes.teamApproval ? room.votes.teamApproval : {};
+      const players = Object.values(room.players || {});
+      const voted = !!votes[uid()];
+      return `
+        ${renderQuestBoard(room)}
+        <section class="aura rounded-2xl border border-slate-700 bg-slate-900/75 p-4">
+          <h3 class="text-lg font-bold text-amber-200">Team Approval Vote</h3>
+          <p class="mt-2 text-sm">Team: ${(room.teamNomination || []).map((id) => room.players[id] ? room.players[id].nickname : "?").join(", ")}</p>
+          ${voted ? `<p class="mt-3 text-sm text-emerald-300">Vote submitted.</p>` : `
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <button id="approveBtn" class="rounded-xl border border-emerald-500/50 bg-emerald-900/30 py-3 font-bold">Approve</button>
+              <button id="rejectBtn" class="rounded-xl border border-rose-500/50 bg-rose-900/30 py-3 font-bold">Reject</button>
+            </div>
+          `}
+          <div class="mt-3 rounded-lg border border-slate-700 p-3 text-xs">
+            <p class="font-bold uppercase tracking-[0.12em] text-slate-400">Vote Status Indicator</p>
+            <div class="mt-2 grid gap-1">
+              ${players.map((p) => `<div class="flex justify-between"><span>${p.nickname}</span><span class="${votes[p.uid] ? "text-emerald-300" : "text-slate-500"}">${votes[p.uid] ? "Voted" : "Waiting"}</span></div>`).join("")}
+            </div>
+          </div>
+          ${isHost() ? `<button id="hostContinueBtn" class="btn-main mt-4 w-full">Host Continue</button>` : ""}
+        </section>
+      `;
+    }
+
+    function renderQuestVotePhase(room) {
+      const team = room.teamNomination || [];
+      const onTeam = team.includes(uid());
+      const myRole = roleOfMe();
+      const votes = room.votes && room.votes.quest ? room.votes.quest : {};
+      return `
+        ${renderQuestBoard(room)}
+        <section class="aura rounded-2xl border border-slate-700 bg-slate-900/75 p-4">
+          <h3 class="text-lg font-bold text-amber-200">Quest Vote</h3>
+          <p class="mt-2 text-sm text-slate-300">Mission team: ${team.map((id) => room.players[id] ? room.players[id].nickname : "?").join(", ")}</p>
+          ${onTeam ? (votes[uid()] ? `<p class="mt-3 text-sm text-emerald-300">Vote submitted.</p>` : `
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <button id="successBtn" class="rounded-xl border border-emerald-500/50 bg-emerald-900/30 py-3 font-bold">Success</button>
+              <button id="failBtn" class="rounded-xl border border-rose-500/50 bg-rose-900/30 py-3 font-bold ${["Merlin","Percival","LoyalServant"].includes(myRole) ? "opacity-40" : ""}" ${["Merlin","Percival","LoyalServant"].includes(myRole) ? "disabled" : ""}>Fail</button>
+            </div>
+          `) : `<p class="mt-3 rounded-lg border border-slate-700 p-3 text-sm text-slate-400">You are not on this mission.</p>`}
+          <div class="mt-3 rounded-lg border border-slate-700 p-3 text-xs">
+            <p class="font-bold uppercase tracking-[0.12em] text-slate-400">Vote Status Indicator</p>
+            <div class="mt-2 grid gap-1">
+              ${team.map((pid) => `<div class="flex justify-between"><span>${room.players[pid] ? room.players[pid].nickname : "?"}</span><span class="${votes[pid] ? "text-emerald-300" : "text-slate-500"}">${votes[pid] ? "Voted" : "Waiting"}</span></div>`).join("")}
+            </div>
+          </div>
+          ${isHost() ? `<button id="hostContinueBtn" class="btn-main mt-4 w-full">Host Continue</button>` : ""}
+        </section>
+      `;
+    }
+
+    function renderAssassinationPhase(room) {
+      const entries = Object.entries(room.roleAssignments || {});
+      const assassinUid = entries.find(([, role]) => role === "Assassin");
+      const iAmAssassin = assassinUid && assassinUid[0] === uid();
+      const targets = Object.values(room.players || {});
+      return `
+        ${renderQuestBoard(room)}
+        <section class="aura rounded-2xl border border-rose-500/40 bg-slate-900/75 p-4">
+          <h3 class="text-lg font-bold text-rose-300">Assassination Phase</h3>
+          <p class="mt-2 text-sm text-slate-300">Good has 3 successful quests. Assassin must identify Merlin.</p>
+          ${iAmAssassin ? `
+            <form id="assassinForm" class="mt-3 grid gap-2">
+              ${targets.map((p) => `<label class="flex items-center justify-between rounded-lg border border-slate-700 px-3 py-2"><span>${p.nickname}</span><input type="radio" name="target" value="${p.uid}" required></label>`).join("")}
+              <button class="btn-main mt-2 w-full">Confirm Assassination</button>
+            </form>
+          ` : `<p class="mt-3 rounded-lg border border-slate-700 p-3 text-sm">Waiting for the Assassin to choose a target.</p>`}
+        </section>
+      `;
+    }
+
+    function renderEndPhase(room) {
+      const reveal = Object.entries(room.roleAssignments || {}).map(([pid, role]) => {
+        const p = room.players[pid];
+        return `<div class="flex justify-between rounded-lg border border-slate-700 px-3 py-2 text-sm"><span>${p ? p.nickname : pid}</span><span class="font-semibold text-amber-200">${role}</span></div>`;
+      }).join("");
+      return `
+        ${renderQuestBoard(room)}
+        <section class="aura rounded-2xl border border-amber-500/40 bg-slate-900/75 p-4">
+          <h3 class="text-2xl font-black text-amber-300">${room.winner || "Game Over"}</h3>
+          <p class="mt-2 text-sm text-slate-300">${room.winReason || "Session complete."}</p>
+          <div class="mt-3 grid gap-2">${reveal}</div>
+          ${isHost() ? `<button id="resetLobbyBtn" class="btn-main mt-4 w-full">Return To Lobby</button>` : `<p class="mt-4 text-sm text-slate-400">Waiting for host to reset.</p>`}
+        </section>
+      `;
+    }
+
+    function renderGame(room) {
+      let html = "";
+      if (room.phase === "night") html = renderNightPhase(room);
+      if (room.phase === "day") html = renderDayPhase(room);
+      if (room.phase === "team_vote") html = renderTeamVotePhase(room);
+      if (room.phase === "quest_vote") html = renderQuestVotePhase(room);
+      if (room.phase === "assassination") html = renderAssassinationPhase(room);
+      if (room.phase === "end") html = renderEndPhase(room);
+
+      el.screenRoot.innerHTML = html;
+
+      const hostBtn = document.getElementById("hostContinueBtn");
+      if (hostBtn) hostBtn.addEventListener("click", hostContinue);
+
+      const toggleRoleBtn = document.getElementById("toggleRoleBtn");
+      if (toggleRoleBtn) toggleRoleBtn.addEventListener("click", () => {
+        appState.showRoleCard = !appState.showRoleCard;
+        renderGame(room);
+      });
+
+      const nominationForm = document.getElementById("nominationForm");
+      if (nominationForm) {
+        nominationForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const picks = Array.from(nominationForm.querySelectorAll("input[name='team']:checked")).map((i) => i.value);
+          submitNomination(picks);
+        });
+      }
+
+      const approveBtn = document.getElementById("approveBtn");
+      const rejectBtn = document.getElementById("rejectBtn");
+      if (approveBtn) approveBtn.addEventListener("click", () => castTeamVote("approve"));
+      if (rejectBtn) rejectBtn.addEventListener("click", () => castTeamVote("reject"));
+
+      const successBtn = document.getElementById("successBtn");
+      const failBtn = document.getElementById("failBtn");
+      if (successBtn) successBtn.addEventListener("click", () => castQuestVote("success"));
+      if (failBtn) failBtn.addEventListener("click", () => castQuestVote("fail"));
+
+      const assassinForm = document.getElementById("assassinForm");
+      if (assassinForm) {
+        assassinForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const targetUid = new FormData(assassinForm).get("target");
+          if (targetUid) performAssassination(targetUid);
+        });
+      }
+
+      const resetLobbyBtn = document.getElementById("resetLobbyBtn");
+      if (resetLobbyBtn) resetLobbyBtn.addEventListener("click", adminResetLobby);
+    }
+
+    function renderOverlays() {
+      const guide = appState.guideOpen ? (() => {
+        const myRole = roleOfMe();
+        const roleText = myRole ? `${myRole}: ${ROLE_META[myRole].desc}` : "Join a game to see role-specific guidance.";
+        return `
+          <div class="pointer-events-auto fixed inset-0 bg-black/75 p-4">
+            <div class="mx-auto mt-8 w-full max-w-md rounded-2xl border border-amber-500/30 bg-slate-900 p-4">
+              <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-amber-200">Instructions</h3>
+                <button id="closeGuideBtn" class="rounded-lg border border-slate-600 px-2 py-1 text-xs">Close</button>
+              </div>
+              <p class="mt-3 text-sm text-slate-200">Phases: Night role reveal -> Day team nomination -> Team approval vote -> Quest vote -> Assassination (if Good reaches 3) -> End screen.</p>
+              <p class="mt-2 text-sm text-slate-200">Team vote needs majority approve. Five consecutive rejected teams gives Evil a win.</p>
+              <p class="mt-2 text-sm text-slate-200">Quest team members vote secretly. Any Fail fails the quest, except Quest 4 requires two Fails in 7+ player games.</p>
+              <div class="mt-3 rounded-lg border border-slate-700 p-3 text-sm">
+                <p class="text-xs uppercase tracking-[0.15em] text-slate-400">Your Role Context</p>
+                <p class="mt-1 text-amber-200">${roleText}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      })() : "";
+
+      const adminDialog = appState.adminDialogPlayer ? `
+        <div class="pointer-events-auto fixed inset-0 bg-black/70 p-4">
+          <div class="mx-auto mt-24 w-full max-w-md rounded-2xl border border-rose-500/40 bg-slate-900 p-4">
+            <h3 class="text-lg font-bold text-rose-300">Admin Disconnect Control</h3>
+            <p class="mt-2 text-sm text-slate-200">${appState.adminDialogPlayer} has disconnected.</p>
+            <div class="mt-4 grid gap-2">
+              <button id="adminTerminateBtn" class="rounded-xl border border-rose-500/40 bg-rose-900/30 py-3">Forcibly terminate session</button>
+              <button id="adminResetBtn" class="rounded-xl border border-amber-500/40 bg-amber-900/30 py-3">Kill room and start new lobby game</button>
+              <button id="adminDismissBtn" class="rounded-xl border border-slate-600 py-3">Dismiss</button>
+            </div>
+          </div>
+        </div>
+      ` : "";
+
+      const qrScanner = appState.qrScannerOpen ? `
+        <div class="pointer-events-auto fixed inset-0 bg-black/85 p-4">
+          <div class="mx-auto mt-8 w-full max-w-md rounded-2xl border border-slate-600 bg-slate-950 p-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-bold text-amber-200">Scan Room QR</h3>
+              <button id="closeQrBtn" class="rounded-lg border border-slate-600 px-2 py-1 text-xs">Close</button>
+            </div>
+            <video id="qrVideo" class="mt-3 aspect-square w-full rounded-xl border border-slate-700 bg-black" autoplay muted playsinline></video>
+            <p class="mt-2 text-xs text-slate-400">Point your camera at the host QR code.</p>
+          </div>
+        </div>
+      ` : "";
+
+      const toasts = `<div class="absolute bottom-4 left-0 right-0 mx-auto flex w-full max-w-md flex-col gap-2 px-4">
+        ${appState.toasts.map((t) => `<div class="rounded-lg border border-amber-500/40 bg-slate-900/95 px-3 py-2 text-sm">${t.message}</div>`).join("")}
+      </div>`;
+
+      el.overlayRoot.innerHTML = guide + adminDialog + qrScanner + toasts;
+      const closeGuideBtn = document.getElementById("closeGuideBtn");
+      if (closeGuideBtn) closeGuideBtn.addEventListener("click", closeGuide);
+      const adminTerminateBtn = document.getElementById("adminTerminateBtn");
+      if (adminTerminateBtn) adminTerminateBtn.addEventListener("click", adminTerminateSession);
+      const adminResetBtn = document.getElementById("adminResetBtn");
+      if (adminResetBtn) adminResetBtn.addEventListener("click", adminResetLobby);
+      const adminDismissBtn = document.getElementById("adminDismissBtn");
+      if (adminDismissBtn) adminDismissBtn.addEventListener("click", () => { appState.adminDialogPlayer = null; renderOverlays(); });
+      const closeQrBtn = document.getElementById("closeQrBtn");
+      if (closeQrBtn) closeQrBtn.addEventListener("click", closeQrScanner);
+    }
+
+    function render() {
+      if (checkDeviceLock()) return;
+      if (!appState.standalone) return;
+      if (!appState.firebaseReady) return renderFirebaseSetup();
+      if (!appState.user) return renderAuth();
+      if (!appState.room) return renderHome();
+      if (appState.room.phase === "lobby") return renderLobby(appState.room);
+      return renderGame(appState.room);
+    }
+
+    async function bootstrap() {
+      if ("serviceWorker" in navigator) {
+        try { await navigator.serviceWorker.register("./sw.js"); } catch (_err) {}
+      }
+
+      navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data && event.data.type === "NETWORK_CONTEXT") {
+          console.log("Network context", event.data.payload);
+        }
+      });
+
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        appState.deferredPrompt = e;
+        if (!appState.standalone) {
+          showInstallGate("Tap Install App to Device to continue.");
+        }
+      });
+
+      window.addEventListener("appinstalled", () => {
+        appState.deferredPrompt = null;
+        appState.standalone = isStandalone();
+        hideInstallGate();
+        render();
+      });
+
+      el.installBtn.addEventListener("click", async () => {
+        if (!appState.deferredPrompt) {
+          showInstallGate("Open browser menu and tap 'Add to Home Screen', then launch from your home screen.");
+          return;
+        }
+        appState.deferredPrompt.prompt();
+        await appState.deferredPrompt.userChoice;
+      });
+
+      el.openGuideBtn.addEventListener("click", openGuide);
+      window.addEventListener("resize", render);
+      window.addEventListener("orientationchange", render);
+
+      appState.standalone = isStandalone();
+      if (!appState.standalone) {
+        showInstallGate("Install required before sign-in.");
+        return render();
+      }
+      hideInstallGate();
+
+      const firebaseOk = await initFirebase();
+      if (!firebaseOk) return render();
+
+      setupAuthListener();
+      render();
+    }
+
+    bootstrap();
+  </script>
+</body>
+</html>
