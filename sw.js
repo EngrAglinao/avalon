@@ -1,329 +1,279 @@
-// ⚔️ AVALON PWA — Service Worker
-// Handles: install caching, offline fallback, fetch strategy, state routing
+/**
+ * ╔══════════════════════════════════════════════════════════════╗
+ * ║         THE RESISTANCE: AVALON — Service Worker              ║
+ * ║         PWA Offline Cache & Background Sync Engine           ║
+ * ╚══════════════════════════════════════════════════════════════╝
+ *
+ * Strategy: Cache-First for static assets, Network-First for
+ * Firebase API calls, Stale-While-Revalidate for Google Fonts.
+ */
 
-const CACHE_NAME = 'avalon-pwa-v1';
-const CACHE_VERSION = 1;
+'use strict';
 
-// Core files to cache on install
-const PRECACHE_URLS = [
+const CACHE_VERSION = 'avalon-v1.0.0';
+const STATIC_CACHE  = `${CACHE_VERSION}-static`;
+const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
+const FONT_CACHE    = `${CACHE_VERSION}-fonts`;
+
+/* ── Static assets to pre-cache on install ── */
+const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './sw.js'
+
+  /* ── Card Assets (./cards/) ── */
+  './cards/merlin.png',
+  './cards/percival.png',
+  './cards/good_generic.png',
+  './cards/good_generic_alt.png',
+  './cards/assassin.png',
+  './cards/morgana.png',
+  './cards/mordred.png',
+  './cards/oberon.png',
+  './cards/evil_generic.png',
+  './cards/evil_generic_alt.png',
+  './cards/quest_success.png',
+  './cards/quest_fail.png',
+
+  /* ── Icon Assets (./icons/) ── */
+  './icons/vote_approve.png',
+  './icons/vote_reject.png',
+  './icons/leader_token.png',
+  './icons/quest_marker_good.png',
+  './icons/quest_marker_evil.png',
+  './icons/vote_tracker_token.png',
+  './icons/team_shield.png',
+  './icons/lady_token.png',
+  './icons/app_icon.png',
 ];
 
-// External CDN resources to cache
-const CDN_CACHE_NAME = 'avalon-cdn-v1';
-const CDN_URLS = [
-  'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
-  'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js',
-  'https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js'
+/* ── External CDN URLs to cache dynamically ── */
+const CDN_PATTERNS = [
+  'cdn.jsdelivr.net',
+  'fonts.googleapis.com',
+  'fonts.gstatic.com',
+  'www.gstatic.com/firebasejs',
 ];
 
-// ─── INSTALL ────────────────────────────────────────────────────
-self.addEventListener('install', event => {
-  console.log('[SW] Installing Avalon Service Worker v' + CACHE_VERSION);
-  event.waitUntil(
-    Promise.all([
-      // Cache core app files
-      caches.open(CACHE_NAME).then(cache => {
-        console.log('[SW] Pre-caching core app files');
-        return cache.addAll(PRECACHE_URLS).catch(err => {
-          console.warn('[SW] Pre-cache partial failure (expected in dev):', err);
-        });
-      }),
-      // Cache CDN files with individual error handling
-      caches.open(CDN_CACHE_NAME).then(cache => {
-        console.log('[SW] Pre-caching CDN resources');
-        return Promise.allSettled(
-          CDN_URLS.map(url =>
-            fetch(url, { mode: 'cors' })
-              .then(response => {
-                if (response.ok) {
-                  return cache.put(url, response);
-                }
-              })
-              .catch(err => console.warn('[SW] CDN cache miss for:', url, err))
-          )
-        );
-      })
-    ]).then(() => {
-      console.log('[SW] Install complete — skipping waiting');
-      return self.skipWaiting();
-    })
-  );
-});
+/* ── Firebase/Firestore domains (Network-First, no cache) ── */
+const NETWORK_ONLY_PATTERNS = [
+  'firestore.googleapis.com',
+  'firebase.googleapis.com',
+  'identitytoolkit.googleapis.com',
+  'securetoken.googleapis.com',
+  'firebasestorage.googleapis.com',
+];
 
-// ─── ACTIVATE ───────────────────────────────────────────────────
-self.addEventListener('activate', event => {
-  console.log('[SW] Activating Avalon Service Worker v' + CACHE_VERSION);
+/* ══════════════════════════════════════════════════════════════
+   INSTALL — Pre-cache all static assets
+══════════════════════════════════════════════════════════════ */
+self.addEventListener('install', (event) => {
+  console.log(`[SW] Installing ${CACHE_VERSION}`);
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames
-          .filter(cacheName => {
-            // Delete old versions of our caches
-            return (
-              (cacheName.startsWith('avalon-pwa-') && cacheName !== CACHE_NAME) ||
-              (cacheName.startsWith('avalon-cdn-') && cacheName !== CDN_CACHE_NAME)
-            );
-          })
-          .map(cacheName => {
-            console.log('[SW] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          })
+    caches.open(STATIC_CACHE).then(async (cache) => {
+      // Cache assets individually so one failure doesn't break all
+      const results = await Promise.allSettled(
+        STATIC_ASSETS.map(url => cache.add(url).catch(e => {
+          console.warn(`[SW] Failed to cache: ${url}`, e.message);
+        }))
       );
-    }).then(() => {
-      console.log('[SW] Activation complete — claiming clients');
-      return self.clients.claim();
+      console.log(`[SW] Pre-cache complete. ${results.filter(r=>r.status==='fulfilled').length}/${STATIC_ASSETS.length} assets cached.`);
+    })
+  );
+  // Activate immediately without waiting for old SW to retire
+  self.skipWaiting();
+});
+
+/* ══════════════════════════════════════════════════════════════
+   ACTIVATE — Clean up old caches
+══════════════════════════════════════════════════════════════ */
+self.addEventListener('activate', (event) => {
+  console.log(`[SW] Activating ${CACHE_VERSION}`);
+  event.waitUntil(
+    caches.keys().then(async (cacheNames) => {
+      const deletions = cacheNames
+        .filter(name => name.startsWith('avalon-') && name !== STATIC_CACHE && name !== DYNAMIC_CACHE && name !== FONT_CACHE)
+        .map(name => {
+          console.log(`[SW] Deleting old cache: ${name}`);
+          return caches.delete(name);
+        });
+      await Promise.all(deletions);
+      // Take control of all open clients immediately
+      await self.clients.claim();
+      console.log('[SW] Active and controlling all clients.');
     })
   );
 });
 
-// ─── FETCH STRATEGY ─────────────────────────────────────────────
-self.addEventListener('fetch', event => {
+/* ══════════════════════════════════════════════════════════════
+   FETCH — Intercept all network requests
+══════════════════════════════════════════════════════════════ */
+self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
+  // Skip non-GET requests (POST, PUT, DELETE — Firebase writes)
   if (request.method !== 'GET') return;
 
-  // Skip Firebase API calls (always go to network)
-  if (
-    url.hostname.includes('firebaseio.com') ||
-    url.hostname.includes('firebase.googleapis.com') ||
-    url.hostname.includes('identitytoolkit.googleapis.com') ||
-    url.hostname.includes('securetoken.googleapis.com') ||
-    url.pathname.includes('/__/auth/')
-  ) {
-    return; // Let Firebase handle its own requests
-  }
+  // Skip chrome-extension and non-http(s) schemes
+  if (!request.url.startsWith('http')) return;
 
-  // Skip ipify / IP detection calls (always network)
-  if (url.hostname.includes('ipify.org') || url.hostname.includes('ipapi.co')) {
+  /* ── Strategy 1: Network-Only for Firebase APIs ── */
+  if (NETWORK_ONLY_PATTERNS.some(p => url.hostname.includes(p))) {
+    event.respondWith(fetch(request).catch(() => {
+      return new Response(
+        JSON.stringify({ error: 'offline', message: 'No network connection available.' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }));
     return;
   }
 
-  // CDN resources — Cache First strategy
-  if (
-    url.hostname.includes('gstatic.com') ||
-    url.hostname.includes('googleapis.com') ||
-    url.hostname.includes('cdn.jsdelivr.net') ||
-    url.hostname.includes('unpkg.com')
-  ) {
-    event.respondWith(cacheFirst(request, CDN_CACHE_NAME));
+  /* ── Strategy 2: Stale-While-Revalidate for Google Fonts & CDN ── */
+  if (CDN_PATTERNS.some(p => url.hostname.includes(p))) {
+    event.respondWith(staleWhileRevalidate(request, FONT_CACHE));
     return;
   }
 
-  // Core app files — Network First with Cache Fallback
+  /* ── Strategy 3: Cache-First for local static assets ── */
   if (url.origin === self.location.origin) {
-    event.respondWith(networkFirstWithFallback(request));
+    event.respondWith(cacheFirst(request, STATIC_CACHE));
     return;
+  }
+
+  /* ── Strategy 4: Network-First for everything else ── */
+  event.respondWith(networkFirst(request, DYNAMIC_CACHE));
+});
+
+/* ══════════════════════════════════════════════════════════════
+   CACHING STRATEGIES
+══════════════════════════════════════════════════════════════ */
+
+/**
+ * Cache-First: Serve from cache, fallback to network, then cache the response.
+ * Best for: Static assets that rarely change (images, fonts, app shell).
+ */
+async function cacheFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (e) {
+    // Return offline fallback for HTML pages
+    if (request.headers.get('Accept')?.includes('text/html')) {
+      const fallback = await cache.match('./index.html');
+      if (fallback) return fallback;
+    }
+    return new Response('Offline — Asset not available.', { status: 503 });
+  }
+}
+
+/**
+ * Network-First: Try network, fallback to cache.
+ * Best for: API calls and dynamic content that should be fresh when online.
+ */
+async function networkFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (e) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    return new Response('Offline — Content not cached.', { status: 503 });
+  }
+}
+
+/**
+ * Stale-While-Revalidate: Serve from cache immediately, update cache in background.
+ * Best for: CDN assets like fonts and libraries — fast loads + eventual freshness.
+ */
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+
+  const networkPromise = fetch(request).then(response => {
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  }).catch(() => null);
+
+  return cached || await networkPromise || new Response('Offline', { status: 503 });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BACKGROUND SYNC — Queue offline Firebase writes
+══════════════════════════════════════════════════════════════ */
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'avalon-sync-votes') {
+    console.log('[SW] Background sync: avalon-sync-votes');
+    // Votes are handled by Firebase SDK's offline persistence
+    // This hook exists for custom queued actions if needed
   }
 });
 
-// ─── CACHE STRATEGIES ───────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════════
+   PUSH NOTIFICATIONS (reserved for future use)
+══════════════════════════════════════════════════════════════ */
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() || {};
+  const title = data.title || 'The Resistance: Avalon';
+  const options = {
+    body: data.body || 'It\'s your turn!',
+    icon: './icons/app_icon.png',
+    badge: './icons/app_icon.png',
+    data: data.url || './',
+    vibrate: [200, 100, 200],
+    actions: [
+      { action: 'open', title: 'Open Game' },
+      { action: 'dismiss', title: 'Dismiss' }
+    ]
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
 
-/**
- * Cache First: Try cache, fall back to network, update cache
- */
-async function cacheFirst(request, cacheName = CACHE_NAME) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
-  if (cached) {
-    // Refresh cache in background
-    fetch(request).then(response => {
-      if (response && response.ok) {
-        cache.put(request, response.clone());
-      }
-    }).catch(() => {});
-    return cached;
-  }
-  try {
-    const response = await fetch(request);
-    if (response && response.ok) {
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch (err) {
-    return offlineFallback(request);
-  }
-}
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  if (event.action === 'dismiss') return;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      const existing = clients.find(c => c.url.includes('index.html'));
+      if (existing) { existing.focus(); }
+      else { self.clients.openWindow('./index.html'); }
+    })
+  );
+});
 
-/**
- * Network First: Try network, fall back to cache
- */
-async function networkFirstWithFallback(request) {
-  const cache = await caches.open(CACHE_NAME);
-  try {
-    const response = await fetch(request);
-    if (response && response.ok) {
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch (err) {
-    const cached = await cache.match(request);
-    if (cached) {
-      return cached;
-    }
-    // If requesting a navigation (HTML page), return the app shell
-    if (request.mode === 'navigate') {
-      const appShell = await cache.match('./index.html') ||
-                        await cache.match('/index.html');
-      if (appShell) return appShell;
-    }
-    return offlineFallback(request);
-  }
-}
-
-/**
- * Offline fallback response
- */
-function offlineFallback(request) {
-  if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
-    return new Response(getOfflinePage(), {
-      status: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' }
-    });
-  }
-  return new Response('Offline — resource unavailable', {
-    status: 503,
-    headers: { 'Content-Type': 'text/plain' }
-  });
-}
-
-/**
- * Inline offline fallback page
- */
-function getOfflinePage() {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Avalon — Offline</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: #1a0a2e;
-      color: #c9a84c;
-      font-family: 'Georgia', serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      text-align: center;
-      padding: 2rem;
-    }
-    .crest {
-      font-size: 5rem;
-      margin-bottom: 1.5rem;
-      animation: pulse 2s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(0.95); }
-    }
-    h1 { font-size: 2rem; margin-bottom: 0.75rem; letter-spacing: 0.2em; }
-    p { color: #9d7ecf; font-size: 1rem; line-height: 1.6; max-width: 300px; margin-bottom: 2rem; }
-    button {
-      background: linear-gradient(135deg, #c9a84c, #8b6914);
-      color: #1a0a2e;
-      border: none;
-      padding: 1rem 2rem;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: bold;
-      letter-spacing: 0.1em;
-      cursor: pointer;
-    }
-    .divider {
-      width: 200px;
-      height: 1px;
-      background: linear-gradient(to right, transparent, #c9a84c, transparent);
-      margin: 1.5rem auto;
-    }
-  </style>
-</head>
-<body>
-  <div class="crest">⚔️</div>
-  <h1>NO SIGNAL</h1>
-  <div class="divider"></div>
-  <p>The Round Table cannot be reached. You appear to be offline. Please check your connection and try again.</p>
-  <button onclick="window.location.reload()">Try Again</button>
-</body>
-</html>`;
-}
-
-// ─── MESSAGE HANDLING ────────────────────────────────────────────
-self.addEventListener('message', event => {
+/* ══════════════════════════════════════════════════════════════
+   MESSAGE HANDLER — Communication from main thread
+══════════════════════════════════════════════════════════════ */
+self.addEventListener('message', (event) => {
   const { type, payload } = event.data || {};
 
   switch (type) {
     case 'SKIP_WAITING':
       self.skipWaiting();
       break;
-
     case 'GET_VERSION':
-      event.ports[0]?.postMessage({ version: CACHE_VERSION, cacheName: CACHE_NAME });
+      event.source.postMessage({ type: 'VERSION', version: CACHE_VERSION });
       break;
-
     case 'CLEAR_CACHE':
-      caches.keys().then(names => {
-        Promise.all(names.map(name => caches.delete(name))).then(() => {
-          event.ports[0]?.postMessage({ success: true });
-        });
-      });
+      caches.keys().then(names => Promise.all(names.map(n => caches.delete(n))))
+        .then(() => event.source.postMessage({ type: 'CACHE_CLEARED' }));
       break;
-
-    case 'CACHE_URLS':
-      if (payload?.urls && Array.isArray(payload.urls)) {
-        caches.open(CACHE_NAME).then(cache => {
-          cache.addAll(payload.urls).catch(err => {
-            console.warn('[SW] Manual cache add failed:', err);
-          });
-        });
-      }
-      break;
-
     default:
-      break;
+      console.log('[SW] Unknown message type:', type);
   }
 });
 
-// ─── PUSH NOTIFICATIONS (future-ready) ──────────────────────────
-self.addEventListener('push', event => {
-  if (!event.data) return;
-  const data = event.data.json().catch(() => ({ title: 'Avalon', body: event.data.text() }));
-  event.waitUntil(
-    data.then(payload => {
-      return self.registration.showNotification(payload.title || 'Avalon', {
-        body: payload.body || '',
-        icon: './manifest.json',
-        badge: './manifest.json',
-        tag: 'avalon-notification',
-        renotify: true,
-        data: payload.data || {}
-      });
-    })
-  );
-});
-
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-      for (const client of clientList) {
-        if (client.url.includes('index.html') && 'focus' in client) {
-          return client.focus();
-        }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow('./index.html');
-      }
-    })
-  );
-});
-
-console.log('[SW] Avalon Service Worker loaded — v' + CACHE_VERSION);
+console.log(`[SW] ${CACHE_VERSION} script loaded.`);
