@@ -625,21 +625,26 @@
 </div>
 
 <!-- ════════════════════════════════════════════════
-     PWA INSTALL GATE (Live Mode Only)
+     PWA INSTALL GATE — always shown on first load.
+     Skipped automatically if already running as installed PWA.
      ════════════════════════════════════════════════ -->
-<div id="pwaGate" style="display:none;">
-  <div style="font-size:5rem; margin-bottom:20px;">⚔️</div>
+<div id="pwaGate" style="display:flex;">
+  <div style="font-size:5rem; margin-bottom:20px; filter:drop-shadow(0 0 24px rgba(212,175,55,0.5));">⚔️</div>
   <h1 class="font-cinzel shimmer-text" style="font-size:1.4rem; margin-bottom:8px;">THE RESISTANCE</h1>
-  <h2 class="font-cinzel" style="font-size:1rem; color:var(--gold); margin-bottom:24px;">AVALON</h2>
-  <p style="color:var(--parchment-dark); font-size:0.85rem; line-height:1.6; max-width:300px; margin-bottom:32px;">
-    For the full immersive experience, install Avalon to your home screen as a dedicated app.
+  <h2 class="font-cinzel" style="font-size:1rem; color:var(--gold); margin-bottom:8px;">AVALON</h2>
+  <div class="gold-sep" style="margin-bottom:20px;"></div>
+  <p style="color:var(--parchment-dark); font-size:0.82rem; line-height:1.6; text-align:center; max-width:280px; margin-bottom:24px;">
+    Install Avalon to your home screen for the best experience — works offline and feels native.
   </p>
-  <button id="pwaInstallBtn" class="btn-gold" style="width:100%; max-width:280px; margin-bottom:12px;">
-    📲 Install App to Device
-  </button>
-  <button id="pwaSkipBtn" class="btn-ghost" style="font-size:0.75rem; padding:8px 16px;">
-    Continue in Browser
-  </button>
+  <div style="display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:280px;">
+    <button id="pwaInstallBtn" class="btn-gold" style="width:100%;">
+      📲 Install App to Device
+    </button>
+    <button id="pwaSkipBtn" class="btn-ghost" style="font-size:0.75rem; padding:8px 16px; width:100%;">
+      Continue in Browser
+    </button>
+  </div>
+  <p id="pwaInstallHint" style="display:none; color:rgba(242,230,206,0.4); font-size:0.7rem; text-align:center; max-width:260px; margin-top:16px; line-height:1.6;"></p>
 </div>
 
 <!-- ════════════════════════════════════════════════
@@ -1461,46 +1466,69 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// ── PWA INSTALL GATE LOGIC ──────────────────────────────────────────
+
+// Capture beforeinstallprompt so we can trigger it on button tap
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   pwaInstallPrompt = e;
-  // Show inline install buttons — no blocking gate
-  const authBtn = document.getElementById('authInstallBtn');
-  const demoBtn = document.getElementById('demoInstallBtn');
-  if (authBtn) authBtn.style.display = 'flex';
-  if (demoBtn) demoBtn.style.display = 'block';
 });
 
-window.triggerPwaInstall = async function() {
-  if (!pwaInstallPrompt) {
-    showToast('📲 To install: use your browser menu → "Add to Home Screen"');
-    return;
+function hidePwaGateAndBoot() {
+  document.getElementById('pwaGate').style.display = 'none';
+  if (window._demoBootPending) {
+    window._demoBootPending = false;
+    activateDemoMode();
+  } else {
+    bootApp();
   }
-  pwaInstallPrompt.prompt();
-  const { outcome } = await pwaInstallPrompt.userChoice;
-  pwaInstallPrompt = null;
-  // Hide install buttons after prompt
-  const authBtn = document.getElementById('authInstallBtn');
-  const demoBtn = document.getElementById('demoInstallBtn');
-  if (authBtn) authBtn.style.display = 'none';
-  if (demoBtn) demoBtn.style.display = 'none';
-  if (outcome === 'accepted') showToast('✅ Avalon installed! Launch from your home screen.');
-};
+}
 
+// Install button — works whether prompt is available or not
 document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
+  if (pwaInstallPrompt) {
+    // Native install prompt available (Android Chrome / Edge)
+    pwaInstallPrompt.prompt();
+    const { outcome } = await pwaInstallPrompt.userChoice;
+    pwaInstallPrompt = null;
+    if (outcome === 'accepted') {
+      showToast('✅ Avalon installed! You can now launch from your home screen.');
+    }
+    hidePwaGateAndBoot();
+  } else {
+    // No native prompt — show manual instructions per platform
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const hint = document.getElementById('pwaInstallHint');
+    if (isIOS) {
+      hint.textContent = 'On iOS: tap the Share button (□↑) at the bottom of Safari, then choose "Add to Home Screen".';
+    } else {
+      hint.textContent = 'Use your browser menu (⋮) and choose "Add to Home Screen" or "Install App".';
+    }
+    hint.style.display = 'block';
+    // Don't proceed — let user read the instructions, Skip to continue
+  }
+});
+
+// Skip button
+document.getElementById('pwaSkipBtn').addEventListener('click', () => {
+  hidePwaGateAndBoot();
+});
+
+// In-game install button (auth screen + demo strip)
+window.triggerPwaInstall = async function() {
   if (pwaInstallPrompt) {
     pwaInstallPrompt.prompt();
     const { outcome } = await pwaInstallPrompt.userChoice;
     pwaInstallPrompt = null;
+    const authBtn = document.getElementById('authInstallBtn');
+    const demoBtn = document.getElementById('demoInstallBtn');
+    if (authBtn) authBtn.style.display = 'none';
+    if (demoBtn) demoBtn.style.display = 'none';
+    if (outcome === 'accepted') showToast('✅ Avalon installed!');
+  } else {
+    showToast('📲 Use browser menu → "Add to Home Screen"');
   }
-  document.getElementById('pwaGate').style.display = 'none';
-  bootApp();
-});
-
-document.getElementById('pwaSkipBtn').addEventListener('click', () => {
-  document.getElementById('pwaGate').style.display = 'none';
-  bootApp();
-});
+};
 
 // ═══════════════════════════════════════════════════════════════════
 // SECTION 6: FIREBASE INITIALIZATION
@@ -1568,24 +1596,32 @@ window.showFirebaseSetup = function() {
 // ═══════════════════════════════════════════════════════════════════
 
 function boot() {
-  // DEMO MODE takes absolute priority
-  if (DEMO_MODE_ACTIVE) {
-    document.body.classList.add('demo-active');
-    document.getElementById('demoStrip').style.display = 'flex';
-    activateDemoMode();
+  // If already running as installed PWA, skip the install gate entirely
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+  if (isStandalone) {
+    document.getElementById('pwaGate').style.display = 'none';
+    if (DEMO_MODE_ACTIVE) {
+      document.body.classList.add('demo-active');
+      document.getElementById('demoStrip').style.display = 'flex';
+      activateDemoMode();
+    } else {
+      const cfg = getFirebaseConfig();
+      if (cfg) initFirebase(cfg);
+      bootApp();
+    }
     return;
   }
 
-  // Try Firebase init
-  const cfg = getFirebaseConfig();
-  if (cfg) {
-    initFirebase(cfg);
-  }
-
-  // PWA gate handles itself via beforeinstallprompt
-  // If not fired, just boot normally
-  if (!pwaInstallPrompt) {
-    bootApp();
+  // Not installed yet — show gate. Set pending flags so Skip/Install know what to launch.
+  if (DEMO_MODE_ACTIVE) {
+    document.body.classList.add('demo-active');
+    document.getElementById('demoStrip').style.display = 'flex';
+    window._demoBootPending = true;
+  } else {
+    const cfg = getFirebaseConfig();
+    if (cfg) initFirebase(cfg);
+    // pwaGate buttons call hidePwaGateAndBoot → bootApp
   }
 }
 
