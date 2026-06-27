@@ -568,6 +568,43 @@
       background: linear-gradient(135deg, #8b1a1a, #5a0e0e);
       border-color: #ef4444; box-shadow: 0 0 14px rgba(239,68,68,0.5);
     }
+
+    /* ── NIGHT PHASE ── */
+    #nightPhaseScreen {
+      background: linear-gradient(160deg, #07080f 0%, #0d1020 100%);
+    }
+    .night-knowledge-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 0.8rem;
+    }
+    .night-knowledge-row.evil-row {
+      background: rgba(139,26,26,0.25); border: 1px solid rgba(239,68,68,0.3); color: #f87171;
+    }
+    .night-knowledge-row.merlin-row {
+      background: rgba(30,64,128,0.25); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd;
+    }
+    .night-knowledge-row.percival-row {
+      background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); color: #c4b5fd;
+    }
+
+    /* ── LADY OF THE LAKE ── */
+    #ladyModal .lady-target-row {
+      display: flex; align-items: center; gap: 10px; padding: 10px;
+      border-radius: 8px; cursor: pointer;
+      border: 2px solid rgba(212,175,55,0.15);
+      background: rgba(30,36,53,0.5); transition: all 0.2s;
+      margin-bottom: 6px;
+    }
+    #ladyModal .lady-target-row.selected {
+      border-color: #06b6d4; background: rgba(6,182,212,0.1);
+    }
+    #ladyRevealBanner {
+      display: none; padding: 14px; border-radius: 10px;
+      margin-bottom: 14px; animation: fadeIn 0.5s ease; text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -645,14 +682,15 @@
      DEMO CONTROL STRIP (z:99999 — always on top)
      ════════════════════════════════════════════════ -->
 <div id="demoStrip" style="display:none;">
-  <span>⚡ DEMO</span>
-  <select id="demoPlayerSelect" style="background:#1a1f2e; color:var(--parchment); border:1px solid var(--gold); border-radius:4px; padding:2px 6px; font-size:0.7rem; flex:1;">
-    <option value="0">👑 Arthur (You - Leader)</option>
-    <option value="1">🧙 Merlin</option>
-    <option value="2">⚔️ Percival</option>
-    <option value="3">🔴 Morgana</option>
-    <option value="4">💀 Assassin</option>
+  <span>👁️ DEMO</span>
+  <select id="demoPlayerSelect" onchange="demoObservePlayer(this.value)" style="background:#1a1f2e; color:var(--parchment); border:1px solid var(--gold); border-radius:4px; padding:2px 6px; font-size:0.7rem; flex:1;" title="Observe a bot's perspective (view only)">
+    <option value="0">👑 Arthur (You)</option>
+    <option value="1">🧙 Merlin [BOT]</option>
+    <option value="2">⚔️ Percival [BOT]</option>
+    <option value="3">🔮 Morgana [BOT]</option>
+    <option value="4">🗡️ Assassin [BOT]</option>
   </select>
+  <span id="demoObserveLabel" style="font-size:0.65rem; color:#92400e; white-space:nowrap;">👀 View Only</span>
   <button onclick="demoBotAll()" style="background:#11141a; color:#f59e0b; border:1px solid #d97706; border-radius:4px; padding:2px 8px; font-size:0.7rem; cursor:pointer; font-weight:700;">⚡ Bot All</button>
   <button onclick="demoNextPhase()" style="background:#11141a; color:#10b981; border:1px solid #059669; border-radius:4px; padding:2px 8px; font-size:0.7rem; cursor:pointer; font-weight:700;">→ Phase</button>
 </div>
@@ -750,11 +788,7 @@
           <button class="btn-evil" style="font-size:0.78rem;" onclick="adminTerminateRoom()">💀 Terminate Room</button>
         </div>
       </div>
-      <!-- Firebase Config Editor -->
-      <div style="background:rgba(30,36,53,0.6); border:1px solid rgba(212,175,55,0.2); border-radius:10px; padding:14px;">
-        <p class="font-cinzel-reg" style="color:var(--parchment); font-size:0.85rem; margin-bottom:8px;">🔥 Firebase Config</p>
-        <button class="btn-ghost" style="width:100%; font-size:0.78rem;" onclick="showFirebaseSetup()">Edit Firebase Credentials</button>
-      </div>
+      <!-- Firebase Config Editor removed — credentials are embedded in build -->
     </div>
   </div>
 </div>
@@ -961,6 +995,23 @@
     </div>
   </div>
 
+  <!-- ═══ SCREEN: NIGHT PHASE ═══ -->
+  <div id="nightPhaseScreen" class="screen" style="align-items:center; justify-content:center; padding:24px;">
+    <div style="width:100%; max-width:340px; display:flex; flex-direction:column; align-items:center; gap:14px;">
+      <div style="text-align:center;">
+        <div style="font-size:3rem; margin-bottom:6px; filter:drop-shadow(0 0 16px rgba(0,0,255,0.3));">🌙</div>
+        <h2 class="font-cinzel" style="color:var(--gold); font-size:0.95rem; letter-spacing:0.15em;">THE NIGHT PHASE</h2>
+        <p style="font-size:0.75rem; color:var(--parchment-dark); margin-top:6px;">Everyone closes their eyes. Special roles open theirs one at a time to learn secrets.</p>
+      </div>
+      <div style="width:100%; background:rgba(30,36,53,0.5); border:1px solid rgba(212,175,55,0.2); border-radius:12px; padding:16px;">
+        <p class="font-cinzel-reg" id="nightPhaseTitle" style="font-size:0.78rem; color:var(--gold); margin-bottom:10px; letter-spacing:0.08em;"></p>
+        <div id="nightPhaseContent"></div>
+      </div>
+      <p style="font-size:0.68rem; color:rgba(242,230,206,0.35); text-align:center; line-height:1.5;" id="nightPhaseNote"></p>
+      <button class="btn-gold" style="width:100%;" id="nightPhaseBtn" onclick="advanceNightPhase()">Continue →</button>
+    </div>
+  </div>
+
   <!-- ═══ SCREEN: MAIN GAME TABLE ═══ -->
   <div id="gameScreen" class="screen table-bg" style="position:relative; overflow:hidden;">
     <!-- Top Nav -->
@@ -971,6 +1022,7 @@
       </div>
       <div style="display:flex; gap:6px; align-items:center;">
         <div id="gameAdminGear" style="display:none; cursor:pointer;" onclick="openAdminPanel()"><span style="font-size:1.1rem;">⚙️</span></div>
+        <button onclick="openRoleModal()" style="background:none; border:none; color:var(--gold); font-size:1.1rem; cursor:pointer; padding:4px;" title="My Role">🃏</button>
         <button onclick="openSideNav()" style="background:none; border:none; color:rgba(242,230,206,0.6); font-size:0.7rem; cursor:pointer; font-family:'Cinzel',serif; padding:4px;">📋</button>
       </div>
     </div>
@@ -1080,7 +1132,7 @@
       Choose how you will act on this quest. Your decision is anonymous.
     </p>
     <div id="cautionWarning" class="caution-warning" style="display:none; margin-bottom:12px;">
-      ⚠️ Caution: You are registered as a Good Role. Think carefully before failing this quest.
+      ⚠️ You are a <strong>Good</strong> role. Failing this quest will only help Evil win — it does NOT help your team. Tap <strong>Confirm Fail</strong> again if you still wish to proceed.
     </div>
     <div id="myQuestVoteArea">
       <div style="display:flex; gap:10px;">
@@ -1126,6 +1178,71 @@
   </div>
 </div>
 
+<!-- ROLE INFO MODAL -->
+<div id="roleInfoModal" style="display:none;" class="overlay-full" onclick="if(event.target===this)closeModal('roleInfoModal')">
+  <div class="modal-card" style="text-align:center; max-width:340px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <h3 class="font-cinzel" style="color:var(--gold); font-size:0.9rem;">Your Role</h3>
+      <button onclick="closeModal('roleInfoModal')" style="background:none; border:none; color:var(--parchment); font-size:1.2rem; cursor:pointer; line-height:1;">✕</button>
+    </div>
+    <!-- Flip card -->
+    <div class="card-scene" style="width:140px; height:200px; margin:0 auto 16px;" id="roleInfoCardScene">
+      <div class="card-inner" id="roleInfoCardInner" style="width:140px; height:200px;">
+        <!-- Front: locked -->
+        <div class="card-face" style="width:140px; height:200px; border-radius:12px; background:linear-gradient(135deg,#1a1f2e,#11141a); border:2px solid var(--gold); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-direction:column; gap:8px;" onclick="flipRoleInfoCard()">
+          <div style="font-size:2rem;">🔒</div>
+          <p style="font-size:0.65rem; color:var(--gold); font-family:'Cinzel',serif;">TAP TO REVEAL</p>
+        </div>
+        <!-- Back: role -->
+        <div class="card-face card-back" style="width:140px; height:200px; border-radius:12px; overflow:hidden; border:2px solid var(--gold);" id="roleInfoCardBorder">
+          <div style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:14px; background:linear-gradient(160deg,#1a1f2e,#11141a); gap:6px;">
+            <div style="font-size:2.2rem;" id="roleInfoEmoji">⚔️</div>
+            <p class="font-cinzel" style="font-size:0.82rem; color:var(--gold);" id="roleInfoName">Knight</p>
+            <div class="gold-sep" style="margin:4px 0;"></div>
+            <p id="roleInfoTeam" style="font-size:0.6rem; border-radius:20px; padding:3px 10px;"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Role description -->
+    <div style="background:rgba(30,36,53,0.5); border:1px solid rgba(212,175,55,0.15); border-radius:10px; padding:14px; text-align:left; margin-bottom:12px;">
+      <p style="font-size:0.78rem; color:var(--parchment); font-family:'Cinzel',serif; margin-bottom:6px;" id="roleInfoRoleName"></p>
+      <p style="font-size:0.75rem; color:var(--parchment-dark); line-height:1.6;" id="roleInfoDesc"></p>
+    </div>
+    <div id="roleInfoExtra" style="display:none; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:10px; padding:12px; margin-bottom:12px; text-align:left;">
+      <p style="font-size:0.72rem; color:#fbbf24; line-height:1.5;" id="roleInfoExtraText"></p>
+    </div>
+    <button class="btn-ghost" style="width:100%; font-size:0.8rem;" onclick="closeModal('roleInfoModal')">✕ Close</button>
+  </div>
+</div>
+
+<!-- LADY OF THE LAKE MODAL -->
+<div id="ladyModal" style="display:none;" class="overlay-full" onclick="if(event.target===this){}">
+  <div class="modal-card" id="ladyModalCard">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <h3 class="font-cinzel" style="color:#06b6d4; font-size:0.9rem;">🌊 Lady of the Lake</h3>
+      <span style="font-size:0.7rem; color:rgba(242,230,206,0.4); font-family:'Cinzel',serif;">SECRET</span>
+    </div>
+    <!-- Holder view: pick a target -->
+    <div id="ladyPickView">
+      <p style="font-size:0.78rem; color:var(--parchment-dark); margin-bottom:12px;" id="ladyPickInstruction"></p>
+      <div id="ladyTargetList"></div>
+      <button class="btn-gold" style="width:100%; margin-top:10px; background:linear-gradient(135deg,#0891b2,#06b6d4); color:#fff;" onclick="submitLadyChoice()">🌊 Reveal Alignment</button>
+    </div>
+    <!-- Holder view: result -->
+    <div id="ladyRevealView" style="display:none;">
+      <div id="ladyRevealBanner"></div>
+      <p style="font-size:0.75rem; color:rgba(242,230,206,0.5); text-align:center; margin-bottom:14px;">Keep this secret! The Lady token now passes to them.</p>
+      <button class="btn-gold" style="width:100%;" onclick="closeLadyModal()">✅ Understood</button>
+    </div>
+    <!-- Non-holder view -->
+    <div id="ladyWaitView" style="display:none; text-align:center; padding:12px;">
+      <div style="font-size:2rem; margin-bottom:8px;">🌊</div>
+      <p style="font-size:0.8rem; color:var(--parchment-dark);" id="ladyWaitText"></p>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════════════════════════════════════════
      FIREBASE MODULE IMPORTS & SCRIPT
      ════════════════════════════════════════════════ -->
@@ -1134,7 +1251,7 @@
 // FIREBASE SDK IMPORTS (ESM CDN — v10+)
 // ═══════════════════════════════════════════════════════════════════
 import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection,
   deleteDoc, updateDoc, arrayUnion, serverTimestamp, query, where, getDocs }
@@ -1232,6 +1349,7 @@ const GAME_TEXT_CONFIG = {
     { key: "percival", label: "Percival & Morgana", requires: 5, emoji: "⚔️🔮" },
     { key: "mordred", label: "Mordred", requires: 7, emoji: "💀" },
     { key: "oberon", label: "Oberon", requires: 7, emoji: "👁️" },
+    { key: "lady", label: "Lady of the Lake", requires: 7, emoji: "🌊" },
   ],
 
   outcomes: {
@@ -1325,6 +1443,9 @@ let selectedNominees = [];
 let myTeamVote = null;
 let myQuestVote = null;
 let assassinTarget = null;
+// Lady of the Lake state
+let ladyHolderId = null;       // player id currently holding the Lady token
+let ladyUsedOn = [];           // player ids already investigated
 
 // ═══════════════════════════════════════════════════════════════════
 // SECTION 5: PWA & SERVICE WORKER REGISTRATION
@@ -1445,19 +1566,46 @@ function boot() {
   }
 }
 
-function bootApp() {
+function resolveFirebaseUser(user) {
+  if (!user) return;
+  setCurrentUser({
+    id: user.uid,
+    name: user.displayName || user.email,
+    email: user.email,
+    photoURL: user.photoURL,
+    isGuest: false,
+    isAdmin: user.email === 'buenavistaaglinaodanny@gmail.com',
+  });
+  showLobby();
+}
+
+async function bootApp() {
   if (firebaseReady && auth) {
+    // Check for pending redirect result first (mobile Google sign-in)
+    const googleBtn = document.querySelector('#authScreen button[onclick="signInWithGoogle()"]');
+    if (googleBtn) {
+      googleBtn.textContent = '⏳ Completing sign-in…';
+      googleBtn.disabled = true;
+    }
+    try {
+      const result = await getRedirectResult(auth);
+      if (result?.user) {
+        resolveFirebaseUser(result.user);
+        return;
+      }
+    } catch(e) {
+      console.warn('getRedirectResult error:', e);
+      // Don't block boot — fall through to onAuthStateChanged
+    }
+    // Restore button if no redirect result
+    if (googleBtn) {
+      googleBtn.innerHTML = \`<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Sign in with Google\`;
+      googleBtn.disabled = false;
+    }
+
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        setCurrentUser({
-          id: user.uid,
-          name: user.displayName || user.email,
-          email: user.email,
-          photoURL: user.photoURL,
-          isGuest: false,
-          isAdmin: user.email === 'buenavistaaglinaodanny@gmail.com',
-        });
-        showLobby();
+        resolveFirebaseUser(user);
       } else {
         showScreen('authScreen');
       }
@@ -1466,9 +1614,14 @@ function bootApp() {
     // Check local guest session
     const guestData = localStorage.getItem('avalon_guest');
     if (guestData) {
-      const g = JSON.parse(guestData);
-      setCurrentUser(g);
-      showLobby();
+      try {
+        const g = JSON.parse(guestData);
+        setCurrentUser(g);
+        showLobby();
+      } catch(e) {
+        localStorage.removeItem('avalon_guest');
+        showScreen('authScreen');
+      }
     } else {
       showScreen('authScreen');
     }
@@ -1526,9 +1679,29 @@ window.signInWithGoogle = async function() {
   }
   try {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    // On mobile or when popups are blocked, fall back to redirect automatically
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    if (isMobile) {
+      await signInWithRedirect(auth, provider);
+      // Page will redirect — execution stops here
+    } else {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch(popupErr) {
+        // popup-blocked or unauthorized domain → fall back to redirect
+        if (popupErr.code === 'auth/popup-blocked' ||
+            popupErr.code === 'auth/unauthorized-domain' ||
+            popupErr.code === 'auth/popup-closed-by-user') {
+          showToast('🔄 Popup blocked — redirecting to Google…');
+          await signInWithRedirect(auth, provider);
+        } else {
+          throw popupErr;
+        }
+      }
+    }
   } catch(e) {
-    showToast('❌ Google Sign-in failed: ' + (e.message || ''));
+    console.error('Google sign-in error:', e);
+    showToast('❌ Sign-in failed: ' + (e.code || e.message || 'Unknown error'));
   }
 };
 
@@ -1814,6 +1987,7 @@ window.startGame = async function() {
     seatIndex: i,
   }));
 
+  const ladyEnabled = currentRoom.expansions?.lady || false;
   const newState = {
     phase: 'roles',
     players: assignedPlayers,
@@ -1825,7 +1999,9 @@ window.startGame = async function() {
     teamVotes: {},
     questVotes: [],
     revealedCards: [],
-    ladyEnabled: currentRoom.expansions?.lady || false,
+    ladyEnabled,
+    ladyHolder: ladyEnabled ? assignedPlayers[assignedPlayers.length - 1].id : null,
+    ladyUsedOn: [],
     gameLog: [`🏰 Game started with ${count} players.`],
     winner: null,
   };
@@ -1843,26 +2019,22 @@ window.startGame = async function() {
 function buildRoleDeck(count, expansions) {
   const good = GAME_TEXT_CONFIG.goodTeamSizes[count];
   const evil = GAME_TEXT_CONFIG.evilTeamSizes[count];
-  const roles = [];
+  const goodRoles = ['merlin'];
+  const evilRoles = ['assassin'];
 
-  // Always: Merlin on good, Assassin on evil
-  roles.push('merlin');
-  roles.push('assassin');
+  // Expansions — good side (Percival, only if under good cap)
+  if (expansions.percival && goodRoles.length < good) goodRoles.push('percival');
+  // Expansions — evil side (each only if under evil cap)
+  if (expansions.percival && evilRoles.length < evil) evilRoles.push('morgana');
+  if (expansions.mordred && count >= 7 && evilRoles.length < evil) evilRoles.push('mordred');
+  if (expansions.oberon && count >= 7 && evilRoles.length < evil) evilRoles.push('oberon');
 
-  // Expansions
-  if (expansions.percival) { roles.push('percival'); roles.push('morgana'); }
-  if (expansions.mordred && count >= 7) roles.push('mordred');
-  if (expansions.oberon && count >= 7) roles.push('oberon');
+  // Fill generics to exact team sizes
+  while (evilRoles.length < evil) evilRoles.push('evil_generic');
+  while (goodRoles.length < good) goodRoles.push('good_generic');
 
-  // Fill remaining
-  const evilFilled = roles.filter(r => ['assassin','morgana','mordred','oberon','evil_generic'].includes(GAME_TEXT_CONFIG.roles[r]?.team === 'evil' ? r : '')).length;
-  let evilCount = roles.filter(r => GAME_TEXT_CONFIG.roles[r]?.team === 'evil').length;
-  let goodCount = roles.filter(r => GAME_TEXT_CONFIG.roles[r]?.team === 'good').length;
-
-  while (evilCount < evil) { roles.push('evil_generic'); evilCount++; }
-  while (goodCount < good) { roles.push('good_generic'); goodCount++; }
-
-  return roles.slice(0, count);
+  // goodRoles.length === good, evilRoles.length === evil, total === count exactly
+  return [...goodRoles, ...evilRoles];
 }
 
 function beginRoleReveal() {
@@ -1903,7 +2075,158 @@ window.flipRoleCard = function() {
 };
 
 window.acknowledgeRole = function() {
-  showGameTable();
+  beginNightPhase();
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// SECTION 11b: NIGHT PHASE
+// ═══════════════════════════════════════════════════════════════════
+
+/* Night phase sequence:
+   step 0 — Everyone closes eyes (intro screen)
+   step 1 — Evil team opens eyes (assassin, morgana, mordred, evil_generic — NOT oberon)
+   step 2 — Evil closes eyes. Merlin opens eyes (sees evil except mordred)
+   step 3 — Merlin closes. Percival opens eyes (sees merlin + morgana as two unknowns)
+   step 4 — Everyone wakes up → game begins
+*/
+let nightStep = 0;
+
+function buildNightKnowledgeList(playerIds, labelFn, rowClass) {
+  if (!playerIds.length) return '<p style="font-size:0.75rem;color:rgba(242,230,206,0.4);font-style:italic;">None in this game.</p>';
+  return playerIds.map(id => {
+    const p = gameState.players.find(pl => pl.id === id);
+    if (!p) return '';
+    const role = GAME_TEXT_CONFIG.roles[p.role];
+    return `<div class="night-knowledge-row ${rowClass}">
+      <span style="font-size:1rem;">${role?.emoji || '👤'}</span>
+      <span style="font-weight:600;">${p.name}</span>
+      <span style="font-size:0.7rem;opacity:0.7;margin-left:auto;">${labelFn(p, role)}</span>
+    </div>`;
+  }).join('');
+}
+
+function beginNightPhase() {
+  nightStep = 0;
+  showScreen('nightPhaseScreen');
+  renderNightStep();
+}
+
+function renderNightStep() {
+  const myPlayer = gameState.players.find(p => p.id === currentUser?.id);
+  const myRole = myPlayer ? GAME_TEXT_CONFIG.roles[myPlayer.role] : null;
+  const myRoleKey = myPlayer?.role || 'good_generic';
+
+  const titleEl = document.getElementById('nightPhaseTitle');
+  const contentEl = document.getElementById('nightPhaseContent');
+  const noteEl = document.getElementById('nightPhaseNote');
+  const btn = document.getElementById('nightPhaseBtn');
+
+  // Determine evil agents visible to each role
+  const evilIds = gameState.players
+    .filter(p => {
+      const r = GAME_TEXT_CONFIG.roles[p.role];
+      return r?.team === 'evil' && p.role !== 'oberon';
+    }).map(p => p.id);
+
+  const evilVisibleToMerlin = gameState.players
+    .filter(p => {
+      const r = GAME_TEXT_CONFIG.roles[p.role];
+      return r?.team === 'evil' && p.role !== 'mordred' && p.role !== 'oberon';
+    }).map(p => p.id);
+
+  const percivalTargets = gameState.players
+    .filter(p => p.role === 'merlin' || p.role === 'morgana')
+    .map(p => p.id);
+
+  switch (nightStep) {
+    case 0:
+      titleEl.textContent = '😴 EVERYONE CLOSE YOUR EYES';
+      contentEl.innerHTML = '<p style="font-size:0.8rem;color:var(--parchment-dark);line-height:1.6;text-align:center;">Pass the phone face-down or shield the screen. Each role will open their eyes one at a time to learn secret information.</p>';
+      noteEl.textContent = 'When ready, tap Continue to begin the night sequence.';
+      btn.textContent = 'Begin Night →';
+      break;
+
+    case 1: {
+      // Evil team — except Oberon — open eyes and see each other
+      const isMinionOfEvil = myRoleKey !== 'oberon' && myRole?.team === 'evil';
+      titleEl.textContent = '🔴 EVIL MINIONS — OPEN YOUR EYES';
+      if (isMinionOfEvil) {
+        const allies = evilIds.filter(id => id !== myPlayer?.id);
+        contentEl.innerHTML = `
+          <p style="font-size:0.75rem;color:rgba(242,230,206,0.5);margin-bottom:8px;">Your fellow Evil agents (not Oberon):</p>
+          ${allies.length
+            ? buildNightKnowledgeList(allies, (p, r) => r?.name || '', 'evil-row')
+            : '<p style="font-size:0.75rem;color:rgba(242,230,206,0.4);font-style:italic;">You are alone among the evil (or Oberon is hidden).</p>'
+          }`;
+        noteEl.textContent = 'Memorize your allies. Close your eyes before tapping Continue.';
+      } else {
+        contentEl.innerHTML = '<p style="font-size:0.8rem;color:rgba(242,230,206,0.35);text-align:center;font-style:italic;">👁️ Keep your eyes closed. This step is not for you.</p>';
+        noteEl.textContent = 'Wait for the evil players to acknowledge their allies.';
+      }
+      btn.textContent = 'Next →';
+      break;
+    }
+
+    case 2: {
+      // Merlin opens eyes — sees evil except mordred
+      const isMerlin = myRoleKey === 'merlin';
+      titleEl.textContent = '🧙 MERLIN — OPEN YOUR EYES';
+      if (isMerlin) {
+        contentEl.innerHTML = `
+          <p style="font-size:0.75rem;color:rgba(242,230,206,0.5);margin-bottom:8px;">These players serve Evil (Mordred is hidden from you):</p>
+          ${evilVisibleToMerlin.length
+            ? buildNightKnowledgeList(evilVisibleToMerlin, (p, r) => '🔴 Evil', 'merlin-row')
+            : '<p style="font-size:0.75rem;color:rgba(242,230,206,0.4);font-style:italic;">No visible evil agents (Mordred may be hidden).</p>'
+          }`;
+        noteEl.textContent = 'Remember this — but never reveal it directly! Close your eyes before tapping Continue.';
+      } else {
+        contentEl.innerHTML = '<p style="font-size:0.8rem;color:rgba(242,230,206,0.35);text-align:center;font-style:italic;">👁️ Keep your eyes closed. This step is not for you.</p>';
+        noteEl.textContent = 'Wait for Merlin to acknowledge.';
+      }
+      btn.textContent = 'Next →';
+      break;
+    }
+
+    case 3: {
+      // Percival opens eyes — sees Merlin + Morgana but doesn't know which is which
+      const isPercival = myRoleKey === 'percival';
+      const hasMorgana = gameState.players.some(p => p.role === 'morgana');
+      titleEl.textContent = '⚔️ PERCIVAL — OPEN YOUR EYES';
+      if (isPercival && percivalTargets.length > 0) {
+        const label = hasMorgana
+          ? 'One is Merlin, one is Morgana — you cannot tell which.'
+          : 'This is Merlin.';
+        contentEl.innerHTML = `
+          <p style="font-size:0.75rem;color:rgba(242,230,206,0.5);margin-bottom:8px;">${label}</p>
+          ${buildNightKnowledgeList(percivalTargets, () => '❓ Merlin or Morgana', 'percival-row')}`;
+        noteEl.textContent = 'Guard the true Merlin — but be careful not to reveal your knowledge! Close your eyes before tapping Continue.';
+      } else if (isPercival) {
+        contentEl.innerHTML = '<p style="font-size:0.75rem;color:rgba(242,230,206,0.4);font-style:italic;">Merlin is not in this game.</p>';
+        noteEl.textContent = '';
+      } else {
+        contentEl.innerHTML = '<p style="font-size:0.8rem;color:rgba(242,230,206,0.35);text-align:center;font-style:italic;">👁️ Keep your eyes closed. This step is not for you.</p>';
+        noteEl.textContent = 'Wait for Percival to acknowledge.';
+      }
+      btn.textContent = 'Next →';
+      break;
+    }
+
+    case 4:
+      titleEl.textContent = '☀️ EVERYONE WAKE UP';
+      contentEl.innerHTML = '<p style="font-size:0.8rem;color:var(--parchment-dark);line-height:1.6;text-align:center;">All players open their eyes. The quest for Camelot begins. Good luck — and trust no one.</p>';
+      noteEl.textContent = '';
+      btn.textContent = '⚔️ Begin the Quest';
+      break;
+  }
+}
+
+window.advanceNightPhase = function() {
+  if (nightStep < 4) {
+    nightStep++;
+    renderNightStep();
+  } else {
+    showGameTable();
+  }
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2255,27 +2578,37 @@ function enterQuestPhase() {
   }
 }
 
+// Track whether the good-player caution has been acknowledged this turn
+let failCautionShown = false;
+
 function openQuestVoteModal() {
-  const myRole = GAME_TEXT_CONFIG.roles[gameState.localRole];
+  failCautionShown = false;
   document.getElementById('cautionWarning').style.display = 'none';
   document.getElementById('myQuestVoteArea').style.display = 'flex';
   document.getElementById('questVoteWaiting').style.display = 'none';
-
-  // Show caution on hover of fail button for good players
-  if (myRole?.team === 'good') {
-    document.querySelector('#questVoteModal .btn-evil')?.addEventListener('mouseover', () => {
-      document.getElementById('cautionWarning').style.display = 'block';
-    }, { once: false });
-  }
+  // Reset fail button to default state
+  const failBtn = document.querySelector('#questVoteModal .btn-evil');
+  if (failBtn) { failBtn.textContent = '💀 Fail'; failBtn.style.animation = ''; }
   document.getElementById('questVoteModal').style.display = 'flex';
 }
 
 window.castQuestVote = async function(vote) {
   if (myQuestVote) return;
   const myRole = GAME_TEXT_CONFIG.roles[gameState.localRole];
-  if (myRole?.team === 'good' && vote === 'fail') {
+
+  // Good players must see the caution and tap Fail a SECOND time to confirm
+  if (myRole?.team === 'good' && vote === 'fail' && !failCautionShown) {
+    failCautionShown = true;
     document.getElementById('cautionWarning').style.display = 'block';
+    // Swap fail button label to make it clear it's a confirmation
+    const failBtn = document.querySelector('#questVoteModal .btn-evil');
+    if (failBtn) {
+      failBtn.textContent = '⚠️ Confirm Fail';
+      failBtn.style.animation = 'amberPulse 1s infinite';
+    }
+    return; // don't cast yet — wait for second tap
   }
+
   myQuestVote = vote;
   gameState.questVotes.push(vote);
   document.getElementById('myQuestVoteArea').style.display = 'none';
@@ -2429,7 +2762,6 @@ window.continueAfterReveal = function() {
   const fails = gameState.quests.filter(q => q === 'fail').length;
 
   if (successes >= 3) {
-    // Check if assassin active
     const hasAssassin = gameState.players.some(p => p.role === 'assassin');
     if (hasAssassin) {
       enterAssassinationPhase();
@@ -2439,12 +2771,20 @@ window.continueAfterReveal = function() {
   } else if (fails >= 3) {
     endGame('evil');
   } else {
-    // Next quest
+    // Lady of the Lake triggers after quests 2, 3, 4 resolve (currentQuest indices 1,2,3)
+    const completedIdx = gameState.currentQuest;
+    const shouldLady = gameState.ladyEnabled && [1,2,3].includes(completedIdx);
+
     gameState.currentQuest++;
     gameState.currentLeader = (gameState.currentLeader + 1) % gameState.players.length;
     gameState.nominatedTeam = [];
-    renderGameTable();
-    enterNominationPhase();
+
+    if (shouldLady) {
+      openLadyModal();
+    } else {
+      renderGameTable();
+      enterNominationPhase();
+    }
   }
 };
 
@@ -2776,6 +3116,109 @@ window.closeHistoryModal = function(e) {
 };
 
 // ═══════════════════════════════════════════════════════════════════
+// SECTION 16b: LADY OF THE LAKE
+// ═══════════════════════════════════════════════════════════════════
+
+function openLadyModal() {
+  // Sync local Lady state from gameState
+  ladyHolderId = gameState.ladyHolder;
+  ladyUsedOn = gameState.ladyUsedOn || [];
+
+  const isHolder = ladyHolderId === currentUser?.id;
+  const holder = gameState.players.find(p => p.id === ladyHolderId);
+
+  addLog(`🌊 Lady of the Lake — ${holder?.name} investigates a player.`);
+
+  document.getElementById('ladyPickView').style.display = isHolder ? 'block' : 'none';
+  document.getElementById('ladyRevealView').style.display = 'none';
+  document.getElementById('ladyWaitView').style.display = isHolder ? 'none' : 'block';
+
+  if (isHolder) {
+    document.getElementById('ladyPickInstruction').textContent =
+      `You hold the Lady of the Lake token. Choose one player to secretly learn their alignment. You cannot pick someone already investigated.`;
+    renderLadyTargets();
+  } else {
+    document.getElementById('ladyWaitText').textContent =
+      `${holder?.name} holds the Lady of the Lake and is secretly investigating another player…`;
+  }
+
+  document.getElementById('ladyModal').style.display = 'flex';
+}
+
+let ladySelectedTarget = null;
+
+function renderLadyTargets() {
+  const list = document.getElementById('ladyTargetList');
+  list.innerHTML = '';
+  ladySelectedTarget = null;
+  gameState.players.forEach(p => {
+    if (p.id === ladyHolderId) return;           // can't investigate yourself
+    if (ladyUsedOn.includes(p.id)) return;       // already investigated
+    const div = document.createElement('div');
+    div.className = 'lady-target-row';
+    div.id = `ladyTarget_${p.id}`;
+    div.innerHTML = `
+      <span style="font-size:1rem;">${getPlayerEmoji(p)}</span>
+      <span style="flex:1;font-size:0.85rem;color:var(--parchment);">${p.name}</span>
+      <span id="ladyCheck_${p.id}">⬜</span>`;
+    div.onclick = () => selectLadyTarget(p.id);
+    list.appendChild(div);
+  });
+}
+
+window.selectLadyTarget = function(id) {
+  // Deselect previous
+  if (ladySelectedTarget) {
+    const prev = document.getElementById(`ladyTarget_${ladySelectedTarget}`);
+    if (prev) prev.classList.remove('selected');
+    const prevCheck = document.getElementById(`ladyCheck_${ladySelectedTarget}`);
+    if (prevCheck) prevCheck.textContent = '⬜';
+  }
+  ladySelectedTarget = id;
+  const div = document.getElementById(`ladyTarget_${id}`);
+  if (div) div.classList.add('selected');
+  const check = document.getElementById(`ladyCheck_${id}`);
+  if (check) check.textContent = '🌊';
+};
+
+window.submitLadyChoice = function() {
+  if (!ladySelectedTarget) { showToast('⚠️ Select a player to investigate.'); return; }
+
+  const target = gameState.players.find(p => p.id === ladySelectedTarget);
+  const role = GAME_TEXT_CONFIG.roles[target?.role];
+  const isGood = role?.team === 'good';
+
+  // Show result to holder only
+  const banner = document.getElementById('ladyRevealBanner');
+  banner.style.display = 'block';
+  banner.style.background = isGood ? 'rgba(30,64,128,0.3)' : 'rgba(139,26,26,0.3)';
+  banner.style.border = `1px solid ${isGood ? '#3b82f6' : '#ef4444'}`;
+  banner.innerHTML = `
+    <p style="font-size:1.1rem;margin-bottom:6px;">${isGood ? '🔵' : '🔴'}</p>
+    <p class="font-cinzel" style="font-size:0.9rem;color:${isGood ? '#60a5fa' : '#f87171'};">
+      ${target?.name} is <strong>${isGood ? 'GOOD' : 'EVIL'}</strong>
+    </p>
+    <p style="font-size:0.72rem;color:rgba(242,230,206,0.5);margin-top:6px;">Keep this secret! The Lady token passes to ${target?.name}.</p>`;
+
+  // Update game state — Lady token passes to investigated player
+  gameState.ladyHolder = ladySelectedTarget;
+  gameState.ladyUsedOn = [...ladyUsedOn, ladySelectedTarget];
+  ladyHolderId = ladySelectedTarget;
+  ladyUsedOn = gameState.ladyUsedOn;
+
+  addLog(`🌊 Lady investigation complete. Token passed to ${target?.name}.`);
+
+  document.getElementById('ladyPickView').style.display = 'none';
+  document.getElementById('ladyRevealView').style.display = 'block';
+};
+
+window.closeLadyModal = function() {
+  document.getElementById('ladyModal').style.display = 'none';
+  renderGameTable();
+  enterNominationPhase();
+};
+
+// ═══════════════════════════════════════════════════════════════════
 // SECTION 17: ADMIN PANEL
 // ═══════════════════════════════════════════════════════════════════
 
@@ -2790,7 +3233,7 @@ window.closeAdminPanel = function() {
 
 window.adminToggleLady = function(checked) {
   gameState.ladyEnabled = checked;
-  showToast(`🌊 Lady of the Lake ${checked?'enabled':'disabled'}`);
+  showToast(`🌊 Lady of the Lake ${checked?'enabled (takes effect next game)':'disabled'}`);
 };
 
 window.adminUploadCard = function(input) {
@@ -2862,7 +3305,7 @@ window.adminTerminateRoom = async function() {
    ────────────────────────────────────────────────────────────────── */
 
 function activateDemoMode() {
-  // Inject fake user
+  // Inject fake user as p0 (Arthur) — the only player the user can act as
   setCurrentUser({
     id: 'p0', name: 'Arthur (Demo)', email: 'demo@avalon.local',
     isGuest: false, photoURL: null, isAdmin: false,
@@ -2876,7 +3319,7 @@ function activateDemoMode() {
   gameState.localRole = 'good_generic';
   gameState.phase = 'nomination';
   gameState.quests = [null,null,null,null,null];
-  gameState.gameLog = ['🎮 Demo mode activated — 5-player test state loaded.'];
+  gameState.gameLog = ['🎮 Demo mode — You are Arthur. Use the dropdown to observe bots (view only).'];
 
   showScreen('gameScreen');
   renderGameTable();
@@ -2884,19 +3327,64 @@ function activateDemoMode() {
   document.getElementById('historyBtn').style.display = 'flex';
 }
 
-window.demoBotAll = function() {
-  const phase = gameState.phase;
-  if (phase === 'nomination') {
-    const count = gameState.players.length;
-    const questSize = (GAME_TEXT_CONFIG.questRules[count]||[2,3,2,3,3])[gameState.currentQuest];
-    selectedNominees = gameState.players.slice(0, questSize).map(p=>p.id);
-    submitNomination();
-  } else if (phase === 'teamVote') {
-    castTeamVote('approve');
-  } else if (phase === 'quest') {
-    castQuestVote('success');
-  } else if (phase === 'reveal') {
-    continueAfterReveal();
+/* ── DEMO OBSERVE: swap perspective to any bot player (read-only) ── */
+let demoObservedPlayer = 'p0'; // currently observed player id
+
+window.demoObservePlayer = function(seatIdx) {
+  const player = gameState.players[parseInt(seatIdx)];
+  if (!player) return;
+
+  const isUser = player.id === 'p0';
+  demoObservedPlayer = player.id;
+
+  const label = document.getElementById('demoObserveLabel');
+  if (isUser) {
+    gameState.localRole = player.role;
+    if (label) label.textContent = '🎮 Playing';
+    showToast(`▶ Back to playing as ${player.name}`);
+  } else {
+    // Observe a bot — do NOT change currentUser.id (stay as p0 for action gating)
+    gameState.localRole = player.role;
+    if (label) label.textContent = `👀 Observing ${player.name}`;
+    const role = GAME_TEXT_CONFIG.roles[player.role];
+    showToast(`👀 Observing ${player.name} — ${role?.name} (${role?.team?.toUpperCase()})`);
+  }
+  // Re-render seats only — do NOT re-enter the current phase (would reset game state)
+  renderPlayerSeats();
+};
+
+window.demoBotAll = async function() {
+  // Always force currentUser.id to p0 for the duration of all async actions
+  const savedId = currentUser.id;
+  currentUser.id = 'p0';
+
+  try {
+    const phase = gameState.phase;
+    if (phase === 'nomination') {
+      const count = gameState.players.length;
+      const questSize = (GAME_TEXT_CONFIG.questRules[count]||[2,3,2,3,3])[gameState.currentQuest];
+      selectedNominees = gameState.players.slice(0, questSize).map(p=>p.id);
+      await submitNomination();
+    } else if (phase === 'teamVote') {
+      // Reset myTeamVote guard so bot-all can always vote even if already clicked
+      myTeamVote = null;
+      await castTeamVote('approve');
+    } else if (phase === 'quest') {
+      // simulateOtherQuestVotes() already fires automatically from enterQuestPhase.
+      // If Arthur is on the team, just cast his vote; the polling interval resolves reveal.
+      // If Arthur is NOT on the team, the interval auto-resolves — do nothing extra.
+      const isOnQuest = gameState.nominatedTeam.includes('p0');
+      if (isOnQuest) {
+        myQuestVote = null; // reset guard so vote goes through
+        await castQuestVote('success');
+      } else {
+        showToast('⚡ Quest in progress — bots are voting…');
+      }
+    } else if (phase === 'reveal') {
+      continueAfterReveal();
+    }
+  } finally {
+    currentUser.id = savedId;
   }
 };
 
@@ -2905,6 +3393,54 @@ window.demoNextPhase = function() {
 };
 
 /* ────────────────────────────────────────────────── END DEMO BLOCK */
+
+// ═══════════════════════════════════════════════════════════════════
+// SECTION 18b: ROLE INFO MODAL (In-Game)
+// ═══════════════════════════════════════════════════════════════════
+
+window.openRoleModal = function() {
+  const role = GAME_TEXT_CONFIG.roles[gameState.localRole || 'good_generic'];
+  if (!role) return;
+
+  // Reset card to unflipped state
+  document.getElementById('roleInfoCardInner').classList.remove('flipped');
+
+  // Populate back-face content
+  document.getElementById('roleInfoEmoji').textContent = role.emoji;
+  document.getElementById('roleInfoName').textContent = role.name;
+
+  const teamEl = document.getElementById('roleInfoTeam');
+  teamEl.textContent = role.team === 'good' ? '🔵 GOOD — ARTHUR\'S SIDE' : '🔴 EVIL — MORDRED\'S SIDE';
+  teamEl.style.cssText = `background:${role.team==='good'?'rgba(30,64,128,0.3)':'rgba(139,26,26,0.3)'};color:${role.team==='good'?'#60a5fa':'#f87171'};border:1px solid ${role.team==='good'?'#3b82f6':'#ef4444'};font-size:0.6rem;border-radius:20px;padding:3px 10px;`;
+
+  // Card border color
+  const border = document.getElementById('roleInfoCardBorder');
+  if (border) {
+    border.style.borderColor = role.team === 'good' ? '#3b82f6' : '#ef4444';
+    border.style.boxShadow = role.team === 'good'
+      ? '0 0 16px rgba(59,130,246,0.4)'
+      : '0 0 16px rgba(239,68,68,0.4)';
+  }
+
+  // Description panel
+  document.getElementById('roleInfoRoleName').textContent = `${role.emoji} ${role.name}`;
+  document.getElementById('roleInfoDesc').textContent = role.desc;
+
+  // Extra info
+  const extraEl = document.getElementById('roleInfoExtra');
+  if (role.extra) {
+    extraEl.style.display = 'block';
+    document.getElementById('roleInfoExtraText').textContent = role.extra;
+  } else {
+    extraEl.style.display = 'none';
+  }
+
+  document.getElementById('roleInfoModal').style.display = 'flex';
+};
+
+window.flipRoleInfoCard = function() {
+  document.getElementById('roleInfoCardInner').classList.add('flipped');
+};
 
 // ═══════════════════════════════════════════════════════════════════
 // SECTION 19: UTILITIES
@@ -2957,7 +3493,7 @@ window.addEventListener('resize', () => {
 // Escape key closes modals
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    ['nominationModal','teamVoteModal','questVoteModal','questRevealModal','assassinModal'].forEach(id => {
+    ['nominationModal','teamVoteModal','questVoteModal','questRevealModal','assassinModal','roleInfoModal','ladyModal'].forEach(id => {
       const el = document.getElementById(id);
       if (el && el.style.display === 'flex') el.style.display = 'none';
     });
