@@ -693,6 +693,7 @@
   <span id="demoObserveLabel" style="font-size:0.65rem; color:#92400e; white-space:nowrap;">👀 View Only</span>
   <button onclick="demoBotAll()" style="background:#11141a; color:#f59e0b; border:1px solid #d97706; border-radius:4px; padding:2px 8px; font-size:0.7rem; cursor:pointer; font-weight:700;">⚡ Bot All</button>
   <button onclick="demoNextPhase()" style="background:#11141a; color:#10b981; border:1px solid #059669; border-radius:4px; padding:2px 8px; font-size:0.7rem; cursor:pointer; font-weight:700;">→ Phase</button>
+  <button id="demoInstallBtn" onclick="triggerPwaInstall()" style="display:none; background:#11141a; color:#d4af37; border:1px solid #d4af37; border-radius:4px; padding:2px 8px; font-size:0.7rem; cursor:pointer; font-weight:700;">📲 Install</button>
 </div>
 
 <!-- ════════════════════════════════════════════════
@@ -821,8 +822,12 @@
       </div>
       <!-- Decorative Footer -->
       <p style="color:rgba(242,230,206,0.25); font-size:0.68rem; letter-spacing:0.1em; text-align:center;">
-        A SOCIAL DEDUCTION GAME OF LOYALTY & DECEIT
+        A SOCIAL DEDUCTION GAME OF LOYALTY &amp; DECEIT
       </p>
+      <!-- PWA Install Button — visible only when install prompt is available -->
+      <button id="authInstallBtn" onclick="triggerPwaInstall()" style="display:none; align-items:center; justify-content:center; gap:8px; background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.35); color:var(--gold); border-radius:8px; padding:10px 18px; font-size:0.75rem; font-family:'Cinzel',serif; cursor:pointer; width:100%; max-width:320px;">
+        📲 Install App to Home Screen
+      </button>
     </div>
   </div>
 
@@ -1459,10 +1464,28 @@ if ('serviceWorker' in navigator) {
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   pwaInstallPrompt = e;
-  if (!DEMO_MODE_ACTIVE) {
-    document.getElementById('pwaGate').style.display = 'flex';
-  }
+  // Show inline install buttons — no blocking gate
+  const authBtn = document.getElementById('authInstallBtn');
+  const demoBtn = document.getElementById('demoInstallBtn');
+  if (authBtn) authBtn.style.display = 'flex';
+  if (demoBtn) demoBtn.style.display = 'block';
 });
+
+window.triggerPwaInstall = async function() {
+  if (!pwaInstallPrompt) {
+    showToast('📲 To install: use your browser menu → "Add to Home Screen"');
+    return;
+  }
+  pwaInstallPrompt.prompt();
+  const { outcome } = await pwaInstallPrompt.userChoice;
+  pwaInstallPrompt = null;
+  // Hide install buttons after prompt
+  const authBtn = document.getElementById('authInstallBtn');
+  const demoBtn = document.getElementById('demoInstallBtn');
+  if (authBtn) authBtn.style.display = 'none';
+  if (demoBtn) demoBtn.style.display = 'none';
+  if (outcome === 'accepted') showToast('✅ Avalon installed! Launch from your home screen.');
+};
 
 document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
   if (pwaInstallPrompt) {
