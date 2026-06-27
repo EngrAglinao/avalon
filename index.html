@@ -625,26 +625,58 @@
 </div>
 
 <!-- ════════════════════════════════════════════════
-     PWA INSTALL GATE — always shown on first load.
-     Skipped automatically if already running as installed PWA.
+     PWA INSTALL GATE
+     Hard wall — app only works when installed.
+     Skipped automatically when running in standalone mode.
      ════════════════════════════════════════════════ -->
 <div id="pwaGate" style="display:flex;">
-  <div style="font-size:5rem; margin-bottom:20px; filter:drop-shadow(0 0 24px rgba(212,175,55,0.5));">⚔️</div>
-  <h1 class="font-cinzel shimmer-text" style="font-size:1.4rem; margin-bottom:8px;">THE RESISTANCE</h1>
-  <h2 class="font-cinzel" style="font-size:1rem; color:var(--gold); margin-bottom:8px;">AVALON</h2>
+  <div style="font-size:5rem; margin-bottom:16px; filter:drop-shadow(0 0 24px rgba(212,175,55,0.5));">⚔️</div>
+  <h1 class="font-cinzel shimmer-text" style="font-size:1.4rem; margin-bottom:6px;">THE RESISTANCE</h1>
+  <h2 class="font-cinzel" style="font-size:1rem; color:var(--gold); margin-bottom:16px;">AVALON</h2>
   <div class="gold-sep" style="margin-bottom:20px;"></div>
-  <p style="color:var(--parchment-dark); font-size:0.82rem; line-height:1.6; text-align:center; max-width:280px; margin-bottom:24px;">
-    Install Avalon to your home screen for the best experience — works offline and feels native.
-  </p>
-  <div style="display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:280px;">
-    <button id="pwaInstallBtn" class="btn-gold" style="width:100%;">
-      📲 Install App to Device
+
+  <!-- Default: Android Chrome / Edge — native prompt available -->
+  <div id="pwaAndroidView" style="display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:280px;">
+    <p style="color:var(--parchment-dark); font-size:0.82rem; line-height:1.6; text-align:center;">
+      This app must be installed to play.<br>Tap below to add it to your home screen.
+    </p>
+    <button id="pwaInstallBtn" class="btn-gold" style="width:100%; font-size:0.9rem;">
+      📲 Install Avalon
     </button>
-    <button id="pwaSkipBtn" class="btn-ghost" style="font-size:0.75rem; padding:8px 16px; width:100%;">
-      Continue in Browser
-    </button>
+    <p style="color:rgba(242,230,206,0.3); font-size:0.68rem; text-align:center; line-height:1.5;">
+      Requires Android Chrome or Edge
+    </p>
   </div>
-  <p id="pwaInstallHint" style="display:none; color:rgba(242,230,206,0.4); font-size:0.7rem; text-align:center; max-width:260px; margin-top:16px; line-height:1.6;"></p>
+
+  <!-- iOS Safari instructions -->
+  <div id="pwaIOSView" style="display:none; flex-direction:column; align-items:center; gap:14px; width:100%; max-width:290px;">
+    <p style="color:var(--parchment-dark); font-size:0.82rem; line-height:1.6; text-align:center;">
+      This app must be installed to play.<br>Follow these steps in <strong style="color:var(--gold);">Safari</strong>:
+    </p>
+    <div style="background:rgba(30,36,53,0.8); border:1px solid rgba(212,175,55,0.2); border-radius:12px; padding:16px; width:100%; display:flex; flex-direction:column; gap:12px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:32px; height:32px; background:rgba(212,175,55,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:var(--gold); flex-shrink:0;">1</div>
+        <p style="font-size:0.78rem; color:var(--parchment-dark); line-height:1.4;">Tap the <strong style="color:var(--parchment);">Share</strong> button <span style="font-size:1rem;">⎙</span> at the bottom of Safari</p>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:32px; height:32px; background:rgba(212,175,55,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:var(--gold); flex-shrink:0;">2</div>
+        <p style="font-size:0.78rem; color:var(--parchment-dark); line-height:1.4;">Scroll down and tap <strong style="color:var(--parchment);">"Add to Home Screen"</strong></p>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:32px; height:32px; background:rgba(212,175,55,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:var(--gold); flex-shrink:0;">3</div>
+        <p style="font-size:0.78rem; color:var(--parchment-dark); line-height:1.4;">Tap <strong style="color:var(--parchment);">"Add"</strong> — then open Avalon from your home screen</p>
+      </div>
+    </div>
+    <p style="color:rgba(242,230,206,0.3); font-size:0.68rem; text-align:center;">⚠️ Must be opened in Safari, not Chrome or Firefox</p>
+  </div>
+
+  <!-- Fallback for other browsers -->
+  <div id="pwaFallbackView" style="display:none; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:280px;">
+    <p style="color:var(--parchment-dark); font-size:0.82rem; line-height:1.6; text-align:center;">
+      This app must be installed to play.<br>Open this page in <strong style="color:var(--gold);">Chrome</strong> on Android or <strong style="color:var(--gold);">Safari</strong> on iOS, then install from there.
+    </p>
+    <p style="color:rgba(242,230,206,0.3); font-size:0.68rem; text-align:center; line-height:1.5; margin-top:4px;">Current browser does not support installation.</p>
+  </div>
 </div>
 
 <!-- ════════════════════════════════════════════════
@@ -1468,13 +1500,42 @@ if ('serviceWorker' in navigator) {
 
 // ── PWA INSTALL GATE LOGIC ──────────────────────────────────────────
 
-// Capture beforeinstallprompt so we can trigger it on button tap
+const _isIOS        = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const _isAndroid    = /Android/i.test(navigator.userAgent);
+const _isSafari     = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+const _isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                      || window.navigator.standalone === true;
+
+// Capture beforeinstallprompt (fires on Android Chrome / Edge when installable)
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   pwaInstallPrompt = e;
+  // Switch to Android install view now that we have the prompt
+  document.getElementById('pwaAndroidView').style.display  = 'flex';
+  document.getElementById('pwaIOSView').style.display      = 'none';
+  document.getElementById('pwaFallbackView').style.display = 'none';
 });
 
-function hidePwaGateAndBoot() {
+function _showPwaGateView() {
+  // Already installed — skip gate entirely
+  if (_isStandalone) { _hidePwaGateAndBoot(); return; }
+
+  if (_isIOS && _isSafari) {
+    // iOS Safari — show step-by-step instructions (no native prompt)
+    document.getElementById('pwaAndroidView').style.display  = 'none';
+    document.getElementById('pwaIOSView').style.display      = 'flex';
+    document.getElementById('pwaFallbackView').style.display = 'none';
+  } else if (!pwaInstallPrompt && !_isAndroid) {
+    // Unsupported browser (Firefox, desktop, etc.)
+    document.getElementById('pwaAndroidView').style.display  = 'none';
+    document.getElementById('pwaIOSView').style.display      = 'none';
+    document.getElementById('pwaFallbackView').style.display = 'flex';
+  }
+  // else: Android Chrome — pwaAndroidView is shown by default,
+  //       beforeinstallprompt will fire shortly and confirm the prompt
+}
+
+function _hidePwaGateAndBoot() {
   document.getElementById('pwaGate').style.display = 'none';
   if (window._demoBootPending) {
     window._demoBootPending = false;
@@ -1484,37 +1545,35 @@ function hidePwaGateAndBoot() {
   }
 }
 
-// Install button — works whether prompt is available or not
+// Install button (Android Chrome / Edge — native prompt)
 document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
   if (pwaInstallPrompt) {
-    // Native install prompt available (Android Chrome / Edge)
     pwaInstallPrompt.prompt();
     const { outcome } = await pwaInstallPrompt.userChoice;
     pwaInstallPrompt = null;
     if (outcome === 'accepted') {
-      showToast('✅ Avalon installed! You can now launch from your home screen.');
+      // Show brief success state then boot
+      const btn = document.getElementById('pwaInstallBtn');
+      btn.textContent = '✅ Installed! Launching…';
+      btn.disabled = true;
+      setTimeout(_hidePwaGateAndBoot, 1200);
     }
-    hidePwaGateAndBoot();
+    // If dismissed — stay on gate, user must install to proceed
   } else {
-    // No native prompt — show manual instructions per platform
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const hint = document.getElementById('pwaInstallHint');
-    if (isIOS) {
-      hint.textContent = 'On iOS: tap the Share button (□↑) at the bottom of Safari, then choose "Add to Home Screen".';
-    } else {
-      hint.textContent = 'Use your browser menu (⋮) and choose "Add to Home Screen" or "Install App".';
-    }
-    hint.style.display = 'block';
-    // Don't proceed — let user read the instructions, Skip to continue
+    // Prompt not ready yet — shouldn't normally happen since button
+    // only shows in pwaAndroidView which requires the prompt
+    const btn = document.getElementById('pwaInstallBtn');
+    btn.textContent = '⏳ Waiting for prompt…';
+    btn.disabled = true;
+    // Re-enable after 3s in case prompt fires
+    setTimeout(() => {
+      btn.textContent = '📲 Install Avalon';
+      btn.disabled = false;
+    }, 3000);
   }
 });
 
-// Skip button
-document.getElementById('pwaSkipBtn').addEventListener('click', () => {
-  hidePwaGateAndBoot();
-});
-
-// In-game install button (auth screen + demo strip)
+// In-game install buttons (auth screen + demo strip — secondary, post-install)
 window.triggerPwaInstall = async function() {
   if (pwaInstallPrompt) {
     pwaInstallPrompt.prompt();
@@ -1596,33 +1655,33 @@ window.showFirebaseSetup = function() {
 // ═══════════════════════════════════════════════════════════════════
 
 function boot() {
-  // If already running as installed PWA, skip the install gate entirely
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    || window.navigator.standalone === true;
-  if (isStandalone) {
+  // Init Firebase early (needed even before gate clears)
+  if (!DEMO_MODE_ACTIVE) {
+    const cfg = getFirebaseConfig();
+    if (cfg) initFirebase(cfg);
+  }
+
+  // If already installed (standalone), skip gate immediately
+  if (_isStandalone) {
     document.getElementById('pwaGate').style.display = 'none';
     if (DEMO_MODE_ACTIVE) {
       document.body.classList.add('demo-active');
       document.getElementById('demoStrip').style.display = 'flex';
       activateDemoMode();
     } else {
-      const cfg = getFirebaseConfig();
-      if (cfg) initFirebase(cfg);
       bootApp();
     }
     return;
   }
 
-  // Not installed yet — show gate. Set pending flags so Skip/Install know what to launch.
+  // Show install gate — hard wall, no skip
   if (DEMO_MODE_ACTIVE) {
     document.body.classList.add('demo-active');
     document.getElementById('demoStrip').style.display = 'flex';
     window._demoBootPending = true;
-  } else {
-    const cfg = getFirebaseConfig();
-    if (cfg) initFirebase(cfg);
-    // pwaGate buttons call hidePwaGateAndBoot → bootApp
   }
+  // Show correct platform view
+  _showPwaGateView();
 }
 
 function resolveFirebaseUser(user) {
