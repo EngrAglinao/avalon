@@ -1,14 +1,12 @@
 {
   "name": "The Resistance: Avalon",
   "short_name": "Avalon",
-  "description": "A mobile-first progressive web app for the social deduction game The Resistance: Avalon.",
+  "description": "The Resistance: Avalon — Mobile-first social deduction board game PWA",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#11141a",
-  "theme_color": "#11141a",
-  "scope": "./",
-  "lang": "en",
+  "theme_color": "#d4af37",
   "icons": [
     {
       "src": "./icons/app_icon.png",
@@ -23,7 +21,8 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [],
   "categories": ["games", "entertainment"],
+  "lang": "en-US",
+  "scope": "./",
   "prefer_related_applications": false
 }

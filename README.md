@@ -1,18 +1,18 @@
-# ⚔️ The Resistance: Avalon — PWA
+# ⚔️ The Resistance: Avalon — PWA Mobile Game Engine
 
-A mobile-first Progressive Web App for the social deduction board game **The Resistance: Avalon**. Built as a single-file engine with Firebase Firestore real-time sync, circular table seating, animated card reveals, and a role-based multiplayer game loop.
+> A fully immersive, Firebase-backed, mobile-first Progressive Web Application for the social deduction board game **The Resistance: Avalon**. Designed with a physical tabletop aesthetic, real-time multiplayer synchronization, and a strict portrait-mode mobile interface.
 
 ---
 
 ## 📁 Project File Matrix
 
 ```
-avalon/
-├── index.html        ← Single-file app engine (HTML + CSS + JS + Firebase hooks)
-├── manifest.json     ← PWA configuration for mobile OS installation
-├── sw.js             ← Service Worker: offline caching & background sync
-├── README.md         ← This file
-├── cards/            ← 12 character & decision card images (PNG)
+avalon-pwa/
+├── index.html          # Single-file game engine (HTML + CSS + JS)
+├── manifest.json       # PWA manifest for mobile OS installation
+├── sw.js               # Service Worker for offline caching
+├── README.md           # This documentation file
+├── cards/              # 12 Character & Decision card images
 │   ├── merlin.png
 │   ├── percival.png
 │   ├── good_generic.png
@@ -25,7 +25,7 @@ avalon/
 │   ├── evil_generic_alt.png
 │   ├── quest_success.png
 │   └── quest_fail.png
-└── icons/            ← 9 board marker, token, and badge images (PNG)
+└── icons/              # 9 Board tokens, markers & badges
     ├── vote_approve.png
     ├── vote_reject.png
     ├── leader_token.png
@@ -37,127 +37,73 @@ avalon/
     └── app_icon.png
 ```
 
-> **Strict workspace rule:** No additional files may be added outside this matrix. All logic, styling, and PWA hooks are compiled inside `index.html`.
-
 ---
 
-## 🚀 Quick Start
+## ⚙️ Firebase Configuration
 
-### Demo Mode (No Firebase required)
-1. Open `index.html` in any mobile browser (or desktop Chrome DevTools mobile view).
-2. The `DEMO_MODE_ACTIVE = true` flag (top of the `<script>` block) auto-populates a 5-player game state.
-3. Use the red **⚡ DEMO** strip at the top to switch player perspectives and advance phases.
+Open `index.html` and locate the clearly commented `FIREBASE CONFIG BLOCK` near the bottom of the `<script>` section. Paste your Firebase project credentials there:
 
-### Live Mode (Firebase required)
-1. Set `const DEMO_MODE_ACTIVE = false;` in `index.html`.
-2. Deploy to GitHub Pages (see deployment section below).
-3. On first launch, the app shows the Firebase Setup screen — enter your credentials.
-4. Credentials are stored in `localStorage` on each device.
-
----
-
-## 🔥 Firebase Configuration
-
-### Required Firebase Services
-- **Firestore Database** — real-time room, player, vote, and quest card sync
-- **Authentication** — Google OAuth for admin access
-
-### Firestore Data Structure
-```
-rooms/
-  {roomId}/
-    code: "ABCD1"          // 5-char room code
-    hostId: "uid"
-    players: [...]          // array of player objects
-    phase: "nomination"     // current game phase
-    roles: { uid: "merlin" }
-    nominatedIds: [...]
-    currentLeaderIndex: 0
-    questIndex: 0
-    questResults: []
-    voteTrack: 0
-    createdAt: timestamp
-    votes/
-      {uid}/
-        vote: "approve"|"reject"
-    questCards/
-      {uid}/
-        card: "success"|"fail"
-
-assets/
-  {cardSlot}/
-    base64: "data:image/png;base64,..."
-    updatedAt: timestamp
+```javascript
+// ── FIREBASE CONFIGURATION BLOCK ──────────────────────────────
+// Paste your Firebase project config here:
+const FIREBASE_CONFIG = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  databaseURL:       "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
 ```
 
-### Firestore Security Rules (Recommended)
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /rooms/{roomId} {
-      allow read, write: if request.auth != null;
-      match /votes/{uid} {
-        allow read, write: if request.auth.uid == uid;
+### Firebase Services Required
+1. **Authentication** — Enable: Email/Password, Google Sign-In
+2. **Realtime Database** — Create default database (us-central1 recommended)
+3. **Storage** — Enable for card asset uploads via Admin Panel
+
+### Realtime Database Security Rules (Development)
+```json
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "rooms": {
+      "$roomId": {
+        ".read": true,
+        ".write": "auth != null"
       }
-      match /questCards/{uid} {
-        allow read: if false; // leader reveals only
-        allow write: if request.auth.uid == uid;
-      }
-    }
-    match /assets/{assetId} {
-      allow read: if true;
-      allow write: if request.auth.token.email == 'buenavistaaglinaodanny@gmail.com';
     }
   }
 }
 ```
 
-### Admin Access
-Sign in with `buenavistaaglinaodanny@gmail.com` to unlock:
-- ⚙️ Admin gear FAB (in-game bottom right, above history button)
-- Live match controls: Re-open voting, Force phase, Drop to Lobby, Terminate Room
-- Lady of the Lake toggle
-- Card asset uploader (Base64 → Firebase)
-- Player connection log
-
----
-
-## 🎮 Gameplay Flow
-
-```
-Boot → [Firebase Setup] → Login (Guest / Google)
-  → Lobby (Room code, role config, wait for 5–10 players)
-    → Night Phase (role reveal modal, knowledge shown)
-      → Nomination (Leader taps players on circular table)
-        → Voting (all players cast blind Approve/Reject)
-          → Vote Results (revealed publicly)
-            ↳ Rejected: rotate leader, increment vote track (5 = Evil wins)
-            ↳ Approved:
-              → Quest Phase (team plays Success/Fail cards secretly)
-                → Quest Reveal (Leader taps to flip cards one by one)
-                  → [3 successes] → Assassin Phase → End
-                  → [3 failures] → Evil Wins → End
+### Realtime Database Security Rules (Production)
+```json
+{
+  "rules": {
+    "rooms": {
+      "$roomId": {
+        ".read": "data.child('players').child(auth.uid).exists() || data.child('host').val() === auth.uid",
+        ".write": "data.child('players').child(auth.uid).exists() || !data.exists()"
+      }
+    }
+  }
+}
 ```
 
 ---
 
-## 🛠️ Developer Testing — DEMO MODE
+## 🖼️ Card & Icon Assets
 
-The `#demo-panel` strip at the top of the screen is only visible when `DEMO_MODE_ACTIVE = true`.
+Place your card images in `./cards/` and icon images in `./icons/` using the **exact filenames** listed in the file matrix above. The application will automatically detect and render them. Recommended dimensions:
 
-| Control | Behaviour |
-|---|---|
-| Player dropdown | Switches your local player perspective (role, alignment, HUD) |
-| **⚡ Bot All** | Auto-fills all missing votes/quest cards for the current phase |
-| **→ Phase** | Advances to the next phase intelligently (nominates, votes, reveals) |
-
-Wrap all demo-only code in the clearly labeled comment boundaries:
-```js
-// === DEMO SANDBOX BOUNDARIES START ===
-...
-// === DEMO SANDBOX BOUNDARIES END ===
-```
+| Asset Type    | Dimensions  | Format |
+|---------------|-------------|--------|
+| Character Cards | 400×600px | PNG (transparent bg optional) |
+| Quest Cards    | 400×600px  | PNG |
+| Icon Tokens    | 192×192px  | PNG (transparent bg) |
+| App Icon       | 512×512px  | PNG (solid bg for PWA) |
 
 ---
 
@@ -166,158 +112,237 @@ Wrap all demo-only code in the clearly labeled comment boundaries:
 ### 1. Git Initialization
 
 ```bash
-# From the project root
+# Initialize repository in project root
 git init
-git add .
-git commit -m "Initial commit: Avalon PWA engine"
-```
 
-**`.gitignore` configuration:**
-```gitignore
-# System files
+# Create .gitignore
+cat > .gitignore << 'EOF'
+# OS & System Files
 .DS_Store
 Thumbs.db
+desktop.ini
 *.log
-.env
-.env.local
+*.tmp
 
-# IDE files
+# IDE & Editor Files
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
-# Note: track ./cards/ and ./icons/ asset directories
-# (do NOT ignore them — card art is part of the deployable package)
+# Node (if ever used for tooling)
+node_modules/
+npm-debug.log*
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+firebase-debug.log
+
+# Build artifacts
+dist/
+build/
+
+# Track card and icon assets (DO NOT ignore)
+# ./cards/ and ./icons/ are intentionally tracked
+EOF
+
+# Stage all allowed project files
+git add index.html manifest.json sw.js README.md
+git add cards/ icons/
+
+# Initial commit
+git commit -m "feat: initial Avalon PWA engine — single-file architecture"
 ```
 
 ### 2. GitHub Repository Synchronization
 
 ```bash
-# Link to a remote repository
-git remote add origin https://github.com/YOUR_USERNAME/avalon-pwa.git
-git branch -M main
-git push -u origin main
+# Create repository on GitHub (via GitHub CLI)
+gh repo create avalon-pwa --public --description "The Resistance: Avalon — Mobile PWA Game Engine"
 
-# Subsequent pushes
-git add .
-git commit -m "feat: describe your change"
-git push
+# OR link to an existing remote repository:
+git remote add origin https://github.com/YOUR_USERNAME/avalon-pwa.git
+
+# Verify remote connection
+git remote -v
+
+# Push initial commit to main branch
+git push -u origin main
 ```
 
-### 3. Multi-Branch Architecture
+### 3. Safe Single-File Branch Management
 
-| Branch | Purpose | `DEMO_MODE_ACTIVE` |
-|---|---|---|
-| `main` | Production — live Firebase, real gameplay | `false` |
-| `sandbox-staging` | Development & UI testing — no Firebase needed | `true` |
+This project uses a **two-branch architecture** for safe development and production isolation:
 
 ```bash
-# Create and switch to sandbox branch
+# ── PRODUCTION BRANCH: main ──────────────────────────────────────
+# Always contains DEMO_MODE_ACTIVE = false
+# Live Firebase credentials active
+# Never push untested code directly here
+
+# ── STAGING BRANCH: sandbox-staging ─────────────────────────────
+# Create the staging branch from main
 git checkout -b sandbox-staging
 
-# Set demo mode for this branch (edit index.html)
-# const DEMO_MODE_ACTIVE = true;
+# In index.html, set: const DEMO_MODE_ACTIVE = true;
+# (5-player bot simulation, no Firebase required)
 
 git add index.html
-git commit -m "chore: enable demo mode for sandbox branch"
+git commit -m "chore(sandbox): enable DEMO_MODE_ACTIVE for visual testing"
 git push origin sandbox-staging
+```
 
-# Merge tested changes back to main
+**Branch Workflow:**
+
+```bash
+# Development cycle:
+git checkout sandbox-staging        # Work in sandbox
+# ... make changes, test visuals, validate phases ...
+git add -A && git commit -m "feat: ..."
+
+# Promote to production:
 git checkout main
-git merge sandbox-staging
-# Remember to flip DEMO_MODE_ACTIVE = false before pushing main
+git merge sandbox-staging --no-ff -m "release: promote sandbox changes to production"
+
+# Before merging, always revert demo flag:
+# Set DEMO_MODE_ACTIVE = false in index.html
+git add index.html
+git commit --amend --no-edit
+
 git push origin main
 ```
 
-### 4. GitHub Pages Deployment (HTTPS CDN)
+### 4. Automated CDN & Static Hosting via GitHub Pages
 
-GitHub Pages serves the `main` branch root directory directly over HTTPS — no build step needed.
+```bash
+# Enable GitHub Pages from repository Settings → Pages
+# Source: Deploy from branch → main → / (root)
 
-**Setup:**
-1. Go to your repository → **Settings** → **Pages**
-2. Source: **Deploy from a branch**
-3. Branch: `main` / `/ (root)`
-4. Click **Save**
-
-GitHub will publish the app at:
-```
-https://YOUR_USERNAME.github.io/avalon-pwa/
+# OR use GitHub CLI:
+gh api repos/YOUR_USERNAME/avalon-pwa/pages \
+  --method POST \
+  -f source='{"branch":"main","path":"/"}'
 ```
 
-**PWA requirements for GitHub Pages:**
-- ✅ HTTPS is served automatically — required for Service Workers
-- ✅ `manifest.json` must be at the root — ✓
-- ✅ `sw.js` must be at the root scope — ✓
-- ✅ `start_url` in manifest uses `./index.html` — ✓
+**GitHub Actions Workflow** — Create `.github/workflows/deploy.yml`:
 
-**Automated deployment via GitHub Actions (optional):**
-
-Create `.github/workflows/deploy.yml`:
 ```yaml
-name: Deploy to GitHub Pages
+name: Deploy Avalon PWA to GitHub Pages
+
 on:
   push:
-    branches: [main]
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v4
-      - uses: actions/upload-pages-artifact@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate DEMO_MODE_ACTIVE is false
+        run: |
+          if grep -q "const DEMO_MODE_ACTIVE = true" index.html; then
+            echo "❌ ERROR: DEMO_MODE_ACTIVE is true. Set to false before deploying to production!"
+            exit 1
+          fi
+          echo "✅ DEMO_MODE_ACTIVE = false confirmed."
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
-      - uses: actions/deploy-pages@v4
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+```bash
+# After setup, your live game URL will be:
+# https://YOUR_USERNAME.github.io/avalon-pwa/
+
+# For custom domains, create a CNAME file:
+echo "avalon.yourdomain.com" > CNAME
+git add CNAME && git commit -m "chore: add custom domain CNAME"
+git push origin main
 ```
 
 ---
 
-## 🎨 Customization
+## 🛠️ Developer Testing (Demo Mode)
 
-### Text & Copy
-All user-facing strings are in `GAME_TEXT_CONFIG` at the top of the `<script>` block. Edit this object to localize or rebrand without touching any UI or logic code.
+To activate the 5-player bot sandbox without Firebase:
 
-### Theme Colors
-All colors are defined as CSS custom properties in `:root {}` at the top of the `<style>` block:
+1. Open `index.html`
+2. Locate: `const DEMO_MODE_ACTIVE = false;`
+3. Change to: `const DEMO_MODE_ACTIVE = true;`
+4. Open in a mobile browser or Chrome DevTools (portrait mode)
+5. The game will auto-populate 5 players and enter an active game state
 
-```css
---gold:       #d4af37;   /* Critical board elements */
---blue-good:  #2a5fa5;   /* Good faction */
---red-evil:   #8b1a1a;   /* Evil faction */
---parchment:  #f2e6ce;   /* Accent text */
-```
-
-### Card Assets
-Place PNG files (any resolution, recommended 300×420px for cards) in `./cards/` and `./icons/` using the exact filenames listed in the file matrix above. The engine resolves them by name with `onerror` fallbacks for missing images.
+**Reset to live mode:** Set back to `false` before committing to `main`.
 
 ---
 
-## 📱 PWA Notes
+## 👑 Admin Access
 
-- **Portrait-only lock:** A full-screen blockout panel covers desktop viewports (`min-width: 600px`).
-- **Install gate:** In live mode (`DEMO_MODE_ACTIVE = false`), the `beforeinstallprompt` event shows a non-dismissible install screen. Once installed, the gate is hidden permanently.
-- **Offline support:** The Service Worker caches the app shell and all local assets on install. Firebase calls bypass the cache and always go to the network.
-- **iOS (Safari):** The `beforeinstallprompt` event is not fired on iOS. Users must manually add to home screen via the Share menu.
+The Master Admin Panel is accessible to the authenticated Google user:
+`buenavistaaglinaodanny@gmail.com`
+
+Admin capabilities:
+- Toggle Lady of the Lake expansion
+- Upload & hot-swap card artwork (Base64 → Firebase Storage)
+- Force-advance game phases
+- Re-open quest voting
+- Drop all players to lobby
+- Terminate & delete active rooms
+- View live connection status of all players
 
 ---
 
-## 👥 Player Count Reference
+## 📱 PWA Installation
 
-| Players | Good | Evil | Quest sizes (R1–R5) |
-|---|---|---|---|
-| 5 | 3 | 2 | 2, 3, 2, 3, 3 |
-| 6 | 4 | 2 | 2, 3, 4, 3, 4 |
-| 7 | 4 | 3 | 2, 3, 3, 4*, 4 |
-| 8 | 5 | 3 | 3, 4, 4, 5*, 5 |
-| 9 | 6 | 3 | 3, 4, 4, 5*, 5 |
-| 10 | 6 | 4 | 3, 4, 4, 5*, 5 |
+The app enforces PWA installation on first load (live mode only). Users will see a non-dismissible install prompt. On iOS, they must use **Safari → Share → Add to Home Screen**.
 
-*Quest 4 requires **2 Fail cards** (not 1) to fail, for 7+ player games.
+After installation, the game runs in **standalone mode** (full-screen, no browser chrome) and works offline for previously loaded rooms.
+
+---
+
+## 🔧 Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Firebase not connecting | Check `FIREBASE_CONFIG` block in `index.html` |
+| Cards not showing | Verify exact filenames in `./cards/` directory |
+| Install prompt not showing | Must be served over HTTPS (GitHub Pages provides this) |
+| Service Worker not updating | Hard refresh: Ctrl+Shift+R or clear SW in DevTools |
+| Google Sign-In fails | Add your domain to Firebase Auth → Authorized Domains |
 
 ---
 
 ## 📜 License
 
-This app is a companion tool for the board game **The Resistance: Avalon** by Don Eskridge, published by Indie Boards & Cards. This software is an unofficial digital aid and is not affiliated with or endorsed by the publisher. All game rules and mechanics are the intellectual property of their respective owners.
+This application is built for personal/private use with the **The Resistance: Avalon** board game. All game mechanics, role names, and thematic elements are intellectual property of Indie Boards & Cards. This PWA is a companion tool, not a commercial product.
+
+---
+
+*Built with ❤️ using Firebase, Tailwind CSS, Vanilla JS, and Web Platform APIs.*
