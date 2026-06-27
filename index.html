@@ -814,9 +814,9 @@
         <button class="btn-gold" style="width:100%;" onclick="showGuestLogin()">
           🛡️ Play as Guest
         </button>
-        <button onclick="signInWithGoogle()" style="width:100%; background:white; color:#1a1f2e; font-family:'Cinzel',serif; font-weight:700; border:none; border-radius:8px; padding:12px 20px; font-size:0.85rem; letter-spacing:0.05em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
+        <button id="googleSignInBtn" onclick="signInWithGoogle()" style="width:100%; background:white; color:#1a1f2e; font-family:'Cinzel',serif; font-weight:700; border:none; border-radius:8px; padding:12px 20px; font-size:0.85rem; letter-spacing:0.05em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
           <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          Sign in with Google
+          <span id="googleSignInLabel">Sign in with Google</span>
         </button>
       </div>
       <!-- Decorative Footer -->
@@ -1246,16 +1246,16 @@
 <!-- ════════════════════════════════════════════════
      FIREBASE MODULE IMPORTS & SCRIPT
      ════════════════════════════════════════════════ -->
-<script type="module">
+<script>
 // ═══════════════════════════════════════════════════════════════════
-// FIREBASE SDK IMPORTS (ESM CDN — v10+)
+// FIREBASE SDK placeholders — assigned via dynamic import at boot
+// All game functions are defined synchronously so onclick= handlers
+// work immediately without waiting for network imports.
 // ═══════════════════════════════════════════════════════════════════
-import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
-  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection,
-  deleteDoc, updateDoc, arrayUnion, serverTimestamp, query, where, getDocs }
-  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+var initializeApp, getApps,
+    getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged,
+    getFirestore, doc, setDoc, getDoc, onSnapshot, collection,
+    deleteDoc, updateDoc, arrayUnion, serverTimestamp, query, where, getDocs;
 
 // ═══════════════════════════════════════════════════════════════════
 // ██████████████████████████████████████████████████████████████████
@@ -1581,26 +1581,19 @@ function resolveFirebaseUser(user) {
 
 async function bootApp() {
   if (firebaseReady && auth) {
-    // Check for pending redirect result first (mobile Google sign-in)
-    const googleBtn = document.querySelector('#authScreen button[onclick="signInWithGoogle()"]');
-    if (googleBtn) {
-      googleBtn.textContent = '⏳ Completing sign-in…';
-      googleBtn.disabled = true;
-    }
+    // Check for pending redirect result first (handles mobile Google sign-in return)
+    const googleBtn = document.getElementById('googleSignInBtn');
     try {
+      if (googleBtn) { const lbl = document.getElementById('googleSignInLabel'); if(lbl) lbl.textContent = '⏳ Completing sign-in…'; googleBtn.disabled = true; }
       const result = await getRedirectResult(auth);
-      if (result?.user) {
+      if (result && result.user) {
         resolveFirebaseUser(result.user);
         return;
       }
     } catch(e) {
-      console.warn('getRedirectResult error:', e);
-      // Don't block boot — fall through to onAuthStateChanged
-    }
-    // Restore button if no redirect result
-    if (googleBtn) {
-      googleBtn.innerHTML = \`<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Sign in with Google\`;
-      googleBtn.disabled = false;
+      console.warn('getRedirectResult error:', e.code || e.message);
+    } finally {
+      if (googleBtn) { googleBtn.disabled = false; const lbl = document.getElementById('googleSignInLabel'); if(lbl) lbl.textContent = 'Sign in with Google'; }
     }
 
     onAuthStateChanged(auth, (user) => {
@@ -1611,7 +1604,7 @@ async function bootApp() {
       }
     });
   } else {
-    // Check local guest session
+    // No Firebase — check for saved guest session
     const guestData = localStorage.getItem('avalon_guest');
     if (guestData) {
       try {
@@ -1668,31 +1661,38 @@ window.guestLogin = function() {
 };
 
 window.signInWithGoogle = async function() {
-  if (!firebaseReady) {
-    const cfg = getFirebaseConfig();
-    if (!cfg) {
-      showToast('🔥 Firebase not configured. Set up Firebase first.');
-      document.getElementById('firebaseSetupPanel').style.display = 'block';
-      return;
-    }
-    initFirebase(cfg);
-  }
+  const btn = document.getElementById('googleSignInBtn');
   try {
+    if (!firebaseReady || !auth) {
+      const cfg = getFirebaseConfig();
+      if (!cfg) {
+        showToast('🔥 Firebase not configured.');
+        document.getElementById('firebaseSetupPanel').style.display = 'block';
+        return;
+      }
+      const ok = initFirebase(cfg);
+      if (!ok || !auth) {
+        showToast('❌ Could not connect to Firebase. Check your config.');
+        return;
+      }
+    }
+
+    if (btn) { const lbl = document.getElementById('googleSignInLabel'); if(lbl) lbl.textContent = '⏳ Connecting to Google…'; btn.disabled = true; }
+
     const provider = new GoogleAuthProvider();
-    // On mobile or when popups are blocked, fall back to redirect automatically
     const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
     if (isMobile) {
+      // Redirect flow — page navigates away; bootApp handles the result on return
       await signInWithRedirect(auth, provider);
-      // Page will redirect — execution stops here
     } else {
       try {
         await signInWithPopup(auth, provider);
+        // onAuthStateChanged in bootApp handles the rest
       } catch(popupErr) {
-        // popup-blocked or unauthorized domain → fall back to redirect
-        if (popupErr.code === 'auth/popup-blocked' ||
-            popupErr.code === 'auth/unauthorized-domain' ||
-            popupErr.code === 'auth/popup-closed-by-user') {
-          showToast('🔄 Popup blocked — redirecting to Google…');
+        const fallbackCodes = ['auth/popup-blocked','auth/unauthorized-domain','auth/popup-closed-by-user'];
+        if (fallbackCodes.includes(popupErr.code)) {
+          showToast('🔄 Redirecting to Google sign-in…');
           await signInWithRedirect(auth, provider);
         } else {
           throw popupErr;
@@ -1701,7 +1701,13 @@ window.signInWithGoogle = async function() {
     }
   } catch(e) {
     console.error('Google sign-in error:', e);
-    showToast('❌ Sign-in failed: ' + (e.code || e.message || 'Unknown error'));
+    const msg = e.code === 'auth/unauthorized-domain'
+      ? '❌ This domain is not authorized in Firebase. Add it in Firebase Console → Authentication → Authorized Domains.'
+      : '❌ Sign-in failed: ' + (e.code || e.message || 'Unknown error');
+    showToast(msg);
+  } finally {
+    // Re-enable button only if we didn't redirect (redirect leaves the page)
+    if (btn && !document.hidden) { btn.disabled = false; const lbl = document.getElementById('googleSignInLabel'); if(lbl) lbl.textContent = 'Sign in with Google'; }
   }
 };
 
@@ -3504,8 +3510,22 @@ document.addEventListener('keydown', (e) => {
 // ═══════════════════════════════════════════════════════════════════
 // SECTION 20: APP BOOT
 // ═══════════════════════════════════════════════════════════════════
-boot();
-
+// ═══════════════════════════════════════════════════════════════════
+// FIREBASE DYNAMIC IMPORT — runs after all functions are defined
+// ═══════════════════════════════════════════════════════════════════
+(async function loadFirebaseAndBoot() {
+  try {
+    ({ initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js'));
+    ({ getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
+      = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js'));
+    ({ getFirestore, doc, setDoc, getDoc, onSnapshot, collection,
+      deleteDoc, updateDoc, arrayUnion, serverTimestamp, query, where, getDocs }
+      = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js'));
+  } catch(e) {
+    console.warn('Firebase SDK load failed — offline/guest mode only.', e);
+  }
+  boot();
+})();
 </script>
 </body>
 </html>
