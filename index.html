@@ -1545,17 +1545,13 @@ function _showPwaGateView() {
     document.getElementById('pwaIOSView').style.display      = 'flex';
     document.getElementById('pwaFallbackView').style.display = 'none';
   } else if (_isAndroid) {
-    // Android Chrome — show loading state while waiting for beforeinstallprompt
+    // Android Chrome — show install button immediately, enabled
+    // beforeinstallprompt will auto-trigger when it fires
     document.getElementById('pwaAndroidView').style.display  = 'flex';
     document.getElementById('pwaIOSView').style.display      = 'none';
     document.getElementById('pwaFallbackView').style.display = 'none';
     const btn = document.getElementById('pwaInstallBtn');
-    if (btn) { btn.textContent = '⏳ Preparing install…'; btn.disabled = true; }
-    // Fallback: if prompt doesn't fire within 4s, re-enable button for manual tap
-    setTimeout(() => {
-      if (!pwaInstallPrompt) return; // already triggered
-      if (btn) { btn.textContent = '📲 Install Avalon'; btn.disabled = false; }
-    }, 4000);
+    if (btn) { btn.textContent = '📲 Install Avalon'; btn.disabled = false; }
   } else {
     // Unsupported browser
     document.getElementById('pwaAndroidView').style.display  = 'none';
