@@ -1506,33 +1506,62 @@ const _isSafari     = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
 const _isStandalone = window.matchMedia('(display-mode: standalone)').matches
                       || window.navigator.standalone === true;
 
-// Capture beforeinstallprompt (fires on Android Chrome / Edge when installable)
+async function _triggerInstallPrompt() {
+  if (!pwaInstallPrompt) return;
+  const btn = document.getElementById('pwaInstallBtn');
+  try {
+    pwaInstallPrompt.prompt();
+    const { outcome } = await pwaInstallPrompt.userChoice;
+    pwaInstallPrompt = null;
+    if (outcome === 'accepted') {
+      if (btn) { btn.textContent = '✅ Installed! Launching…'; btn.disabled = true; }
+      setTimeout(_hidePwaGateAndBoot, 1200);
+    } else {
+      // User dismissed — reset button so they can try again
+      if (btn) { btn.textContent = '📲 Install Avalon'; btn.disabled = false; }
+    }
+  } catch(e) {
+    if (btn) { btn.textContent = '📲 Install Avalon'; btn.disabled = false; }
+  }
+}
+
+// Auto-trigger the moment beforeinstallprompt fires — zero extra taps on Android
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   pwaInstallPrompt = e;
-  // Switch to Android install view now that we have the prompt
+  // Show the Android install view
   document.getElementById('pwaAndroidView').style.display  = 'flex';
   document.getElementById('pwaIOSView').style.display      = 'none';
   document.getElementById('pwaFallbackView').style.display = 'none';
+  // Auto-fire the native prompt immediately
+  _triggerInstallPrompt();
 });
 
 function _showPwaGateView() {
-  // Already installed — skip gate entirely
   if (_isStandalone) { _hidePwaGateAndBoot(); return; }
 
   if (_isIOS && _isSafari) {
-    // iOS Safari — show step-by-step instructions (no native prompt)
     document.getElementById('pwaAndroidView').style.display  = 'none';
     document.getElementById('pwaIOSView').style.display      = 'flex';
     document.getElementById('pwaFallbackView').style.display = 'none';
-  } else if (!pwaInstallPrompt && !_isAndroid) {
-    // Unsupported browser (Firefox, desktop, etc.)
+  } else if (_isAndroid) {
+    // Android Chrome — show loading state while waiting for beforeinstallprompt
+    document.getElementById('pwaAndroidView').style.display  = 'flex';
+    document.getElementById('pwaIOSView').style.display      = 'none';
+    document.getElementById('pwaFallbackView').style.display = 'none';
+    const btn = document.getElementById('pwaInstallBtn');
+    if (btn) { btn.textContent = '⏳ Preparing install…'; btn.disabled = true; }
+    // Fallback: if prompt doesn't fire within 4s, re-enable button for manual tap
+    setTimeout(() => {
+      if (!pwaInstallPrompt) return; // already triggered
+      if (btn) { btn.textContent = '📲 Install Avalon'; btn.disabled = false; }
+    }, 4000);
+  } else {
+    // Unsupported browser
     document.getElementById('pwaAndroidView').style.display  = 'none';
     document.getElementById('pwaIOSView').style.display      = 'none';
     document.getElementById('pwaFallbackView').style.display = 'flex';
   }
-  // else: Android Chrome — pwaAndroidView is shown by default,
-  //       beforeinstallprompt will fire shortly and confirm the prompt
 }
 
 function _hidePwaGateAndBoot() {
@@ -1545,45 +1574,22 @@ function _hidePwaGateAndBoot() {
   }
 }
 
-// Install button (Android Chrome / Edge — native prompt)
-document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
+// Manual tap fallback — in case user dismissed auto-prompt and wants to retry
+document.getElementById('pwaInstallBtn').addEventListener('click', () => {
   if (pwaInstallPrompt) {
-    pwaInstallPrompt.prompt();
-    const { outcome } = await pwaInstallPrompt.userChoice;
-    pwaInstallPrompt = null;
-    if (outcome === 'accepted') {
-      // Show brief success state then boot
-      const btn = document.getElementById('pwaInstallBtn');
-      btn.textContent = '✅ Installed! Launching…';
-      btn.disabled = true;
-      setTimeout(_hidePwaGateAndBoot, 1200);
-    }
-    // If dismissed — stay on gate, user must install to proceed
+    _triggerInstallPrompt();
   } else {
-    // Prompt not ready yet — shouldn't normally happen since button
-    // only shows in pwaAndroidView which requires the prompt
+    // Prompt already consumed or not available — guide user
     const btn = document.getElementById('pwaInstallBtn');
-    btn.textContent = '⏳ Waiting for prompt…';
-    btn.disabled = true;
-    // Re-enable after 3s in case prompt fires
-    setTimeout(() => {
-      btn.textContent = '📲 Install Avalon';
-      btn.disabled = false;
-    }, 3000);
+    btn.textContent = '⚠️ Try browser menu → Install App';
+    setTimeout(() => { btn.textContent = '📲 Install Avalon'; }, 3000);
   }
 });
 
-// In-game install buttons (auth screen + demo strip — secondary, post-install)
+// In-game install buttons (auth screen + demo strip)
 window.triggerPwaInstall = async function() {
   if (pwaInstallPrompt) {
-    pwaInstallPrompt.prompt();
-    const { outcome } = await pwaInstallPrompt.userChoice;
-    pwaInstallPrompt = null;
-    const authBtn = document.getElementById('authInstallBtn');
-    const demoBtn = document.getElementById('demoInstallBtn');
-    if (authBtn) authBtn.style.display = 'none';
-    if (demoBtn) demoBtn.style.display = 'none';
-    if (outcome === 'accepted') showToast('✅ Avalon installed!');
+    await _triggerInstallPrompt();
   } else {
     showToast('📲 Use browser menu → "Add to Home Screen"');
   }
