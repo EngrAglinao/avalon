@@ -1690,10 +1690,8 @@ function resolveFirebaseUser(user) {
 
 async function bootApp() {
   if (firebaseReady && auth) {
-    // Check for pending redirect result first (handles mobile Google sign-in return)
-    const googleBtn = document.getElementById('googleSignInBtn');
+    // First check for redirect result (mobile Google sign-in returning from Google)
     try {
-      if (googleBtn) { const lbl = document.getElementById('googleSignInLabel'); if(lbl) lbl.textContent = '⏳ Completing sign-in…'; googleBtn.disabled = true; }
       const result = await getRedirectResult(auth);
       if (result && result.user) {
         resolveFirebaseUser(result.user);
@@ -1701,17 +1699,26 @@ async function bootApp() {
       }
     } catch(e) {
       console.warn('getRedirectResult error:', e.code || e.message);
-    } finally {
-      if (googleBtn) { googleBtn.disabled = false; const lbl = document.getElementById('googleSignInLabel'); if(lbl) lbl.textContent = 'Sign in with Google'; }
     }
 
+    // onAuthStateChanged — Firebase emits null briefly on load before
+    // restoring the session. Use a short delay before showing authScreen
+    // to avoid a flash back to login when the user is already signed in.
+    let authResolved = false;
     onAuthStateChanged(auth, (user) => {
+      authResolved = true;
       if (user) {
         resolveFirebaseUser(user);
       } else {
         showScreen('authScreen');
       }
     });
+
+    // If auth hasn't resolved after 3s, show login screen as fallback
+    setTimeout(() => {
+      if (!authResolved) showScreen('authScreen');
+    }, 3000);
+
   } else {
     // No Firebase — check for saved guest session
     const guestData = localStorage.getItem('avalon_guest');
@@ -1793,7 +1800,10 @@ window.signInWithGoogle = async function() {
 
     if (isMobile) {
       // Redirect flow — page navigates away; bootApp handles the result on return
+      if (btn) { const lbl = document.getElementById('googleSignInLabel'); if(lbl) lbl.textContent = '🔄 Redirecting to Google…'; btn.disabled = true; }
       await signInWithRedirect(auth, provider);
+      // Execution stops here — browser navigates away
+      return;
     } else {
       try {
         await signInWithPopup(auth, provider);
