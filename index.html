@@ -1661,33 +1661,18 @@ window.showFirebaseSetup = function() {
 // ═══════════════════════════════════════════════════════════════════
 
 function boot() {
-  // Init Firebase early (needed even before gate clears)
+  // Always hide the gate — install is optional until server is confirmed working
+  document.getElementById('pwaGate').style.display = 'none';
+
   if (!DEMO_MODE_ACTIVE) {
     const cfg = getFirebaseConfig();
     if (cfg) initFirebase(cfg);
-  }
-
-  // If already installed (standalone), skip gate immediately
-  if (_isStandalone) {
-    document.getElementById('pwaGate').style.display = 'none';
-    if (DEMO_MODE_ACTIVE) {
-      document.body.classList.add('demo-active');
-      document.getElementById('demoStrip').style.display = 'flex';
-      activateDemoMode();
-    } else {
-      bootApp();
-    }
-    return;
-  }
-
-  // Show install gate — hard wall, no skip
-  if (DEMO_MODE_ACTIVE) {
+    bootApp();
+  } else {
     document.body.classList.add('demo-active');
     document.getElementById('demoStrip').style.display = 'flex';
-    window._demoBootPending = true;
+    activateDemoMode();
   }
-  // Show correct platform view
-  _showPwaGateView();
 }
 
 function resolveFirebaseUser(user) {
