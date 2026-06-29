@@ -2585,17 +2585,29 @@ function toast(msg, type = '', duration = 3000) {
 // ================================================================
 // SECTION 10: AUTH FLOW
 // ================================================================
-$('btn-play-guest').addEventListener('click', () => {
+$('btn-play-guest').addEventListener('click', async () => {
   const name = $('guest-name').value.trim();
   if (!name) { toast('Enter your name to continue', 'gold'); return; }
   G.localUser = { uid: 'local_' + Date.now(), name, email: '', isGuest: true };
   G.isAdmin = false;
+
+  // Try anonymous Firebase sign-in; detect if it's disabled
+  if (window._fb) {
+    try {
+      const cred = await window._fb.signInAnonymously(window._fb.auth);
+      G.localUser.uid = cred.user.uid;
+      G.localUser.isGuest = true;
+    } catch(e) {
+      if (e.code === 'auth/admin-restricted-operation' || e.code === 'auth/operation-not-allowed') {
+        // Anon auth disabled — guest can still use Demo Mode; warn about online rooms
+        toast('⚠️ Guest online rooms unavailable — use Google Sign-In or Demo Mode', 'gold');
+      }
+      // Proceed as local guest regardless
+    }
+  }
+
   showScreen('lobby');
   syncLobbyUI();
-  // Try anonymous Firebase sign-in
-  if (window._fb) {
-    window._fb.signInAnonymously(window._fb.auth).catch(console.warn);
-  }
 });
 
 $('btn-google-signin').addEventListener('click', async () => {
@@ -2668,13 +2680,18 @@ $('btn-create-room').addEventListener('click', async () => {
     return;
   }
 
-  // If guest has no Firebase auth session, sign in anonymously first
+  // If guest has no Firebase auth session, try anon sign-in.
+  // If anon auth is disabled in the project, prompt Google sign-in instead.
   if (window._fb && G.localUser.isGuest && window._fb.auth && !window._fb.auth.currentUser) {
     try {
       const cred = await window._fb.signInAnonymously(window._fb.auth);
       G.localUser.uid = cred.user.uid;
     } catch(e) {
-      toast('Could not authenticate: ' + e.message, 'evil');
+      if (e.code === 'auth/admin-restricted-operation' || e.code === 'auth/operation-not-allowed') {
+        toast('Guest rooms require Google Sign-In on this server. Tap "Sign in with Google" first.', 'gold');
+      } else {
+        toast('Auth error: ' + e.message, 'evil');
+      }
       return;
     }
   }
@@ -2753,10 +2770,14 @@ async function joinRoom(code) {
   if (G.localUser?.isGuest && window._fb.auth && !window._fb.auth.currentUser) {
     try {
       const cred = await window._fb.signInAnonymously(window._fb.auth);
-      // Preserve the chosen display name
       G.localUser.uid = cred.user.uid;
     } catch(e) {
-      // continue with local uid if anon auth fails
+      if (e.code === 'auth/admin-restricted-operation' || e.code === 'auth/operation-not-allowed') {
+        toast('Guest joining requires Google Sign-In on this server. Tap "Sign in with Google" first.', 'gold');
+      } else {
+        toast('Auth error: ' + e.message, 'evil');
+      }
+      return;
     }
   }
 
