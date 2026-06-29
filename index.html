@@ -2210,8 +2210,9 @@
             Waiting for players — need <span id="players-needed">5–10</span> to start
           </div>
           <div class="player-wait-list" id="player-wait-list"></div>
-          <button class="btn-gold" id="btn-start-game" disabled>Start Game</button>
-          <button class="btn-ghost" id="btn-cancel-room">Cancel Room</button>
+          <button class="btn-gold" id="btn-start-game" disabled>⚔️ Start Game</button>
+          <button class="btn-danger hidden" id="btn-terminate-room">🔥 Terminate Room</button>
+          <button class="btn-ghost hidden" id="btn-leave-room">🚪 Leave Room</button>
         </div>
       </div>
 
@@ -3029,32 +3030,51 @@ $('btn-create-room').addEventListener('click', async () => {
   scanLocalRooms();
 });
 
-$('btn-cancel-room').addEventListener('click', async () => {
+function resetWaitingRoomUI() {
   G._unsubs.forEach(u => u());
   G._unsubs = [];
-
-  if (G.isHost) {
-    if (window._fb && G.roomCode) { try { await roomDelete(G.roomCode); } catch(e) {} }
-    toast('Room closed', 'gold');
-  } else {
-    if (window._fb && G.roomCode) {
-      try {
-        const data = await roomGet(G.roomCode);
-        if (data) {
-          const updatedPlayers = (data.players || []).filter(p => p.uid !== G.localUser?.uid);
-          await roomUpdate(G.roomCode, { players: updatedPlayers });
-        }
-      } catch(e) {}
-    }
-    toast('Left room', 'gold');
-  }
-
-  G.roomCode = null; G.isHost = false; G.players = [];
+  G.roomCode = null;
+  G.isHost = false;
+  G.players = [];
   $('host-setup-form').classList.remove('hidden');
   $('host-waiting-room').classList.add('hidden');
   $('btn-start-game').classList.remove('hidden');
-  $('btn-cancel-room').textContent = '✕ Cancel Room';
+  $('btn-terminate-room').classList.add('hidden');
+  $('btn-leave-room').classList.add('hidden');
+}
+
+// Host: Terminate room — deletes it, kicking everyone out
+$('btn-terminate-room').addEventListener('click', async () => {
+  if (!G.isHost || !G.roomCode) return;
+  if (window._fb) { try { await roomDelete(G.roomCode); } catch(e) {} }
+  resetWaitingRoomUI();
+  toast('🔥 Room terminated', 'evil');
 });
+
+// Non-host: Leave room — removes self from player list
+// If somehow the host calls this (shouldn't happen), auto-terminate
+$('btn-leave-room').addEventListener('click', async () => {
+  if (G.isHost) {
+    // Host leaving = terminate
+    if (window._fb && G.roomCode) { try { await roomDelete(G.roomCode); } catch(e) {} }
+    resetWaitingRoomUI();
+    toast('🔥 Room terminated', 'evil');
+    return;
+  }
+  if (window._fb && G.roomCode) {
+    try {
+      const data = await roomGet(G.roomCode);
+      if (data) {
+        const updatedPlayers = (data.players || []).filter(p => p.uid !== G.localUser?.uid);
+        await roomUpdate(G.roomCode, { players: updatedPlayers });
+      }
+    } catch(e) {}
+  }
+  resetWaitingRoomUI();
+  toast('🚪 Left room', 'gold');
+});
+
+
 
 $('btn-join-room').addEventListener('click', () => joinRoom($('join-code').value.trim().toUpperCase()));
 
@@ -3122,7 +3142,6 @@ function renderWaitingList() {
 }
 
 function showJoinedWaitingRoom(data) {
-  // Switch to host tab UI so joined player sees the waiting room
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   const hostTab = document.querySelector('.tab-btn[data-tab="host"]');
@@ -3139,16 +3158,17 @@ function showJoinedWaitingRoom(data) {
     badge.innerHTML = '<span class="pulse-dot"></span> Waiting for Players';
   }
 
-  // Hide start button for non-hosts; show leave button instead
   $('btn-start-game').classList.add('hidden');
-  $('btn-cancel-room').textContent = '🚪 Leave Room';
+  $('btn-terminate-room').classList.add('hidden');
+  $('btn-leave-room').classList.remove('hidden');
   renderWaitingList();
 }
 
 function syncWaitingRoomForHost() {
   $('host-waiting-room').style.display = 'flex';
   $('btn-start-game').classList.remove('hidden');
-  $('btn-cancel-room').textContent = '✕ Cancel Room';
+  $('btn-terminate-room').classList.remove('hidden');
+  $('btn-leave-room').classList.add('hidden');
   const badge = $('room-status-badge');
   if (badge) {
     badge.className = 'waiting-status-badge';
@@ -3167,7 +3187,8 @@ function subscribeToRoom(code) {
       $('host-setup-form').classList.remove('hidden');
       $('host-waiting-room').classList.add('hidden');
       $('btn-start-game').classList.remove('hidden');
-      $('btn-cancel-room').textContent = '✕ Cancel Room';
+      $('btn-terminate-room').classList.add('hidden');
+      $('btn-leave-room').classList.add('hidden');
       toast('🏰 Room was closed by the host', 'gold');
       return;
     }
