@@ -2667,6 +2667,18 @@ $('btn-create-room').addEventListener('click', async () => {
     toast('Connect Firebase first or use Demo Mode', 'gold');
     return;
   }
+
+  // If guest has no Firebase auth session, sign in anonymously first
+  if (window._fb && G.localUser.isGuest && window._fb.auth && !window._fb.auth.currentUser) {
+    try {
+      const cred = await window._fb.signInAnonymously(window._fb.auth);
+      G.localUser.uid = cred.user.uid;
+    } catch(e) {
+      toast('Could not authenticate: ' + e.message, 'evil');
+      return;
+    }
+  }
+
   const code = generateRoomCode();
   G.roomCode = code;
   G.isHost = true;
