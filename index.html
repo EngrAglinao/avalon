@@ -1833,6 +1833,147 @@
       background: linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent);
       margin: 4px 0;
     }
+
+    /* ── Profile Modal ────────────────────────────────────────── */
+    .btn-profile-trigger {
+      background: none; border: none; cursor: pointer; padding: 0;
+      border-radius: 50%; transition: transform 0.15s;
+    }
+    .btn-profile-trigger:active { transform: scale(0.92); }
+    .btn-profile-trigger .user-avatar {
+      width: 38px; height: 38px; font-size: 1rem;
+      border: 2px solid var(--gold-dim);
+      transition: border-color 0.2s;
+    }
+    .btn-profile-trigger:hover .user-avatar { border-color: var(--gold); }
+
+    .profile-sheet {
+      max-height: 88vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      padding: 0;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 24px 20px 18px;
+      border-bottom: var(--border-subtle);
+      position: relative;
+    }
+    .profile-avatar-lg {
+      width: 54px; height: 54px; border-radius: 50%;
+      background: var(--gradient-gold);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; font-weight: 700; color: var(--bg-deep);
+      flex-shrink: 0;
+      border: 2px solid var(--gold-dim);
+    }
+    .profile-identity { flex: 1; min-width: 0; }
+    .profile-name {
+      font-family: var(--font-title); font-size: 1rem;
+      color: var(--text-primary); white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .profile-email {
+      font-size: 0.72rem; color: var(--text-muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .profile-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-top: 6px; font-size: 0.7rem;
+      background: rgba(212,175,55,0.12);
+      border: 1px solid rgba(212,175,55,0.25);
+      border-radius: var(--radius-full);
+      padding: 2px 8px; color: var(--gold-dim);
+      font-family: var(--font-title); letter-spacing: 0.04em;
+    }
+    .modal-close-btn {
+      position: absolute; top: 16px; right: 16px;
+      background: var(--bg-elevated); border: var(--border-subtle);
+      color: var(--text-muted); border-radius: 50%;
+      width: 30px; height: 30px; font-size: 0.8rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .modal-close-btn:hover { background: var(--bg-card); color: var(--text-primary); }
+
+    .profile-stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1px; background: var(--border-color);
+      border-bottom: var(--border-subtle);
+    }
+    .stat-card {
+      background: var(--bg-deep);
+      padding: 16px 8px;
+      text-align: center;
+    }
+    .stat-value {
+      font-family: var(--font-display); font-size: 1.5rem;
+      color: var(--text-primary); line-height: 1;
+    }
+    .stat-value.good { color: var(--good-light); }
+    .stat-value.evil { color: var(--evil-light); }
+    .stat-value.gold { color: var(--gold); }
+    .stat-label { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+    .profile-section-title {
+      font-family: var(--font-title); font-size: 0.72rem;
+      color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 16px 20px 8px; border-bottom: var(--border-subtle);
+    }
+
+    .profile-role-chips {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      padding: 14px 20px;
+      border-bottom: var(--border-subtle);
+    }
+    .role-chip {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-full);
+      padding: 4px 10px; font-size: 0.72rem;
+      border: var(--border-subtle);
+      white-space: nowrap;
+    }
+    .role-chip.evil-chip { border-color: rgba(192,57,43,0.3); background: rgba(140,26,26,0.15); color: var(--evil-light); }
+    .role-chip.good-chip { border-color: rgba(39,174,96,0.3); background: rgba(24,90,57,0.15); color: var(--good-light); }
+    .role-chip-count { font-weight: 700; margin-left: 2px; }
+    .role-chip-empty { font-size: 0.78rem; color: var(--text-muted); padding: 4px 0; }
+
+    .profile-history-list {
+      display: flex; flex-direction: column;
+      padding: 8px 16px 24px;
+      gap: 8px;
+    }
+    .history-entry {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      border: var(--border-subtle);
+      border-left: 3px solid transparent;
+    }
+    .history-entry.win { border-left-color: var(--good-light); }
+    .history-entry.loss { border-left-color: var(--evil-light); }
+    .history-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .history-meta { flex: 1; min-width: 0; }
+    .history-role { font-size: 0.82rem; color: var(--text-primary); font-weight: 600; }
+    .history-side { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
+    .history-date { font-size: 0.68rem; color: var(--text-muted); text-align: right; flex-shrink: 0; }
+    .history-result-badge {
+      font-size: 0.65rem; font-family: var(--font-title); letter-spacing: 0.05em;
+      padding: 2px 7px; border-radius: var(--radius-full);
+      text-transform: uppercase;
+    }
+    .history-result-badge.win { background: rgba(39,174,96,0.15); color: var(--good-light); border: 1px solid rgba(39,174,96,0.3); }
+    .history-result-badge.loss { background: rgba(140,26,26,0.15); color: var(--evil-light); border: 1px solid rgba(192,57,43,0.3); }
+    .history-empty { font-size: 0.78rem; color: var(--text-muted); text-align: center; padding: 20px 0; }
+
   </style>
 </head>
 <body>
@@ -2021,9 +2162,11 @@
   <div class="screen" id="screen-lobby">
     <div class="lobby-header">
       <div class="lobby-logo">Avalon</div>
-      <div class="lobby-user-chip">
-        <div class="user-avatar" id="lobby-avatar">?</div>
-        <span id="lobby-username">Guest</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn-profile-trigger hidden" id="btn-profile-trigger" title="View Profile & History">
+          <div class="user-avatar" id="lobby-avatar">?</div>
+        </button>
+        <span id="lobby-username" style="font-size:0.82rem;color:var(--text-secondary);">Guest</span>
       </div>
     </div>
 
@@ -2253,6 +2396,52 @@
   </div>
 </div>
 
+<!-- ================================================================
+     PROFILE & HISTORY MODAL (Google users only)
+================================================================ -->
+<div class="modal-overlay" id="modal-profile">
+  <div class="modal-sheet profile-sheet">
+    <div class="profile-header">
+      <div class="profile-avatar-lg" id="profile-avatar-lg">?</div>
+      <div class="profile-identity">
+        <div class="profile-name" id="profile-name-display">—</div>
+        <div class="profile-email" id="profile-email-display">—</div>
+        <div class="profile-badge" id="profile-badge">🛡️ Good Knight</div>
+      </div>
+      <button class="modal-close-btn" id="btn-close-profile">✕</button>
+    </div>
+
+    <div class="profile-stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-played">0</div>
+        <div class="stat-label">Games</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value good" id="stat-wins">0</div>
+        <div class="stat-label">Wins</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value evil" id="stat-losses">0</div>
+        <div class="stat-label">Losses</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value gold" id="stat-winrate">—</div>
+        <div class="stat-label">Win Rate</div>
+      </div>
+    </div>
+
+    <div class="profile-section-title">Role History</div>
+    <div class="profile-role-chips" id="profile-role-chips">
+      <span class="role-chip-empty">No games yet</span>
+    </div>
+
+    <div class="profile-section-title">Recent Games</div>
+    <div class="profile-history-list" id="profile-history-list">
+      <div class="history-empty">Play your first online game to see history here.</div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ================================================================
 // AVALON GAME ENGINE
@@ -2471,11 +2660,11 @@ async function initFirebase() {
     return false;
   }
   try {
-    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js');
     const { getAuth, signInAnonymously, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut }
-      = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+      = await import('https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js');
     const { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, deleteDoc, collection, query, where, getDocs }
-      = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      = await import('https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js');
 
     fbApp = initializeApp(FIREBASE_CONFIG);
     fbAuth = getAuth(fbApp);
@@ -2633,6 +2822,12 @@ function syncLobbyUI() {
   const name = G.localUser.name;
   $('lobby-username').textContent = name;
   $('lobby-avatar').textContent = name.charAt(0).toUpperCase();
+  // Profile button only for Google sign-in users
+  const profileBtn = $('btn-profile-trigger');
+  if (profileBtn) {
+    if (!G.localUser.isGuest) profileBtn.classList.remove('hidden');
+    else profileBtn.classList.add('hidden');
+  }
 }
 
 // Firebase setup save
@@ -2667,34 +2862,140 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // ================================================================
-// SECTION 12: ROOM MANAGEMENT (FIREBASE)
+// SECTION 12: ROOM MANAGEMENT (FIREBASE SDK + REST FALLBACK)
+// Guests without Firebase Auth use the Firestore REST API directly.
+// Requires Firestore rules: allow read, write: if true;
 // ================================================================
 function generateRoomCode() {
   return Math.random().toString(36).substr(2, 4).toUpperCase();
 }
 
+// ── Firestore REST helpers ──────────────────────────────────────
+const FS_REST = {
+  _base() {
+    return `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents/rooms`;
+  },
+  _key() { return FIREBASE_CONFIG.apiKey; },
+  _toVal(v) {
+    if (v === null || v === undefined) return { nullValue: null };
+    if (typeof v === 'boolean') return { booleanValue: v };
+    if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+    if (typeof v === 'string') return { stringValue: v };
+    if (Array.isArray(v)) return { arrayValue: { values: v.map(i => this._toVal(i)) } };
+    if (typeof v === 'object') {
+      const fields = {};
+      for (const [k, val] of Object.entries(v)) fields[k] = this._toVal(val);
+      return { mapValue: { fields } };
+    }
+    return { stringValue: String(v) };
+  },
+  _fromVal(v) {
+    if (!v) return null;
+    if ('nullValue' in v) return null;
+    if ('booleanValue' in v) return v.booleanValue;
+    if ('integerValue' in v) return Number(v.integerValue);
+    if ('doubleValue' in v) return v.doubleValue;
+    if ('stringValue' in v) return v.stringValue;
+    if ('arrayValue' in v) return (v.arrayValue.values || []).map(i => this._fromVal(i));
+    if ('mapValue' in v) {
+      const obj = {};
+      for (const [k, val] of Object.entries(v.mapValue.fields || {})) obj[k] = this._fromVal(val);
+      return obj;
+    }
+    return null;
+  },
+  _fromDoc(doc) {
+    if (!doc || !doc.fields) return null;
+    const obj = {};
+    for (const [k, v] of Object.entries(doc.fields)) obj[k] = this._fromVal(v);
+    return obj;
+  },
+  _toFields(data) {
+    const fields = {};
+    for (const [k, v] of Object.entries(data)) fields[k] = this._toVal(v);
+    return { fields };
+  },
+  async set(code, data) {
+    const url = `${this._base()}/${code}?key=${this._key()}`;
+    const res = await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this._toFields(data)) });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'Write failed'); }
+  },
+  async get(code) {
+    const url = `${this._base()}/${code}?key=${this._key()}`;
+    const res = await fetch(url);
+    if (res.status === 404) return null;
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'Read failed'); }
+    return this._fromDoc(await res.json());
+  },
+  async update(code, patch) {
+    const current = await this.get(code);
+    if (!current) throw new Error('Room not found');
+    await this.set(code, { ...current, ...patch });
+  },
+  async delete(code) {
+    const url = `${this._base()}/${code}?key=${this._key()}`;
+    await fetch(url, { method: 'DELETE' });
+  },
+  subscribe(code, callback) {
+    let active = true;
+    let lastJson = null;
+    const poll = async () => {
+      if (!active) return;
+      try {
+        const data = await this.get(code);
+        const json = JSON.stringify(data);
+        if (json !== lastJson) { lastJson = json; callback(data); }
+      } catch(e) { console.warn('[REST poll]', e); }
+      if (active) setTimeout(poll, 3000);
+    };
+    poll();
+    return () => { active = false; };
+  }
+};
+
+// ── Unified room ops: SDK if authed, REST otherwise ─────────────
+function _isAuthed() { return !!(window._fb?.auth?.currentUser); }
+
+async function roomSet(code, data) {
+  if (_isAuthed()) {
+    await window._fb.setDoc(window._fb.doc(window._fb.db, 'rooms', code), data);
+  } else {
+    await FS_REST.set(code, data);
+  }
+}
+async function roomGet(code) {
+  if (_isAuthed()) {
+    const snap = await window._fb.getDoc(window._fb.doc(window._fb.db, 'rooms', code));
+    return snap.exists() ? snap.data() : null;
+  }
+  return await FS_REST.get(code);
+}
+async function roomUpdate(code, patch) {
+  if (_isAuthed()) {
+    await window._fb.updateDoc(window._fb.doc(window._fb.db, 'rooms', code), patch);
+  } else {
+    await FS_REST.update(code, patch);
+  }
+}
+async function roomDelete(code) {
+  if (_isAuthed()) {
+    await window._fb.deleteDoc(window._fb.doc(window._fb.db, 'rooms', code));
+  } else {
+    await FS_REST.delete(code);
+  }
+}
+function roomSubscribe(code, callback) {
+  if (_isAuthed()) {
+    const ref = window._fb.doc(window._fb.db, 'rooms', code);
+    return window._fb.onSnapshot(ref, snap => callback(snap.exists() ? snap.data() : null));
+  }
+  return FS_REST.subscribe(code, callback);
+}
+
+// ── Button handlers ─────────────────────────────────────────────
 $('btn-create-room').addEventListener('click', async () => {
   if (!G.localUser) return;
-  if (!window._fb && !DEMO_MODE_ACTIVE) {
-    toast('Connect Firebase first or use Demo Mode', 'gold');
-    return;
-  }
-
-  // If guest has no Firebase auth session, try anon sign-in.
-  // If anon auth is disabled in the project, prompt Google sign-in instead.
-  if (window._fb && G.localUser.isGuest && window._fb.auth && !window._fb.auth.currentUser) {
-    try {
-      const cred = await window._fb.signInAnonymously(window._fb.auth);
-      G.localUser.uid = cred.user.uid;
-    } catch(e) {
-      if (e.code === 'auth/admin-restricted-operation' || e.code === 'auth/operation-not-allowed') {
-        toast('Guest rooms require Google Sign-In on this server. Tap "Sign in with Google" first.', 'gold');
-      } else {
-        toast('Auth error: ' + e.message, 'evil');
-      }
-      return;
-    }
-  }
+  if (!window._fb && !DEMO_MODE_ACTIVE) { toast('Connect Firebase first or use Demo Mode', 'gold'); return; }
 
   const code = generateRoomCode();
   G.roomCode = code;
@@ -2702,17 +3003,21 @@ $('btn-create-room').addEventListener('click', async () => {
   G.ladyEnabled = $('host-lady-toggle').checked;
 
   if (window._fb) {
-    const roomRef = window._fb.doc(window._fb.db, 'rooms', code);
-    await window._fb.setDoc(roomRef, {
-      code,
-      host: G.localUser.uid,
-      hostName: G.localUser.name,
-      ladyEnabled: G.ladyEnabled,
-      status: 'waiting',
-      players: [{ uid: G.localUser.uid, name: G.localUser.name }],
-      createdAt: Date.now()
-    });
-    subscribeToRoom(code);
+    try {
+      await roomSet(code, {
+        code,
+        host: G.localUser.uid,
+        hostName: G.localUser.name,
+        ladyEnabled: G.ladyEnabled,
+        status: 'waiting',
+        players: [{ uid: G.localUser.uid, name: G.localUser.name }],
+        createdAt: Date.now()
+      });
+      subscribeToRoom(code);
+    } catch(e) {
+      toast('Failed to create room: ' + e.message, 'evil');
+      G.roomCode = null; G.isHost = false; return;
+    }
   }
 
   G.players = [{ uid: G.localUser.uid, name: G.localUser.name, isLocal: true, isBot: false }];
@@ -2725,35 +3030,26 @@ $('btn-create-room').addEventListener('click', async () => {
 });
 
 $('btn-cancel-room').addEventListener('click', async () => {
-  // Unsubscribe from room updates
   G._unsubs.forEach(u => u());
   G._unsubs = [];
 
   if (G.isHost) {
-    // Host terminates the room
-    if (window._fb && G.roomCode) {
-      await window._fb.deleteDoc(window._fb.doc(window._fb.db, 'rooms', G.roomCode));
-    }
+    if (window._fb && G.roomCode) { try { await roomDelete(G.roomCode); } catch(e) {} }
     toast('Room closed', 'gold');
   } else {
-    // Non-host leaves: remove self from player list
     if (window._fb && G.roomCode) {
       try {
-        const roomRef = window._fb.doc(window._fb.db, 'rooms', G.roomCode);
-        const snap = await window._fb.getDoc(roomRef);
-        if (snap.exists()) {
-          const data = snap.data();
+        const data = await roomGet(G.roomCode);
+        if (data) {
           const updatedPlayers = (data.players || []).filter(p => p.uid !== G.localUser?.uid);
-          await window._fb.updateDoc(roomRef, { players: updatedPlayers });
+          await roomUpdate(G.roomCode, { players: updatedPlayers });
         }
-      } catch(e) { /* room may already be gone */ }
+      } catch(e) {}
     }
     toast('Left room', 'gold');
   }
 
-  G.roomCode = null;
-  G.isHost = false;
-  G.players = [];
+  G.roomCode = null; G.isHost = false; G.players = [];
   $('host-setup-form').classList.remove('hidden');
   $('host-waiting-room').classList.add('hidden');
   $('btn-start-game').classList.remove('hidden');
@@ -2766,43 +3062,20 @@ async function joinRoom(code) {
   if (!code || code.length !== 4) { toast('Enter a valid 4-character room code', 'gold'); return; }
   if (!window._fb) { toast('Firebase required to join rooms', 'gold'); return; }
 
-  // If guest with no Firebase UID, sign in anonymously first so they get a stable UID
-  if (G.localUser?.isGuest && window._fb.auth && !window._fb.auth.currentUser) {
-    try {
-      const cred = await window._fb.signInAnonymously(window._fb.auth);
-      G.localUser.uid = cred.user.uid;
-    } catch(e) {
-      if (e.code === 'auth/admin-restricted-operation' || e.code === 'auth/operation-not-allowed') {
-        toast('Guest joining requires Google Sign-In on this server. Tap "Sign in with Google" first.', 'gold');
-      } else {
-        toast('Auth error: ' + e.message, 'evil');
-      }
-      return;
-    }
-  }
-
-  const roomRef = window._fb.doc(window._fb.db, 'rooms', code);
-  const snap = await window._fb.getDoc(roomRef);
-  if (!snap.exists()) { toast('Room not found: ' + code, 'evil'); return; }
-  const data = snap.data();
+  let data;
+  try { data = await roomGet(code); } catch(e) { toast('Server error: ' + e.message, 'evil'); return; }
+  if (!data) { toast('Room not found: ' + code, 'evil'); return; }
   if (data.status !== 'waiting') { toast('Game already started in that room', 'gold'); return; }
 
-  // Check if already in the player list (rejoining)
   const existingPlayers = data.players || [];
   const alreadyIn = existingPlayers.some(p => p.uid === G.localUser.uid);
-  const updatedPlayers = alreadyIn
-    ? existingPlayers
-    : [...existingPlayers, { uid: G.localUser.uid, name: G.localUser.name }];
+  const updatedPlayers = alreadyIn ? existingPlayers : [...existingPlayers, { uid: G.localUser.uid, name: G.localUser.name }];
 
   if (!alreadyIn) {
-    await window._fb.updateDoc(roomRef, { players: updatedPlayers });
+    try { await roomUpdate(code, { players: updatedPlayers }); } catch(e) { toast('Failed to join: ' + e.message, 'evil'); return; }
   }
 
-  G.roomCode = code;
-  G.isHost = false;
-  G.ladyEnabled = data.ladyEnabled;
-
-  // Show joined waiting room view
+  G.roomCode = code; G.isHost = false; G.ladyEnabled = data.ladyEnabled;
   G.players = updatedPlayers.map(p => ({ ...p, isLocal: p.uid === G.localUser?.uid, isBot: false }));
   showJoinedWaitingRoom(data);
   subscribeToRoom(code);
@@ -2885,9 +3158,8 @@ function syncWaitingRoomForHost() {
 
 function subscribeToRoom(code) {
   if (!window._fb) return;
-  const roomRef = window._fb.doc(window._fb.db, 'rooms', code);
-  const unsub = window._fb.onSnapshot(roomRef, (snap) => {
-    if (!snap.exists()) {
+  const unsub = roomSubscribe(code, (data) => {
+    if (!data) {
       // Room was terminated by host
       G.roomCode = null;
       G.isHost = false;
@@ -2899,7 +3171,6 @@ function subscribeToRoom(code) {
       toast('🏰 Room was closed by the host', 'gold');
       return;
     }
-    const data = snap.data();
 
     if (data.status === 'playing') {
       // Only join night phase if you were already a player when game started
@@ -2958,15 +3229,29 @@ function renderWaitingListInGame() {
 }
 
 async function scanLocalRooms() {
-  if (!window._fb) { $('local-rooms-container').textContent = 'Firebase needed to see rooms'; return; }
+  const container = $('local-rooms-container');
+  if (!window._fb) { container.textContent = 'Firebase needed to see rooms'; return; }
+  container.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem;text-align:center;padding:8px;">Scanning...</div>';
   try {
-    const q = window._fb.query(window._fb.collection(window._fb.db, 'rooms'),
-      window._fb.where('status', '==', 'waiting'));
-    const snaps = await window._fb.getDocs(q);
-    const rooms = [];
-    snaps.forEach(d => rooms.push(d.data()));
+    let rooms = [];
+    if (_isAuthed()) {
+      const q = window._fb.query(window._fb.collection(window._fb.db, 'rooms'), window._fb.where('status', '==', 'waiting'));
+      const snaps = await window._fb.getDocs(q);
+      snaps.forEach(d => rooms.push(d.data()));
+    } else {
+      // REST list — filter client-side
+      const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents/rooms?key=${FIREBASE_CONFIG.apiKey}&pageSize=50`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const json = await res.json();
+        (json.documents || []).forEach(doc => {
+          const d = FS_REST._fromDoc(doc);
+          if (d && d.status === 'waiting') rooms.push(d);
+        });
+      }
+    }
     renderLocalRooms(rooms);
-  } catch(e) { $('local-rooms-container').textContent = 'Unable to scan rooms'; }
+  } catch(e) { container.textContent = 'Unable to scan rooms'; }
 }
 
 function renderLocalRooms(rooms) {
@@ -2996,7 +3281,7 @@ $('btn-start-game').addEventListener('click', async () => {
   G.players.forEach((p, i) => { assignments[p.uid] = roles[i]; });
 
   if (window._fb) {
-    await window._fb.updateDoc(window._fb.doc(window._fb.db, 'rooms', G.roomCode), {
+    await roomUpdate(G.roomCode, {
       status: 'playing',
       roleAssignments: assignments,
       currentLeader: 0,
@@ -3308,9 +3593,14 @@ function checkAllNightReady() {
 async function syncFirebaseNightReady(uid) {
   if (!window._fb || !G.roomCode) return;
   try {
-    var fb = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    await window._fb.updateDoc(window._fb.doc(window._fb.db,'rooms',G.roomCode),{readyPlayers:fb.arrayUnion(uid)});
-  } catch(e) { console.warn('[Night]',e); }
+    // arrayUnion not available in REST; fetch current and merge manually
+    const data = await roomGet(G.roomCode);
+    if (!data) return;
+    const ready = data.readyPlayers || [];
+    if (!ready.includes(uid)) {
+      await roomUpdate(G.roomCode, { readyPlayers: [...ready, uid] });
+    }
+  } catch(e) { console.warn('[Night]', e); }
 }
 
 // ================================================================
@@ -3897,6 +4187,9 @@ function endGame(winner, reason) {
   const key = reason || winner;
   const data = GAME_TEXT_CONFIG.victory[key] || GAME_TEXT_CONFIG.victory[winner];
 
+  // Record result for signed-in users
+  recordGameResult(winner);
+
   showScreen('gameover');
   $('gameover-icon').textContent = data.icon;
   $('gameover-title').textContent = data.title;
@@ -4120,7 +4413,7 @@ $('admin-drop-lobby').addEventListener('click', () => {
 
 $('admin-terminate').addEventListener('click', async () => {
   if (window._fb && G.roomCode) {
-    await window._fb.deleteDoc(window._fb.doc(window._fb.db, 'rooms', G.roomCode));
+    try { await roomDelete(G.roomCode); } catch(e) {}
   }
   resetGame();
   G.roomCode = null;
@@ -4146,10 +4439,9 @@ $('admin-card-upload').addEventListener('change', (e) => {
     G.cardOverrides[role] = ev.target.result;
     // Push to Firebase if available
     if (window._fb && G.roomCode) {
-      window._fb.updateDoc(
-        window._fb.doc(window._fb.db, 'rooms', G.roomCode),
-        { [`cardOverrides.${role}`]: ev.target.result }
-      ).catch(console.warn);
+      const patch = {};
+      patch[`cardOverrides.${role}`] = ev.target.result;
+      roomUpdate(G.roomCode, patch).catch(console.warn);
     }
     toast(`✅ ${role} card updated!`, 'gold');
     // Refresh any visible card
@@ -4167,10 +4459,7 @@ $('btn-dismiss-disconnect').addEventListener('click', () => {
   if (!G.isAdmin) return;
   $('disconnect-overlay').classList.remove('visible');
   if (window._fb && G.roomCode) {
-    window._fb.updateDoc(
-      window._fb.doc(window._fb.db, 'rooms', G.roomCode),
-      { disconnectedPlayer: null }
-    ).catch(console.warn);
+    roomUpdate(G.roomCode, { disconnectedPlayer: null }).catch(console.warn);
   }
 });
 
@@ -4184,7 +4473,177 @@ $('tab-join') && document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // ================================================================
-// SECTION 26: BOOT SEQUENCE
+// SECTION 26: PROFILE & HISTORY SYSTEM
+// Stores per-user stats + game history in Firestore users/{uid}
+// Only active for Google-authenticated users.
+// ================================================================
+
+async function profileGet(uid) {
+  if (!window._fb || !uid) return null;
+  try {
+    if (_isAuthed()) {
+      const snap = await window._fb.getDoc(window._fb.doc(window._fb.db, 'users', uid));
+      return snap.exists() ? snap.data() : null;
+    }
+    // REST fallback
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents/users/${uid}?key=${FIREBASE_CONFIG.apiKey}`;
+    const res = await fetch(url);
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    return FS_REST._fromDoc(await res.json());
+  } catch(e) { return null; }
+}
+
+async function profileSave(uid, data) {
+  if (!window._fb || !uid) return;
+  try {
+    if (_isAuthed()) {
+      await window._fb.setDoc(window._fb.doc(window._fb.db, 'users', uid), data, { merge: true });
+    } else {
+      // REST patch
+      const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents/users/${uid}?key=${FIREBASE_CONFIG.apiKey}`;
+      await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(FS_REST._toFields(data)) });
+    }
+  } catch(e) { console.warn('[Profile] save error', e); }
+}
+
+async function recordGameResult(winner) {
+  const user = G.localUser;
+  if (!user || user.isGuest || !window._fb) return; // only for signed-in users
+
+  const localPlayer = G.players.find(p => p.isLocal);
+  if (!localPlayer) return;
+
+  const role = localPlayer.role || 'unknown';
+  const roleData = getRoleData(role);
+  const side = isEvil(role) ? 'evil' : 'good';
+  const won = (winner === 'good' && side === 'good') || (winner === 'evil' && side === 'evil');
+
+  const existing = await profileGet(user.uid) || { played: 0, wins: 0, losses: 0, roles: {}, history: [] };
+
+  existing.played = (existing.played || 0) + 1;
+  if (won) existing.wins = (existing.wins || 0) + 1;
+  else existing.losses = (existing.losses || 0) + 1;
+  existing.roles = existing.roles || {};
+  existing.roles[role] = (existing.roles[role] || 0) + 1;
+
+  const entry = {
+    role,
+    roleName: roleData.name,
+    roleEmoji: roleData.emoji,
+    side,
+    won,
+    winner,
+    playerCount: G.players.length,
+    date: Date.now()
+  };
+  existing.history = [entry, ...(existing.history || [])].slice(0, 20); // keep last 20
+  existing.name = user.name;
+  existing.email = user.email || '';
+
+  await profileSave(user.uid, existing);
+}
+
+function getProfileBadge(stats) {
+  const played = stats.played || 0;
+  const winRate = played > 0 ? stats.wins / played : 0;
+  if (played === 0) return '🛡️ Recruit';
+  if (played >= 50 && winRate >= 0.65) return '👑 Grand Master';
+  if (played >= 30 && winRate >= 0.6) return '⚔️ Champion';
+  if (played >= 20 && winRate >= 0.55) return '🏰 Knight Commander';
+  if (played >= 10) return '🗡️ Veteran';
+  if (played >= 5) return '🛡️ Squire';
+  return '🪄 Initiate';
+}
+
+async function openProfileModal() {
+  const user = G.localUser;
+  if (!user || user.isGuest) return;
+
+  $('modal-profile').classList.add('visible');
+  $('profile-avatar-lg').textContent = user.name.charAt(0).toUpperCase();
+  $('profile-name-display').textContent = user.name;
+  $('profile-email-display').textContent = user.email || '';
+  $('stat-played').textContent = '…';
+  $('stat-wins').textContent = '…';
+  $('stat-losses').textContent = '…';
+  $('stat-winrate').textContent = '…';
+  $('profile-role-chips').innerHTML = '<span class="role-chip-empty">Loading…</span>';
+  $('profile-history-list').innerHTML = '<div class="history-empty">Loading…</div>';
+
+  const stats = await profileGet(user.uid);
+
+  if (!stats || !stats.played) {
+    $('stat-played').textContent = '0';
+    $('stat-wins').textContent = '0';
+    $('stat-losses').textContent = '0';
+    $('stat-winrate').textContent = '—';
+    $('profile-badge').textContent = '🛡️ Recruit';
+    $('profile-role-chips').innerHTML = '<span class="role-chip-empty">No games yet</span>';
+    $('profile-history-list').innerHTML = '<div class="history-empty">Play your first online game to see history here.</div>';
+    return;
+  }
+
+  const winRate = stats.played > 0 ? Math.round((stats.wins / stats.played) * 100) : 0;
+  $('stat-played').textContent = stats.played;
+  $('stat-wins').textContent = stats.wins || 0;
+  $('stat-losses').textContent = stats.losses || 0;
+  $('stat-winrate').textContent = winRate + '%';
+  $('profile-badge').textContent = getProfileBadge(stats);
+
+  // Role chips
+  const chips = $('profile-role-chips');
+  chips.innerHTML = '';
+  const roles = stats.roles || {};
+  const sortedRoles = Object.entries(roles).sort((a, b) => b[1] - a[1]);
+  if (sortedRoles.length === 0) {
+    chips.innerHTML = '<span class="role-chip-empty">No games yet</span>';
+  } else {
+    sortedRoles.forEach(([role, count]) => {
+      const rd = getRoleData(role);
+      const chip = document.createElement('span');
+      chip.className = `role-chip ${isEvil(role) ? 'evil-chip' : 'good-chip'}`;
+      chip.innerHTML = `${rd.emoji} ${rd.name} <span class="role-chip-count">×${count}</span>`;
+      chips.appendChild(chip);
+    });
+  }
+
+  // History list
+  const histList = $('profile-history-list');
+  histList.innerHTML = '';
+  const history = stats.history || [];
+  if (history.length === 0) {
+    histList.innerHTML = '<div class="history-empty">No game history yet.</div>';
+  } else {
+    history.forEach(entry => {
+      const div = document.createElement('div');
+      div.className = `history-entry ${entry.won ? 'win' : 'loss'}`;
+      const d = new Date(entry.date);
+      const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      div.innerHTML = `
+        <div class="history-icon">${entry.roleEmoji || '🛡️'}</div>
+        <div class="history-meta">
+          <div class="history-role">${entry.roleName || entry.role}</div>
+          <div class="history-side">${entry.side === 'evil' ? '🔴 Evil' : '🔵 Good'} · ${entry.playerCount || '?'} players</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          <span class="history-result-badge ${entry.won ? 'win' : 'loss'}">${entry.won ? 'Victory' : 'Defeat'}</span>
+          <span class="history-date">${dateStr}</span>
+        </div>
+      `;
+      histList.appendChild(div);
+    });
+  }
+}
+
+$('btn-profile-trigger').addEventListener('click', openProfileModal);
+$('btn-close-profile').addEventListener('click', () => $('modal-profile').classList.remove('visible'));
+$('modal-profile').addEventListener('click', (e) => {
+  if (e.target === $('modal-profile')) $('modal-profile').classList.remove('visible');
+});
+
+// ================================================================
+// SECTION 27: BOOT SEQUENCE
 // ================================================================
 async function boot() {
   // Service worker
@@ -4212,5 +4671,6 @@ async function boot() {
 boot();
 
 </script>
+
 </body>
 </html>
