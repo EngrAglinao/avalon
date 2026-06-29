@@ -3194,14 +3194,20 @@ function subscribeToRoom(code) {
     }
 
     if (data.status === 'playing') {
-      // Only join night phase if you were already a player when game started
+      // Unsubscribe immediately — game is live, no more lobby snapshots needed
+      G._unsubs.forEach(u => u());
+      G._unsubs = [];
+
+      // Only enter night phase once — guard against repeated snapshot fires
+      if (G.phase === 'night' || G.phase === 'nomination' || G.phase === 'voting' ||
+          G.phase === 'quest' || G.phase === 'gameover' || G.phase === 'assassin') return;
+
       const wasInGame = data.players && data.players.some(p => p.uid === G.localUser?.uid);
       if (wasInGame) {
         G.players = data.players.map(p => ({ ...p, isLocal: p.uid === G.localUser?.uid, isBot: false }));
         G.ladyEnabled = data.ladyEnabled;
         beginNightPhase(data.roleAssignments);
       } else {
-        // Latecomers see "game in progress" state
         renderWaitingListInGame();
       }
       return;
