@@ -285,8 +285,13 @@
       background: var(--bg-card-2);
       border: 2px solid var(--gold-dim);
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; overflow: hidden; position: relative;
+      font-size: 18px; overflow: visible; position: relative;
       transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .seat-avatar-inner {
+      width: 100%; height: 100%; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; position: relative;
     }
     .seat-avatar.good-aura { border-color: var(--blue-good-l); box-shadow: 0 0 10px rgba(74,127,212,0.6); }
     .seat-avatar.evil-aura { border-color: var(--red-evil-l); box-shadow: 0 0 10px rgba(212,48,48,0.6); }
@@ -306,7 +311,8 @@
       position: absolute; width: 18px; height: 18px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 10px;
+      font-size: 10px; z-index: 5;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.5);
     }
     .leader-token { top: -5px; right: -5px; background: var(--gold); }
     .lady-token { top: -5px; left: -5px; background: #3a7bc8; }
@@ -502,6 +508,20 @@
       font-size: 20px; cursor: pointer;
       box-shadow: 0 4px 16px rgba(212,175,55,0.4);
       z-index: 20;
+    }
+    /* Floating "Show My Role" Button */
+    #role-peek-fab {
+      position: absolute;
+      bottom: 68px; right: 14px;
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2a3a6e, #4a5fa8);
+      border: none;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(74,95,168,0.4);
+      z-index: 20;
+      display: none;
     }
 
     /* ── Card Flip ───────────────────────────────────────────── */
@@ -1090,7 +1110,7 @@
 
   <!-- ▓▓ TOP NAVBAR ▓▓ -->
   <header id="top-navbar">
-    <button class="hamburger-btn" id="menu-btn" aria-label="Open menu">
+    <button class="hamburger-btn" id="menu-btn" aria-label="Open menu" style="display:none;">
       <span></span><span></span><span></span>
     </button>
     <div style="text-align:center;flex:1;padding:0 8px;">
@@ -1164,6 +1184,10 @@
           </select>
         </div>
         <button id="create-room-btn" class="btn-primary btn-small">Create Room ✦</button>
+        <div class="toggle-wrap" style="margin-top:10px;">
+          <span class="toggle-label">💧 Include Lady of the Lake</span>
+          <div class="toggle-switch on" id="create-lady-toggle"></div>
+        </div>
       </div>
 
       <!-- Join Room -->
@@ -1186,13 +1210,13 @@
 
     <!-- ── SCREEN: Staging Room ───────────────────────────────── -->
     <section id="screen-staging" class="screen" style="overflow-y:auto;padding:12px 14px 80px;">
-      <div style="text-align:center;margin-bottom:12px;">
+      <div style="text-align:center;margin-bottom:8px;">
         <p class="font-cinzel-sm" style="color:var(--gold);font-size:14px;">Room Code:</p>
         <div style="display:inline-block;background:rgba(212,175,55,0.1);border:2px solid var(--gold-dim);border-radius:10px;padding:8px 20px;margin-top:4px;">
           <span id="staging-room-code" style="font-family:'Cinzel',serif;font-size:22px;color:var(--gold);letter-spacing:4px;"></span>
         </div>
-        <canvas id="staging-qr" style="display:block;margin:10px auto;border-radius:8px;"></canvas>
-        <p id="staging-status" style="font-size:11px;color:var(--parchment-dim);">Waiting for players...</p>
+        <canvas id="staging-qr" width="80" height="80" style="display:block;margin:8px auto 4px;border-radius:8px;"></canvas>
+        <p id="staging-status" style="font-size:11px;color:var(--parchment-dim);margin:0;">Waiting for players...</p>
       </div>
 
       <div style="background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:12px;padding:12px;margin-bottom:12px;">
@@ -1230,6 +1254,8 @@
           <div id="player-seats-container"></div>
         </div>
 
+        <!-- Show My Role FAB -->
+        <button id="role-peek-fab" title="View My Role">🎭</button>
         <!-- History FAB -->
         <button id="history-fab" title="Match History">📜</button>
       </div>
@@ -1252,18 +1278,57 @@
 <aside id="left-sidebar">
   <div id="sidebar-header">
     <div style="display:flex;align-items:center;justify-content:space-between;">
-      <p class="font-cinzel-sm" style="color:var(--gold);font-size:13px;">🛡️ War Council</p>
+      <p class="font-cinzel-sm" id="sidebar-title" style="color:var(--gold);font-size:13px;">🛡️ War Council</p>
       <button id="sidebar-close" style="background:none;border:none;color:var(--parchment-dim);font-size:18px;cursor:pointer;">✕</button>
     </div>
-    <p style="font-size:10px;color:var(--parchment-dim);margin-top:4px;">Mark your suspicions privately.</p>
+    <p id="sidebar-subtitle" style="font-size:10px;color:var(--parchment-dim);margin-top:4px;">Mark your suspicions privately.</p>
   </div>
+
+  <!-- IN-GAME: War Council roster (mark suspicious players) -->
   <div id="sidebar-roster"></div>
+
+  <!-- OUTSIDE GAME: Account menu -->
+  <div id="sidebar-menu" style="flex:1;overflow-y:auto;padding:16px 14px;display:none;flex-direction:column;">
+    <div id="sidebar-profile-block" style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:18px;">
+      <div id="sidebar-profile-avatar" style="width:64px;height:64px;border-radius:50%;background:var(--bg-card-2);border:2px solid var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;margin-bottom:10px;"></div>
+      <p id="sidebar-profile-name" class="font-cinzel-sm" style="color:var(--gold);font-size:14px;"></p>
+      <p id="sidebar-profile-sub" style="font-size:10px;color:var(--parchment-dim);margin-top:2px;"></p>
+    </div>
+    <div id="sidebar-menu-actions" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+
+  <!-- Footer for menu mode (guest: leave; signed: logout + admin circle) -->
+  <div id="sidebar-menu-footer" style="display:none;flex-shrink:0;padding:12px 14px;border-top:1px solid var(--gold-dim);">
+    <!-- Guest -->
+    <button id="sidebar-leave-btn" class="btn-secondary" style="display:none;width:100%;font-size:12px;">🚪 Leave Game</button>
+    <!-- Signed in -->
+    <div id="sidebar-signedin-footer-row" style="display:none;align-items:center;gap:10px;">
+      <button id="sidebar-logout-btn" class="btn-danger" style="flex:1;font-size:12px;">🔒 Logout</button>
+      <button id="sidebar-admin-circle-btn" title="Admin Panel" style="display:none;width:40px;height:40px;flex-shrink:0;border-radius:50%;background:linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.3));border:1px solid var(--gold-dim);color:var(--gold);font-size:16px;cursor:pointer;align-items:center;justify-content:center;">⚙️</button>
+    </div>
+  </div>
+
+  <!-- Footer for in-game mode -->
   <div id="sidebar-footer">
     <button id="sidebar-admin-btn" style="display:none;width:100%;padding:10px;background:linear-gradient(135deg,rgba(212,175,55,0.1),rgba(212,175,55,0.2));border:1px solid var(--gold-dim);border-radius:10px;color:var(--gold);font-family:'Cinzel',serif;font-size:12px;cursor:pointer;">
       ⚙️ Admin Settings
     </button>
   </div>
 </aside>
+
+<!-- ADMIN: Rooms Created sheet -->
+<div id="admin-rooms-sheet" class="bottom-sheet">
+  <div class="sheet-handle"></div>
+  <div style="padding:0 16px 8px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+    <h3 class="font-cinzel-sm" style="color:var(--gold);font-size:14px;">🏰 Rooms Created</h3>
+    <button id="admin-rooms-close" style="background:none;border:none;color:var(--parchment-dim);font-size:18px;cursor:pointer;">✕</button>
+  </div>
+  <div class="sheet-content" id="admin-rooms-list">
+    <p style="font-size:11px;color:var(--parchment-dim);text-align:center;padding:20px 0;">No active rooms.</p>
+  </div>
+</div>
+
+
 
 <!-- ═══════════════════════════════════════════════════════════════
      BOTTOM SHEET: Match History
@@ -1556,13 +1621,13 @@ const GAME_TEXT_CONFIG = {
    FIREBASE CONFIGURATION (Static — no wizard)
 ════════════════════════════════════════════════════════════════ */
 const firebaseConfig = {
-  apiKey: "AIzaSyBguRpCz2sra2EYCe4rdfu4dF-36j5FE7U",
-  authDomain: "the-avalon.firebaseapp.com",
-  databaseURL: "https://the-avalon-default-rtdb.firebaseio.com",
-  projectId: "the-avalon",
-  storageBucket: "the-avalon.firebasestorage.app",
-  messagingSenderId: "593708085855",
-  appId: "1:593708085855:web:cd62340b7b9ebfee6561ea"
+  apiKey:            "AIzaSyDEMO_REPLACE_WITH_YOUR_KEY",
+  authDomain:        "avalon-resistance.firebaseapp.com",
+  databaseURL:       "https://avalon-resistance-default-rtdb.firebaseio.com",
+  projectId:         "avalon-resistance",
+  storageBucket:     "avalon-resistance.appspot.com",
+  messagingSenderId: "123456789012",
+  appId:             "1:123456789012:web:abcdefabcdefabcdef",
 };
 const ADMIN_EMAIL = "buenavistaaglinaodanny@gmail.com";
 
@@ -1570,7 +1635,7 @@ const ADMIN_EMAIL = "buenavistaaglinaodanny@gmail.com";
    === BEGIN DEMO SANDBOX ZONE ===
    DEMO MODE FLAG — set false for production
 ════════════════════════════════════════════════════════════════ */
-const DEMO_MODE_ACTIVE = false;
+const DEMO_MODE_ACTIVE = true;
 /* === END DEMO SANDBOX ZONE === */
 
 /* ════════════════════════════════════════════════════════════════
@@ -1605,6 +1670,7 @@ let _state = {
   revealedCount:    0,
   assassinTarget:   null,
   playerMarks:      {},       // local only: {playerId: 'good'|'bad'|null}
+  createdRooms:     [],       // admin only: rooms this admin has created [{code,maxPlayers,createdAt}]
   matchHistory:     [],
   demoPlayerIndex:  0,
   // Firebase
@@ -1640,6 +1706,8 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const s = $(id);
   if(s) s.classList.add('active');
+  const menuBtn = $('menu-btn');
+  if(menuBtn) menuBtn.style.display = (id==='screen-auth') ? 'none' : 'flex';
 }
 
 function setNavPhase(text) {
@@ -1848,6 +1916,9 @@ function loadAvailableRooms() {
 }
 
 $('create-room-btn').addEventListener('click', createRoom);
+$('create-lady-toggle')?.addEventListener('click', function(){
+  this.classList.toggle('on');
+});
 $('join-room-btn').addEventListener('click', () => {
   const code = $('join-code-input').value.trim().toUpperCase();
   if(!code || code.length<4) { showToast('Enter a valid room code','error'); return; }
@@ -1864,17 +1935,22 @@ function createRoom() {
 
   if(DEMO_MODE_ACTIVE) {
     setupDemoRoom(code, maxPlayers);
+    if(_state.isAdmin) _state.createdRooms.push({code, maxPlayers, createdAt:Date.now()});
     return;
   }
   if(!_state.db || !window._firebaseModules) { showToast('Not connected','error'); return; }
   const { ref, set } = window._firebaseModules;
   const uid = _state.currentUser.uid;
+  const ladyEnabled = $('create-lady-toggle')?.classList.contains('on') ?? true;
   set(ref(_state.db, `rooms/${code}`), {
     hostId: uid, maxPlayers, phase:'staging',
     createdAt: Date.now(),
-    ladyEnabled: false,
+    ladyEnabled,
     players: { [uid]: { name:_state.currentUser.displayName, emoji:getPlayerEmoji(0), isHost:true, connected:true } }
-  }).then(()=>{ joinRoom(code); }).catch(e=>showToast(e.message,'error'));
+  }).then(()=>{
+    if(_state.isAdmin) _state.createdRooms.push({code, maxPlayers, createdAt:Date.now()});
+    joinRoom(code);
+  }).catch(e=>showToast(e.message,'error'));
 }
 
 function joinRoom(code) {
@@ -1930,7 +2006,7 @@ function setupDemoRoom(code, maxPlayers) {
   _state.phase    = 'staging';
   _state.currentLeader = 0;
   _state.ladyHolder    = 1;
-  _state.ladyEnabled   = true;
+  _state.ladyEnabled   = $('create-lady-toggle')?.classList.contains('on') ?? true;
   _state.questIndex    = 0;
   _state.questResults  = [];
   _state.voteTrack     = 0;
@@ -2136,7 +2212,7 @@ function renderTable() {
     const isLeader = i === _state.currentLeader;
     const isLady   = _state.ladyEnabled && i === _state.ladyHolder;
     const inTeam   = _state.selectedTeam.includes(i);
-    const canNom   = _state.phase === 'nominate' && _state.players[_state.myIndex].isLocal && i === _state.currentLeader ? false : (_state.phase==='nominate' && _state.currentLeader===_state.myIndex);
+    const canNom   = _state.phase==='nominate' && _state.currentLeader===_state.myIndex;
     const dimmed   = (_state.phase==='nominate'||_state.phase==='quest'||_state.phase==='teamVote') && _state.selectedTeam.length>0 && !inTeam;
 
     const seatEl = document.createElement('div');
@@ -2168,8 +2244,10 @@ function renderTable() {
 
     seatEl.innerHTML=`
       <div class="seat-avatar ${auraClass} ${isLeader?'glow-anim':''} ${leaderRingClass}">
-        ${avatarInner}
-        ${nominateTip}
+        <div class="seat-avatar-inner">
+          ${avatarInner}
+          ${nominateTip}
+        </div>
         ${leaderToken}${ladyToken}${questShield}
       </div>
       ${questRibbon}
@@ -2299,6 +2377,9 @@ function renderBottomStrip() {
   const actionsDiv = $('bottom-actions');
   phaseInfo.style.display='none';
   actionsDiv.innerHTML='';
+
+  const roleFab = $('role-peek-fab');
+  if(roleFab) roleFab.style.display = (_state.myRole && _state.phase!=='roleReveal' && _state.phase!=='end') ? 'flex' : 'none';
 
   const me      = _state.players[_state.myIndex];
   const isLeader= _state.myIndex === _state.currentLeader;
@@ -2556,7 +2637,7 @@ function showQuestActionModal() {
   $('quest-caution-text').style.display='none';
   $('quest-waiting-msg').style.display='none';
   $('quest-action-submit').style.display='none';
-  let chosen=null;
+  let submitted=false;
 
   const cardsDiv=$('quest-action-cards');
   cardsDiv.innerHTML='';
@@ -2570,50 +2651,31 @@ function showQuestActionModal() {
       <div style="font-size:32px;margin-bottom:6px;">${isSuccess?'🛡️':'💀'}</div>
       <img src="./cards/quest_${isSuccess?'success':'fail'}.png" onerror="this.style.display='none'" style="width:52px;height:52px;object-fit:contain;" />
       <div style="font-family:'Cinzel',serif;font-size:11px;color:${isSuccess?'var(--success-green)':'var(--fail-red)'};margin-top:8px;">${isSuccess?'SUCCESS':'SABOTAGE'}</div>
-      <div style="font-size:9px;color:var(--parchment-dim);margin-top:4px;">tap or swipe ↑</div>`;
-    card.addEventListener('click',()=>{
-      chosen=type;
-      document.querySelectorAll('.quest-action-card').forEach(c=>c.classList.remove('selected-card'));
-      card.classList.add('selected-card');
-      if(iGood && !isSuccess) {
-        $('quest-caution-text').style.display='block';
-      } else {
-        $('quest-caution-text').style.display='none';
-      }
-      $('quest-action-submit').style.display='block';
-      $('quest-action-submit').onclick=()=>{
-        if(!chosen) return;
-        submitQuestCard(chosen);
-        hideModal('quest-action-modal');
-      };
-    });
+      <div style="font-size:9px;color:var(--parchment-dim);margin-top:4px;">swipe up to choose</div>`;
     if(iGood && !isSuccess) {
-      card.addEventListener('touchstart',()=>$('quest-caution-text').style.display='block',{passive:true});
-      card.addEventListener('mouseenter',()=>$('quest-caution-text').style.display='block');
-      card.addEventListener('mouseleave',()=>{ if(chosen!==type) $('quest-caution-text').style.display='none'; });
+      card.addEventListener('touchstart',()=>{ if(!submitted) $('quest-caution-text').style.display='block'; },{passive:true});
     }
-    // Wire swipe gesture
+    // Wire swipe gesture — swipe up commits the choice immediately, one card per quest
     initSwipeCard(card, ()=>{
-      chosen=type;
-      if(iGood && !isSuccess) $('quest-caution-text').style.display='block';
-      $('quest-action-submit').style.display='block';
-      $('quest-action-submit').onclick=()=>{
-        submitQuestCard(chosen);
-        hideModal('quest-action-modal');
-      };
-      showToast(`${isSuccess?'✅ Success':'💀 Sabotage'} card staged. Confirm below.`, isSuccess?'success':'warn');
+      if(submitted) return;
+      submitted=true;
+      // Lock out the other card so it can't be swiped too
+      document.querySelectorAll('.quest-action-card').forEach(c=>{
+        c.style.pointerEvents='none';
+        if(c!==card) c.style.opacity='0.3';
+      });
+      card.classList.add('selected-card');
+      submitQuestCard(type);
+      hideModal('quest-action-modal');
     }, ()=>{
-      document.querySelectorAll('.quest-action-card').forEach(c=>c.classList.remove('selected-card'));
+      if(submitted) return;
       $('quest-caution-text').style.display='none';
-      if(chosen===type) { chosen=null; $('quest-action-submit').style.display='none'; }
     });
     return card;
   };
 
   cardsDiv.appendChild(makeCard('success'));
-  if(!iGood || true) { // Good can also choose fail (with warning)
-    cardsDiv.appendChild(makeCard('fail'));
-  }
+  cardsDiv.appendChild(makeCard('fail'));
   showModal('quest-action-modal');
 }
 
@@ -2895,15 +2957,37 @@ function launchConfetti(colors) {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SIDEBAR
+   SIDEBAR (dual mode: in-game War Council / outside-game Account)
 ════════════════════════════════════════════════════════════════ */
 $('menu-btn')?.addEventListener('click',openSidebar);
 $('sidebar-close')?.addEventListener('click',closeSidebar);
 $('sidebar-overlay')?.addEventListener('click',closeSidebar);
 
+function isInGameScreen() {
+  return $('screen-game')?.classList.contains('active');
+}
+
 function openSidebar() {
   $('left-sidebar').classList.add('open');
   $('sidebar-overlay').classList.add('active');
+  if(isInGameScreen()) {
+    $('sidebar-title').textContent='🛡️ War Council';
+    $('sidebar-subtitle').textContent='Mark your suspicions privately.';
+    $('sidebar-roster').style.display='block';
+    $('sidebar-menu').style.display='none';
+    $('sidebar-menu-footer').style.display='none';
+    $('sidebar-footer').style.display='block';
+    $('sidebar-admin-btn').style.display = _state.isAdmin?'block':'none';
+    updateSidebar();
+  } else {
+    $('sidebar-title').textContent='👤 Account';
+    $('sidebar-subtitle').textContent = _state.isGuest ? 'Playing as guest' : 'Manage your profile';
+    $('sidebar-roster').style.display='none';
+    $('sidebar-menu').style.display='flex';
+    $('sidebar-footer').style.display='none';
+    $('sidebar-menu-footer').style.display='block';
+    updateSidebarMenu();
+  }
 }
 function closeSidebar() {
   $('left-sidebar').classList.remove('open');
@@ -2937,6 +3021,137 @@ function updateSidebar() {
   });
 }
 
+/* ── Outside-game account menu ─────────────────────────────────── */
+function updateSidebarMenu() {
+  const user = _state.currentUser;
+  const avatarEl = $('sidebar-profile-avatar');
+  const nameEl   = $('sidebar-profile-name');
+  const subEl    = $('sidebar-profile-sub');
+  const actions  = $('sidebar-menu-actions');
+  actions.innerHTML='';
+
+  const leaveBtn   = $('sidebar-leave-btn');
+  const signedRow  = $('sidebar-signedin-footer-row');
+  const adminCircle= $('sidebar-admin-circle-btn');
+
+  if(_state.isGuest) {
+    // GUEST: icon + name centered at top, Leave Game pinned at bottom
+    avatarEl.innerHTML = `<span>${getPlayerEmoji(0)}</span>`;
+    nameEl.textContent = user?.displayName || 'Guest';
+    subEl.textContent = 'Guest Player';
+
+    leaveBtn.style.display='block';
+    signedRow.style.display='none';
+  } else {
+    // SIGNED-IN: profile + name centered at top
+    if(user?.photoURL) {
+      avatarEl.innerHTML = `<img src="${user.photoURL}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentNode.innerHTML='👤'" />`;
+    } else {
+      avatarEl.innerHTML = `<span>👤</span>`;
+    }
+    nameEl.textContent = user?.displayName || 'Player';
+    subEl.textContent = user?.email || 'Signed in';
+
+    if(_state.isAdmin) {
+      // Admin: show rooms created + terminate, instead of game history
+      const roomsBtn = document.createElement('button');
+      roomsBtn.className='btn-secondary';
+      roomsBtn.style.fontSize='12px';
+      roomsBtn.textContent=`🏰 Rooms Created (${_state.createdRooms.length})`;
+      roomsBtn.addEventListener('click', openAdminRoomsSheet);
+      actions.appendChild(roomsBtn);
+    }
+
+    leaveBtn.style.display='none';
+    signedRow.style.display='flex';
+    adminCircle.style.display = _state.isAdmin ? 'flex' : 'none';
+  }
+}
+
+function leaveToLogin() {
+  closeSidebar();
+  _state.currentUser = null;
+  _state.isGuest      = true;
+  _state.roomCode      = null;
+  _state.players        = [];
+  _state.myRole          = null;
+  _state.phase            = 'lobby';
+  showScreen('screen-auth');
+}
+$('sidebar-leave-btn')?.addEventListener('click', leaveToLogin);
+
+function logoutUser() {
+  closeSidebar();
+  if(_state.auth && window._firebaseModules?.signOut) {
+    window._firebaseModules.signOut(_state.auth).catch(()=>{});
+  }
+  _state.currentUser = null;
+  _state.isGuest      = true;
+  _state.isAdmin      = false;
+  _state.roomCode      = null;
+  _state.players        = [];
+  _state.myRole          = null;
+  _state.phase            = 'lobby';
+  showScreen('screen-auth');
+}
+$('sidebar-logout-btn')?.addEventListener('click', logoutUser);
+$('sidebar-admin-circle-btn')?.addEventListener('click', ()=>{
+  closeSidebar();
+  showAdminPanel();
+});
+
+/* ── Admin: Rooms Created sheet ──────────────────────────────────── */
+function openAdminRoomsSheet() {
+  closeSidebar();
+  renderAdminRoomsList();
+  $('admin-rooms-sheet').classList.add('open');
+  $('history-backdrop').style.opacity='1';
+  $('history-backdrop').style.pointerEvents='all';
+}
+function closeAdminRoomsSheet() {
+  $('admin-rooms-sheet').classList.remove('open');
+  $('history-backdrop').style.opacity='0';
+  $('history-backdrop').style.pointerEvents='none';
+}
+$('admin-rooms-close')?.addEventListener('click', closeAdminRoomsSheet);
+
+function renderAdminRoomsList() {
+  const listEl = $('admin-rooms-list');
+  if(!_state.createdRooms.length) {
+    listEl.innerHTML = `<p style="font-size:11px;color:var(--parchment-dim);text-align:center;padding:20px 0;">No active rooms.</p>`;
+    return;
+  }
+  listEl.innerHTML='';
+  _state.createdRooms.slice().reverse().forEach(room=>{
+    const row=document.createElement('div');
+    row.style='display:flex;align-items:center;gap:10px;background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:10px;padding:10px 12px;margin-bottom:8px;';
+    row.innerHTML=`
+      <div style="flex:1;">
+        <p style="font-family:'Cinzel',serif;font-size:13px;color:var(--gold);letter-spacing:1px;">${room.code}</p>
+        <p style="font-size:10px;color:var(--parchment-dim);margin-top:2px;">${room.maxPlayers} players · ${new Date(room.createdAt).toLocaleString()}</p>
+      </div>
+      <button class="btn-danger" data-code="${room.code}" style="font-size:11px;padding:8px 10px;width:auto;">Terminate</button>`;
+    listEl.appendChild(row);
+  });
+  listEl.querySelectorAll('button[data-code]').forEach(btn=>{
+    btn.addEventListener('click', ()=>terminateRoom(btn.dataset.code));
+  });
+}
+
+function terminateRoom(code) {
+  if(!DEMO_MODE_ACTIVE && _state.db && window._firebaseModules) {
+    const { ref, remove } = window._firebaseModules;
+    remove(ref(_state.db, `rooms/${code}`)).catch(()=>{});
+  }
+  _state.createdRooms = _state.createdRooms.filter(r=>r.code!==code);
+  showToast(`Room ${code} terminated`, 'info');
+  renderAdminRoomsList();
+  if(_state.roomCode===code) {
+    _state.roomCode=null; _state.players=[]; _state.myRole=null; _state.phase='lobby';
+    showScreen('screen-lobby');
+  }
+}
+
 $('sidebar-admin-btn')?.addEventListener('click',()=>{
   closeSidebar();
   showAdminPanel();
@@ -2946,6 +3161,10 @@ $('sidebar-admin-btn')?.addEventListener('click',()=>{
    HISTORY BOTTOM SHEET
 ════════════════════════════════════════════════════════════════ */
 $('history-fab')?.addEventListener('click',openHistorySheet);
+$('role-peek-fab')?.addEventListener('click',()=>{
+  if(!_state.myRole) { showToast('No role assigned yet','error'); return; }
+  showRolePeekModal();
+});
 
 function openHistorySheet() {
   $('history-sheet').classList.add('open');
