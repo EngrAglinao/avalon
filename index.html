@@ -13,6 +13,16 @@
   <link rel="apple-touch-icon" href="./icons/app_icon.png" />
   <title>The Resistance: Avalon</title>
 
+  <!-- ⚠️ Must be a plain script (not module) and first in head
+       so beforeinstallprompt is captured before the deferred module script loads -->
+  <script>
+    window._deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window._deferredInstallPrompt = e;
+    });
+  </script>
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1688,7 +1698,7 @@ let _state = {
   customAssets:     {},       // {assetKey: base64url}
 };
 
-let _deferredInstallPrompt = null;
+// captured early in plain script above; alias for use in module scope
 
 /* ════════════════════════════════════════════════════════════════
    UTILITY HELPERS
@@ -1819,24 +1829,17 @@ function proceedPastPwaGate() {
   bootApp();
 }
 
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  _deferredInstallPrompt = e;
-  // Show install button in PWA gate if it's open
-  if($('pwa-gate').style.display==='flex') {
-    $('pwa-install-btn').style.display='block';
-    $('pwa-ios-instructions').style.display='none';
-  }
-});
+// beforeinstallprompt is captured by the early plain <script> in <head>
+// so the event is never missed regardless of module script load timing.
 
 window.addEventListener('appinstalled', () => {
-  _deferredInstallPrompt = null;
+  window._deferredInstallPrompt = null;
   proceedPastPwaGate();
 });
 
 async function triggerPwaInstall() {
   // If prompt hasn't fired yet, wait up to 4s for it
-  if(!_deferredInstallPrompt) {
+  if(!window._deferredInstallPrompt) {
     const btn = $('pwa-install-btn');
     const orig = btn.textContent;
     btn.textContent = '⏳ Preparing…';
@@ -1844,7 +1847,7 @@ async function triggerPwaInstall() {
     await new Promise(resolve => {
       const t = Date.now();
       const check = setInterval(()=>{
-        if(_deferredInstallPrompt || Date.now()-t > 4000) {
+        if(window._deferredInstallPrompt || Date.now()-t > 4000) {
           clearInterval(check);
           resolve();
         }
@@ -1853,13 +1856,13 @@ async function triggerPwaInstall() {
     btn.textContent = orig;
     btn.disabled = false;
   }
-  if(!_deferredInstallPrompt) {
+  if(!window._deferredInstallPrompt) {
     showToast('Install not available in this browser', 'warn');
     return;
   }
-  _deferredInstallPrompt.prompt();
-  const { outcome } = await _deferredInstallPrompt.userChoice;
-  _deferredInstallPrompt = null;
+  window._deferredInstallPrompt.prompt();
+  const { outcome } = await window._deferredInstallPrompt.userChoice;
+  window._deferredInstallPrompt = null;
   if(outcome === 'accepted') proceedPastPwaGate();
 }
 
