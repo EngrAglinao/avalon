@@ -1092,14 +1092,27 @@
     For the full immersive experience, add Avalon to your home screen.
   </p>
 
+  <!-- Native install button — only shown when beforeinstallprompt is available -->
   <button id="pwa-install-btn" onclick="triggerPwaInstall()"
-    style="width:280px;padding:16px 24px;background:linear-gradient(135deg,#8a6e22,#d4af37);border:none;border-radius:14px;color:#0a0a0a;font-family:'Cinzel',serif;font-size:15px;font-weight:700;letter-spacing:0.5px;cursor:pointer;box-shadow:0 6px 24px rgba(212,175,55,0.45);margin-bottom:12px;">
+    style="display:none;width:280px;padding:16px 24px;background:linear-gradient(135deg,#8a6e22,#d4af37);border:none;border-radius:14px;color:#0a0a0a;font-family:'Cinzel',serif;font-size:15px;font-weight:700;letter-spacing:0.5px;cursor:pointer;box-shadow:0 6px 24px rgba(212,175,55,0.45);margin-bottom:16px;">
     📲 Install App
   </button>
 
-  <p id="pwa-ios-instructions" style="display:none;color:var(--parchment-dim);font-size:12px;max-width:280px;line-height:1.7;background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:12px;padding:14px 16px;margin-top:8px;">
-    Tap the <strong style="color:var(--gold);">Share</strong> icon <span style="font-size:15px;">⬆️</span> in Safari, then choose <strong style="color:var(--gold);">"Add to Home Screen"</strong>.
-  </p>
+  <!-- Android/Chrome fallback: manual browser-menu steps -->
+  <div id="pwa-browser-hint" style="display:none;color:var(--parchment-dim);font-size:12px;max-width:280px;line-height:1.9;background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:12px;padding:16px 18px;text-align:left;">
+    <p style="margin:0 0 10px;color:var(--gold);font-family:'Cinzel',serif;font-size:12px;text-align:center;">How to Install</p>
+    <p style="margin:0 0 4px;">1. Tap the browser <strong style="color:var(--parchment);">⋮ Menu</strong></p>
+    <p style="margin:0 0 4px;">2. Select <strong style="color:var(--parchment);">"Add to Home Screen"</strong></p>
+    <p style="margin:0;">3. Tap <strong style="color:var(--parchment);">"Install"</strong></p>
+  </div>
+
+  <!-- iOS Safari instructions -->
+  <div id="pwa-ios-instructions" style="display:none;color:var(--parchment-dim);font-size:12px;max-width:280px;line-height:1.9;background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:12px;padding:16px 18px;text-align:left;">
+    <p style="margin:0 0 10px;color:var(--gold);font-family:'Cinzel',serif;font-size:12px;text-align:center;">How to Install</p>
+    <p style="margin:0 0 4px;">1. Tap the <strong style="color:var(--parchment);">Share ⬆️</strong> icon below</p>
+    <p style="margin:0 0 4px;">2. Select <strong style="color:var(--parchment);">"Add to Home Screen"</strong></p>
+    <p style="margin:0;">3. Tap <strong style="color:var(--parchment);">"Add"</strong></p>
+  </div>
 
   <button id="pwa-skip-btn" style="display:none;"></button>
 </div>
@@ -1793,9 +1806,7 @@ function initServiceWorker() {
 }
 
 function isAppInstalled() {
-  // Standalone display mode (Android/Desktop installed PWA)
   if(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
-  // iOS Safari "Add to Home Screen"
   if(window.navigator.standalone === true) return true;
   return false;
 }
@@ -1812,25 +1823,41 @@ function showPwaGateIfNeeded() {
     proceedPastPwaGate();
     return;
   }
-  $('pwa-gate').style.display='flex';
-  $('app-shell').style.display='none';
+
+  $('pwa-gate').style.display = 'flex';
+  $('app-shell').style.display = 'none';
 
   if(isIOSDevice()) {
-    $('pwa-install-btn').style.display='none';
-    $('pwa-ios-instructions').style.display='block';
+    // iOS: always show manual Share instructions
+    $('pwa-install-btn').style.display = 'none';
+    $('pwa-browser-hint').style.display = 'none';
+    $('pwa-ios-instructions').style.display = 'block';
+  } else if(window._deferredInstallPrompt) {
+    // Prompt already captured — show native install button immediately
+    $('pwa-install-btn').style.display = 'block';
+    $('pwa-browser-hint').style.display = 'none';
+  } else {
+    // Prompt not yet available — show browser-menu hint and poll in background
+    $('pwa-install-btn').style.display = 'none';
+    $('pwa-browser-hint').style.display = 'block';
+    const poll = setInterval(() => {
+      if(_pwaGateResolved) { clearInterval(poll); return; }
+      if(window._deferredInstallPrompt) {
+        clearInterval(poll);
+        // Native prompt arrived — upgrade to install button
+        $('pwa-install-btn').style.display = 'block';
+        $('pwa-browser-hint').style.display = 'none';
+      }
+    }, 300);
   }
-  // Button is always visible on non-iOS; triggerPwaInstall() handles timing
 }
 
 function proceedPastPwaGate() {
   if(_pwaGateResolved) return;
   _pwaGateResolved = true;
-  $('pwa-gate').style.display='none';
+  $('pwa-gate').style.display = 'none';
   bootApp();
 }
-
-// beforeinstallprompt is captured by the early plain <script> in <head>
-// so the event is never missed regardless of module script load timing.
 
 window.addEventListener('appinstalled', () => {
   window._deferredInstallPrompt = null;
@@ -1838,28 +1865,7 @@ window.addEventListener('appinstalled', () => {
 });
 
 async function triggerPwaInstall() {
-  // If prompt hasn't fired yet, wait up to 4s for it
-  if(!window._deferredInstallPrompt) {
-    const btn = $('pwa-install-btn');
-    const orig = btn.textContent;
-    btn.textContent = '⏳ Preparing…';
-    btn.disabled = true;
-    await new Promise(resolve => {
-      const t = Date.now();
-      const check = setInterval(()=>{
-        if(window._deferredInstallPrompt || Date.now()-t > 4000) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 150);
-    });
-    btn.textContent = orig;
-    btn.disabled = false;
-  }
-  if(!window._deferredInstallPrompt) {
-    showToast('Install not available in this browser', 'warn');
-    return;
-  }
+  if(!window._deferredInstallPrompt) return;
   window._deferredInstallPrompt.prompt();
   const { outcome } = await window._deferredInstallPrompt.userChoice;
   window._deferredInstallPrompt = null;
