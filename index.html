@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#11141a">
+    <meta name="description" content="THE RESISTANCE: AVALON - A mobile PWA social deduction game">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Avalon">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/app_icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        :root {
+            --charcoal: #11141a;
+            --charcoal-light: #1a1f2a;
+            --parchment: #f2e6ce;
+            --parchment-dark: #d4c4a8;
+            --velvet-blue: #2d4a7c;
+            --velvet-blue-light: #4a6fa5;
+            --crimson: #8b0000;
+            --crimson-bright: #c41e3a;
+            --gold: #d4af37;
+            --gold-light: #f4cf57;
+            --gold-dark: #b8941f;
+            --amber: #ffbf00;
+            --good-green: #2d8f5c;
+            --evil-purple: #5c2d8f;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--charcoal);
+            color: var(--parchment);
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        
+        .font-medieval {
+            font-family: 'Cinzel Decorative', serif;
+        }
+        
+        .desktop-blockout {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, var(--charcoal) 0%, var(--velvet-blue) 100%);
+            z-index: 100000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        @media (min-width: 769px) {
+            .desktop-blockout {
+                display: flex;
+            }
+            #app-container {
+                display: none;
+            }
+        }
+        
+        #app-container {
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .circular-table {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .player-seat {
+            position: absolute;
+            transform-origin: center bottom;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .player-seat.elevated {
+            transform: translateY(-8px) scale(1.04) !important;
+            box-shadow: 0 12px 32px rgba(212, 175, 55, 0.4);
+            border: 3px solid var(--gold);
+        }
+        
+        .player-seat.dimmed {
+            opacity: 0.7;
+            filter: grayscale(0.3);
+        }
+        
+        .player-avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, var(--velvet-blue), var(--charcoal-light));
+            border: 3px solid var(--parchment-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .player-avatar.current-leader::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px dashed var(--gold);
+            animation: leaderRotate 3s linear infinite;
+        }
+        
+        @keyframes leaderRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .card-stack {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 140px;
+            height: 200px;
+            perspective: 1000px;
+        }
+        
+        .game-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            background: linear-gradient(145deg, var(--parchment), var(--parchment-dark));
+            border: 3px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            cursor: pointer;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+            backface-visibility: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        
+        .game-card.flipped {
+            transform: rotateY(180deg);
+        }
+        
+        .game-card.shuffling {
+            animation: cardShuffle 0.6s ease-in-out;
+        }
+        
+        @keyframes cardShuffle {
+            0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+            25% { transform: translate(-60%, -45%) rotate(-5deg); }
+            50% { transform: translate(-40%, -55%) rotate(5deg); }
+            75% { transform: translate(-55%, -48%) rotate(-3deg); }
+        }
+        
+        .quest-result-display {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: linear-gradient(145deg, var(--charcoal-light), var(--charcoal));
+            border-radius: 16px;
+            border: 2px solid var(--gold);
+        }
+        
+        .result-count {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'Cinzel Decorative', serif;
+        }
+        
+        .floating-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, var(--parchment), var(--parchment-dark));
+            border: 3px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            z-index: 1000;
+        }
+        
+        .floating-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 24px rgba(212, 175, 55, 0.4);
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: linear-gradient(145deg, var(--charcoal-light), var(--charcoal));
+            border: 3px solid var(--gold);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+        
+        .warning-pulse {
+            animation: warningPulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes warningPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 191, 0, 0.7); }
+            50% { box-shadow: 0 0 0 12px rgba(255, 191, 0, 0); }
+        }
+        
+        .demo-panel {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(180deg, #1a1f2a, #0d0f14);
+            border-bottom: 2px solid var(--gold);
+            padding: 8px 16px;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 600px;
+            justify-content: center;
+        }
+        
+        .demo-panel select, .demo-panel button {
+            background: var(--charcoal);
+            color: var(--parchment);
+            border: 1px solid var(--gold);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+        
+        .demo-panel button {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .demo-panel button:hover {
+            background: var(--gold);
+            color: var(--charcoal);
+        }
+        
+        .phase-indicator {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(145deg, var(--velvet-blue), var(--charcoal-light));
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            padding: 8px 24px;
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 1rem;
+            font-weight: 700;
+            z-index: 100;
+            white-space: nowrap;
+        }
+        
+        .role-card {
+            background: linear-gradient(145deg, var(--parchment), var(--parchment-dark));
+            border: 3px solid var(--gold);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        
+        .role-card h3 {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 1.5rem;
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+        }
+        
+        .faction-good {
+            background: linear-gradient(145deg, rgba(45, 143, 92, 0.2), rgba(45, 143, 92, 0.1));
+            border-color: var(--good-green);
+        }
+        
+        .faction-evil {
+            background: linear-gradient(145deg, rgba(92, 45, 143, 0.2), rgba(92, 45, 143, 0.1));
+            border-color: var(--evil-purple);
+        }
+        
+        .action-btn {
+            background: linear-gradient(145deg, var(--gold), var(--gold-light));
+            color: var(--charcoal);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(212, 175, 55, 0.4);
+        }
+        
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .action-btn.secondary {
+            background: linear-gradient(145deg, var(--charcoal-light), var(--charcoal));
+            color: var(--parchment);
+            border: 2px solid var(--gold);
+        }
+        
+        .action-btn.danger {
+            background: linear-gradient(145deg, var(--crimson), var(--crimson-bright));
+            color: white;
+        }
+        
+        .history-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, var(--charcoal-light), var(--charcoal));
+            border-top: 3px solid var(--gold);
+            border-radius: 20px 20px 0 0;
+            max-height: 70vh;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 4000;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .history-panel.active {
+            transform: translateY(0);
+        }
+        
+        .history-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        
+        .history-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid var(--gold);
+        }
+        
+        .admin-gear {
+            position: fixed;
+            top: 60px;
+            right: 16px;
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(145deg, var(--gold), var(--gold-light));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            cursor: pointer;
+            z-index: 99998;
+            box-shadow: 0 4px 16px rgba(212, 175, 55, 0.4);
+            animation: gearSpin 10s linear infinite;
+        }
+        
+        @keyframes gearSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .checkbox-custom {
+            width: 28px;
+            height: 28px;
+            border: 2px solid var(--gold);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--charcoal);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .checkbox-custom.checked {
+            background: var(--gold);
+        }
+        
+        .checkbox-custom.checked::after {
+            content: '✓';
+            color: var(--charcoal);
+            font-weight: 700;
+        }
+        
+        .install-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, var(--charcoal) 0%, var(--velvet-blue) 100%);
+            z-index: 100001;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .input-field {
+            width: 100%;
+            background: var(--charcoal);
+            border: 2px solid var(--gold);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: var(--parchment);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--gold-light);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+        }
+        
+        .quest-tally-cards {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+        
+        .tally-card {
+            width: 60px;
+            height: 85px;
+            border-radius: 8px;
+            background: linear-gradient(145deg, var(--parchment), var(--parchment-dark));
+            border: 2px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            animation: cardReveal 0.5s ease-out;
+        }
+        
+        @keyframes cardReveal {
+            from { transform: scale(0) rotateY(180deg); opacity: 0; }
+            to { transform: scale(1) rotateY(0deg); opacity: 1; }
+        }
+        
+        .team-shield {
+            position: absolute;
+            width: 40px;
+            height: 48px;
+            background: linear-gradient(145deg, var(--gold), var(--gold-light));
+            clip-path: polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        
+        .disconnect-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(139, 0, 0, 0.9);
+            z-index: 6000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Desktop Blockout -->
+    <div class="desktop-blockout">
+        <h1 class="font-medieval text-4xl md:text-6xl text-yellow-500 mb-4">THE RESISTANCE: AVALON</h1>
+        <p class="text-xl md:text-2xl text-gray-300 mb-8">A Mobile-First Social Deduction Experience</p>
+        <div class="text-yellow-500 text-lg">Please rotate your device to portrait mode</div>
+        <div class="mt-8 animate-bounce">↻</div>
+    </div>
+
+    <!-- Install PWA Overlay -->
+    <div id="install-overlay" class="install-overlay hidden">
+        <div class="text-6xl mb-4">📱</div>
+        <h2 class="font-medieval text-3xl text-yellow-500 mb-4">Install Avalon</h2>
+        <p class="text-gray-300 mb-8">Add this app to your home screen for the best experience!</p>
+        <button id="install-btn" class="action-btn text-lg">Install Now</button>
+    </div>
+
+    <!-- Demo Control Panel -->
+    <div id="demo-panel" class="demo-panel">
+        <span class="text-yellow-500 text-sm font-bold">⚡ DEMO</span>
+        <select id="demo-player-select">
+            <option value="">Select Player</option>
+            <option value="player1">Player 1</option>
+            <option value="player2">Player 2</option>
+            <option value="player3">Player 3</option>
+            <option value="player4">Player 4</option>
+            <option value="player5">Player 5</option>
+        </select>
+        <button id="bot-all-btn">⚡ Bot All</button>
+    </div>
+
+    <!-- Admin Gear (visible only to admin) -->
+    <div id="admin-gear" class="admin-gear hidden">⚙️</div>
+
+    <!-- Phase Indicator -->
+    <div id="phase-indicator" class="phase-indicator hidden">
+        <span id="phase-text">Phase 1</span>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app-container">
+        <!-- Login Screen -->
+        <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-6">
+            <div class="text-center mb-8">
+                <div class="text-7xl mb-4">🏰</div>
+                <h1 class="font-medieval text-3xl md:text-4xl text-yellow-500 mb-2">THE RESISTANCE</h1>
+                <h2 class="font-medieval text-2xl md:text-3xl text-amber-500">AVALON</h2>
+            </div>
+            
+            <div class="w-full max-w-sm space-y-4">
+                <button id="google-signin-btn" class="action-btn w-full flex items-center justify-center gap-3">
+                    <span>G</span> Sign in with Google
+                </button>
+                
+                <div class="flex items-center gap-4 my-6">
+                    <div class="flex-1 h-px bg-gray-600"></div>
+                    <span class="text-gray-400 text-sm">or</span>
+                    <div class="flex-1 h-px bg-gray-600"></div>
+                </div>
+                
+                <input type="text" id="nickname-input" class="input-field" placeholder="Enter your nickname" maxlength="20">
+                <button id="guest-btn" class="action-btn w-full">Play as Guest</button>
+            </div>
+            
+            <p class="text-gray-500 text-sm mt-8 text-center">
+                Experience the ultimate social deduction game<br>with friends and family
+            </p>
+        </div>
+
+        <!-- Role Reveal Screen -->
+        <div id="role-screen" class="min-h-screen flex flex-col items-center justify-center p-6 hidden">
+            <h2 class="font-medieval text-2xl text-yellow-500 mb-6">Your Secret Role</h2>
+            <div id="role-display" class="role-card w-full max-w-sm">
+                <!-- Role content injected dynamically -->
+            </div>
+            <button id="reveal-done-btn" class="action-btn mt-6">I Understand</button>
+        </div>
+
+        <!-- Main Game Table -->
+        <div id="game-table" class="circular-table hidden">
+            <!-- Player seats will be dynamically rendered here -->
+            <div id="players-container"></div>
+            
+            <!-- Central Quest Board -->
+            <div id="quest-board" class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <div id="card-stack" class="card-stack">
+                    <!-- Cards will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating History Button -->
+        <div id="history-btn" class="floating-btn hidden">📜</div>
+
+        <!-- History Panel -->
+        <div id="history-panel" class="history-panel">
+            <div class="p-4 border-b border-yellow-600/30 flex items-center justify-between">
+                <h3 class="font-medieval text-xl text-yellow-500">Game History</h3>
+                <button id="history-close-btn" class="text-2xl">✕</button>
+            </div>
+            <div id="history-content" class="history-content">
+                <!-- History items injected here -->
+            </div>
+        </div>
+
+        <!-- Vote Modal -->
+        <div id="vote-modal" class="modal-overlay">
+            <div class="modal-content w-full max-w-sm">
+                <h2 class="font-medieval text-2xl text-yellow-500 mb-4 text-center">Vote on Team</h2>
+                <p id="vote-instruction" class="text-center mb-4"></p>
+                <div id="vote-options" class="space-y-3">
+                    <button id="vote-approve" class="action-btn w-full flex items-center justify-center gap-2">
+                        <span>✓</span> Approve
+                    </button>
+                    <button id="vote-reject" class="action-btn secondary w-full flex items-center justify-center gap-2">
+                        <span>✗</span> Reject
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quest Action Modal -->
+        <div id="quest-modal" class="modal-overlay">
+            <div class="modal-content w-full max-w-sm">
+                <h2 class="font-medieval text-2xl text-yellow-500 mb-4 text-center">Quest Decision</h2>
+                <p id="quest-warning" class="text-amber-500 text-sm text-center mb-4 hidden warning-pulse">
+                    ⚠️ Caution: You are registered as a Good Role. Think carefully before failing this quest.
+                </p>
+                <div id="quest-options" class="space-y-3">
+                    <button id="quest-success" class="action-btn w-full flex items-center justify-center gap-2">
+                        <span>🛡️</span> Success
+                    </button>
+                    <button id="quest-fail" class="action-btn danger w-full flex items-center justify-center gap-2">
+                        <span>👿</span> Fail
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Selection Modal -->
+        <div id="team-modal" class="modal-overlay">
+            <div class="modal-content w-full max-w-sm">
+                <h2 class="font-medieval text-xl text-yellow-500 mb-2 text-center">Select Team</h2>
+                <p id="team-requirement" class="text-center text-sm text-gray-400 mb-4"></p>
+                <div id="team-selection" class="space-y-2 max-h-64 overflow-y-auto"></div>
+                <button id="submit-team" class="action-btn w-full mt-4">Submit Team</button>
+            </div>
+        </div>
+
+        <!-- Continue Modal -->
+        <div id="continue-modal" class="modal-overlay">
+            <div class="modal-content w-full max-w-sm text-center">
+                <h2 class="font-medieval text-2xl text-yellow-500 mb-4">Phase Complete</h2>
+                <div id="continue-message" class="mb-6"></div>
+                <button id="continue-btn" class="action-btn w-full">Continue Game</button>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="game-over-modal" class="modal-overlay">
+            <div class="modal-content w-full max-w-sm text-center">
+                <div id="game-over-icon" class="text-7xl mb-4"></div>
+                <h2 id="game-over-title" class="font-medieval text-3xl mb-2"></h2>
+                <p id="game-over-message" class="text-gray-300 mb-6"></p>
+                <button id="play-again-btn" class="action-btn w-full">Play Again</button>
+            </div>
+        </div>
+
+        <!-- Admin Panel Modal -->
+        <div id="admin-modal" class="modal-overlay">
+            <div class="modal-content w-full max-w-sm">
+                <h2 class="font-medieval text-2xl text-yellow-500 mb-4 text-center">Master Admin Panel</h2>
+                <div class="space-y-3">
+                    <button id="admin-toggle-lotl" class="action-btn secondary w-full">Toggle Lady of the Lake</button>
+                    <button id="admin-reopen-vote" class="action-btn secondary w-full">Re-open Quest Voting</button>
+                    <button id="admin-force-phase" class="action-btn secondary w-full">Force Next Phase</button>
+                    <button id="admin-drop-room" class="action-btn secondary w-full">Drop to Lobby</button>
+                    <button id="admin-terminate" class="action-btn danger w-full">Terminate Room</button>
+                    <button id="admin-close-btn" class="action-btn w-full mt-4">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Firebase Setup Modal -->
+        <div id="firebase-setup-modal" class="modal-overlay">
+            <div class="modal-content w-full max-w-md">
+                <h2 class="font-medieval text-2xl text-yellow-500 mb-4 text-center">Firebase Setup</h2>
+                <p class="text-gray-300 mb-4">Enter your Firebase credentials to enable multiplayer:</p>
+                <input type="text" id="firebase-api-key" class="input-field" placeholder="API Key">
+                <input type="text" id="firebase-auth-domain" class="input-field" placeholder="Auth Domain">
+                <input type="text" id="firebase-project-id" class="input-field" placeholder="Project ID">
+                <button id="firebase-save-btn" class="action-btn w-full">Save Configuration</button>
+                <button id="firebase-skip-btn" class="action-btn secondary w-full mt-2">Skip (Single Player)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disconnect Overlay -->
+    <div id="disconnect-overlay" class="disconnect-overlay hidden">
+        <div class="text-6xl mb-4">⚠️</div>
+        <h2 class="font-medieval text-3xl text-white mb-2">Player Disconnected</h2>
+        <p id="disconnect-player" class="text-xl text-gray-300 mb-4"></p>
+        <p class="text-gray-400">Waiting for admin to resolve...</p>
+    </div>
+
+    <script>
+        // ============================================================================
+        // GAME TEXT CONFIGURATION - All rules, instructions, and localized text
+        // ============================================================================
+        const GAME_TEXT_CONFIG = {
+            appTitle: "THE RESISTANCE: AVALON",
+            appSubtitle: "Social Deduction Game",
+            
+            // Login Screen
+            login: {
+                title: "THE RESISTANCE",
+                subtitle: "AVALON",
+                googleSignIn: "Sign in with Google",
+                guestPlay: "Play as Guest",
+                nicknamePlaceholder: "Enter your nickname",
+                footer: "Experience the ultimate social deduction game with friends and family"
+            },
+            
+            // Game Phases
+            phases: {
+                nomination: "Nominating Team",
+                voting: "Team Vote",
+                quest: "Quest Mission",
+                tally: "Quest Tally",
+                leadership: "Leader Passes"
+            },
+            
+            // Role Descriptions
+            roles: {
+                merlin: {
+                    name: "Merlin",
+                    faction: "good",
+                    description: "You know all Evil players except Oberon. You must help Good win without revealing yourself to the Assassin."
+                },
+                percival: {
+                    name: "Percival",
+                    faction: "good",
+                    description: "You know Merlin and Morgana. Protect Merlin from being discovered."
+                },
+                loyalServant: {
+                    name: "Loyal Servant of Arthur",
+                    faction: "good",
+                    description: "You are a loyal member of the Good team. Help Merlin guide the missions to victory."
+                },
+                assassin: {
+                    name: "Assassin",
+                    faction: "evil",
+                    description: "You know all Evil players. After Good loses 3 quests, you may assassinate Merlin to win."
+                },
+                morgana: {
+                    name: "Morgana",
+                    faction: "evil",
+                    description: "You appear as Merlin to Percival. Work with your team to defeat Good."
+                },
+                mordred: {
+                    name: "Mordred",
+                    faction: "evil",
+                    description: "Merlin does not know your identity. Work with your team to defeat Good."
+                },
+                oberon: {
+                    name: "Oberon",
+                    faction: "evil",
+                    description: "You are Evil but your teammates do not know who you are. You do not know them either."
+                },
+                evilServant: {
+                    name: "Minion of Mordred",
+                    faction: "evil",
+                    description: "You are a loyal servant of the Evil cause. Help your team defeat Good."
+                }
+            },
+            
+            // Game Messages
+            messages: {
+                teamSelected: "Team selected successfully!",
+                voteSubmitted: "Your vote has been recorded.",
+                questSuccess: "Quest succeeded!",
+                questFailed: "Quest failed!",
+                leaderPass: "Leader token passed to next player.",
+                gameWon: "Good has won!",
+                gameLost: "Evil has won!",
+                disconnect: "has disconnected",
+                reconnect: "has reconnected"
+            },
+            
+            // Warnings & Alerts
+            warnings: {
+                goodFailCaution: "⚠️ Caution: You are registered as a Good Role. Think carefully before failing this quest.",
+                notLeader: "You are not the current leader!",
+                teamFull: "Team is already full!",
+                voteLocked: "Voting is locked!",
+                questLocked: "Quest action is locked!"
+            },
+            
+            // Admin Panel
+            admin: {
+                title: "Master Admin Panel",
+                toggleLotL: "Toggle Lady of the Lake",
+                reopenVote: "Re-open Quest Voting",
+                forcePhase: "Force Next Phase",
+                dropRoom: "Drop to Lobby",
+                terminate: "Terminate Room"
+            },
+            
+            // Firebase Setup
+            firebase: {
+                title: "Firebase Setup",
+                instruction: "Enter your Firebase credentials to enable multiplayer:",
+                apiKey: "API Key",
+                authDomain: "Auth Domain",
+                projectId: "Project ID",
+                save: "Save Configuration",
+                skip: "Skip (Single Player)"
+            },
+            
+            // Quest Results
+            questResults: {
+                success: "🛡️ SUCCESS",
+                fail: "👿 FAIL",
+                tally: "Quest Tally"
+            },
+            
+            // Game Over
+            gameOver: {
+                goodWins: {
+                    title: "GOOD VICTORY",
+                    message: "The forces of Good have prevailed! Arthur's loyal servants have exposed the traitors.",
+                    icon: "🏆"
+                },
+                evilWins: {
+                    title: "EVIL TRIUMPHS",
+                    message: "The shadows have consumed Avalon. The forces of Evil have secured victory.",
+                    icon: "👑"
+                },
+                playAgain: "Play Again"
+            }
+        };
+
+        // ============================================================================
+        // DEMO MODE CONFIGURATION - Takes priority over all other modes
+        // ============================================================================
+        const DEMO_MODE_ACTIVE = true;
+        const DEMO_PLAYER_COUNT = 5;
+        
+        // ============================================================================
+        // FIREBASE CONFIGURATION
+        // ============================================================================
+        let firebaseConfig = null;
+        let firebaseApp = null;
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let roomRef = null;
+        let userRef = null;
+        
+        // ============================================================================
+        // GAME STATE
+        // ============================================================================
+        const gameState = {
+            players: [],
+            currentUser: null,
+            currentLeader: 0,
+            currentMission: 0,
+            questFailures: 0,
+            questSuccesses: 0,
+            currentPhase: 'lobby',
+            teamMembers: [],
+            votes: {},
+            questResults: [],
+            history: [],
+            isLadyOfLake: false,
+            playersDisconnected: [],
+            gameEnded: false
+        };
+
+        // Mission configuration based on player count
+        const MISSION_CONFIG = {
+            5: { missions: [2, 3, 2, 3, 3], failsRequired: [1, 1, 1, 2, 1] },
+            6: { missions: [2, 3, 4, 3, 4], failsRequired: [1, 1, 1, 2, 1] },
+            7: { missions: [2, 3, 3, 4, 4], failsRequired: [1, 1, 1, 2, 1] },
+            8: { missions: [3, 4, 4, 5, 5], failsRequired: [1, 1, 1, 2, 1] },
+            9: { missions: [3, 4, 4, 5, 5], failsRequired: [1, 1, 1, 2, 1] },
+            10: { missions: [3, 4, 4, 5, 5], failsRequired: [1, 1, 1, 2, 2] }
+        };
+
+        // Role distribution based on player count
+        const ROLE_DISTRIBUTION = {
+            5: {
+                good: ['merlin', 'percival', 'loyalServant', 'loyalServant'],
+                evil: ['assassin', 'minion']
+            },
+            6: {
+                good: ['merlin', 'percival', 'loyalServant', 'loyalServant'],
+                evil: ['assassin', 'morgana', 'minion']
+            },
+            7: {
+                good: ['merlin', 'percival', 'loyalServant', 'loyalServant', 'loyalServant'],
+                evil: ['assassin', 'mordred', 'minion']
+            },
+            8: {
+                good: ['merlin', 'percival', 'loyalServant', 'loyalServant', 'loyalServant'],
+                evil: ['assassin', 'mordred', 'morgana', 'minion']
+            },
+            9: {
+                good: ['merlin', 'percival', 'loyalServant', 'loyalServant', 'loyalServant', 'loyalServant'],
+                evil: ['assassin', 'mordred', 'morgana', 'minion', 'oberon']
+            },
+            10: {
+                good: ['merlin', 'percival', 'loyalServant', 'loyalServant', 'loyalServant', 'loyalServant'],
+                evil: ['assassin', 'mordred', 'morgana', 'minion', 'minion', 'oberon']
+            }
+        };
+
+        // ============================================================================
+        // UTILITY FUNCTIONS
+        // ============================================================================
+        function generateId() {
+            return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        }
+
+        function shuffleArray(array) {
+            const result = [...array];
+            for (let i = result.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [result[i], result[j]] = [result[j], result[i]];
+            }
+            return result;
+        }
+
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        }
+
+        function isGoodRole(role) {
+            return role && !['assassin', 'morgana', 'mordred', 'oberon', 'minion'].includes(role);
+        }
+
+        // ============================================================================
+        // FIREBASE INITIALIZATION
+        // ============================================================================
+        function initFirebase() {
+            const savedConfig = localStorage.getItem('firebaseConfig');
+            if (savedConfig) {
+                firebaseConfig = JSON.parse(savedConfig);
+                initializeFirebaseApp();
+            }
+        }
+
+        function initializeFirebaseApp() {
+            if (!firebaseConfig) return;
+            
+            try {
+                firebaseApp = firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+                auth = firebase.auth();
+                
+                auth.onAuthStateChanged((user) => {
+                    currentUser = user;
+                    if (user) {
+                        checkAdminStatus(user);
+                    }
+                });
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+            }
+        }
+
+        function checkAdminStatus(user) {
+            const adminEmail = 'buenavistaaglinaodanny@gmail.com';
+            if (user && user.email === adminEmail) {
+                document.getElementById('admin-gear').classList.remove('hidden');
+            }
+        }
+
+        // ============================================================================
+        // DEMO MODE SETUP
+        // ============================================================================
+        function setupDemoMode() {
+            console.log('⚡ DEMO MODE ACTIVE - Bypassing login gates');
+            
+            // Create demo players
+            gameState.players = [];
+            const demoNames = ['Merlin', 'Assassin', 'Loyal', 'Minion', 'Percival'];
+            const demoRoles = ['merlin', 'assassin', 'loyalServant', 'minion', 'percival'];
+            
+            for (let i = 0; i < DEMO_PLAYER_COUNT; i++) {
+                gameState.players.push({
+                    id: `player${i + 1}`,
+                    name: demoNames[i],
+                    role: demoRoles[i],
+                    isLocal: i === 0,
+                    avatar: getInitials(demoNames[i])
+                });
+            }
+            
+            gameState.currentUser = gameState.players[0];
+            gameState.currentPhase = 'nomination';
+            
+            // Skip to game table
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('game-table').classList.remove('hidden');
+            document.getElementById('phase-indicator').classList.remove('hidden');
+            document.getElementById('history-btn').classList.remove('hidden');
+            
+            renderPlayers();
+            updatePhaseIndicator();
+            startNominationPhase();
+        }
+
+        // ============================================================================
+        // PLAYER RENDERING - Circular Table Layout
+        // ============================================================================
+        function renderPlayers() {
+            const container = document.getElementById('players-container');
+            container.innerHTML = '';
+            
+            const centerX = 50;
+            const centerY = 50;
+            const radiusX = 42;
+            const radiusY = 38;
+            const totalPlayers = gameState.players.length;
+            
+            gameState.players.forEach((player, index) => {
+                const angle = (index / totalPlayers) * 2 * Math.PI + Math.PI / 2;
+                const x = centerX + radiusX * Math.cos(angle);
+                const y = centerY + radiusY * Math.sin(angle);
+                
+                const seat = document.createElement('div');
+                seat.className = 'player-seat absolute';
+                seat.style.left = `${x}%`;
+                seat.style.top = `${y}%`;
+                seat.style.transform = 'translate(-50%, -50%)';
+                seat.id = `seat-${player.id}`;
+                
+                const isLeader = index === gameState.currentLeader;
+                const isCurrentUser = player.id === gameState.currentUser?.id;
+                
+                seat.innerHTML = `
+                    <div class="player-avatar ${isLeader ? 'current-leader' : ''} ${isCurrentUser ? 'border-yellow-500' : ''}" 
+                         style="background: linear-gradient(145deg, ${isGoodRole(player.role) ? '#2d4a7c' : '#5c2d8f'}, #1a1f2a)">
+                        ${player.avatar}
+                        ${isLeader ? '<div class="team-shield" style="position:absolute; top:-8px; right:-8px;">👑</div>' : ''}
+                    </div>
+                    <div class="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs whitespace-nowrap font-medium">
+                        ${player.name}
+                        ${isCurrentUser ? '<span class="block text-yellow-500 text-xs">(You)</span>' : ''}
+                    </div>
+                `;
+                
+                container.appendChild(seat);
+            });
+        }
+
+        // ============================================================================
+        // PHASE MANAGEMENT
+        // ============================================================================
+        function updatePhaseIndicator() {
+            const indicator = document.getElementById('phase-text');
+            const phaseNames = {
+                'nomination': GAME_TEXT_CONFIG.phases.nomination,
+                'voting': GAME_TEXT_CONFIG.phases.voting,
+                'quest': GAME_TEXT_CONFIG.phases.quest,
+                'tally': GAME_TEXT_CONFIG.phases.tally,
+                'leadership': GAME_TEXT_CONFIG.phases.leadership
+            };
+            indicator.textContent = phaseNames[gameState.currentPhase] || gameState.currentPhase;
+        }
+
+        function startNominationPhase() {
+            gameState.currentPhase = 'nomination';
+            updatePhaseIndicator();
+            
+            if (gameState.currentLeader >= gameState.players.length) {
+                gameState.currentLeader = 0;
+            }
+            
+            // Check if current leader is disconnected
+            if (gameState.playersDisconnected.includes(gameState.players[gameState.currentLeader].id)) {
+                showDisconnectOverlay(gameState.players[gameState.currentLeader].name);
+                return;
+            }
+            
+            if (gameState.players[gameState.currentLeader].id === gameState.currentUser?.id || DEMO_MODE_ACTIVE) {
+                openTeamSelectionModal();
+            }
+        }
+
+        // ============================================================================
+        // TEAM SELECTION
+        // ============================================================================
+        function openTeamSelectionModal() {
+            const modal = document.getElementById('team-modal');
+            const selection = document.getElementById('team-selection');
+            const requirement = document.getElementById('team-requirement');
+            
+            const missionConfig = MISSION_CONFIG[gameState.players.length] || MISSION_CONFIG[5];
+            const teamSize = missionConfig.missions[gameState.currentMission];
+            requirement.textContent = `Select ${teamSize} players for Mission ${gameState.currentMission + 1}`;
+            
+            selection.innerHTML = '';
+            
+            gameState.players.forEach((player, index) => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-3 bg-gray-800 rounded-lg';
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="player-avatar w-10 h-10 text-sm" style="background: linear-gradient(145deg, ${isGoodRole(player.role) ? '#2d4a7c' : '#5c2d8f'}, #1a1f2a)">
+                            ${player.avatar}
+                        </div>
+                        <span>${player.name}</span>
+                    </div>
+                    <div class="checkbox-custom" data-player="${player.id}"></div>
+                `;
+                
+                item.querySelector('.checkbox-custom').addEventListener('click', function() {
+                    this.classList.toggle('checked');
+                    updateTeamSelection();
+                });
+                
+                selection.appendChild(item);
+            });
+            
+            modal.classList.add('active');
+        }
+
+        function updateTeamSelection() {
+            const checked = document.querySelectorAll('.checkbox-custom.checked');
+            const submitBtn = document.getElementById('submit-team');
+            const missionConfig = MISSION_CONFIG[gameState.players.length] || MISSION_CONFIG[5];
+            const teamSize = missionConfig.missions[gameState.currentMission];
+            
+            submitBtn.disabled = checked.length !== teamSize;
+        }
+
+        function submitTeam() {
+            const checked = document.querySelectorAll('.checkbox-custom.checked');
+            gameState.teamMembers = Array.from(checked).map(el => el.dataset.player);
+            
+            document.getElementById('team-modal').classList.remove('active');
+            startVotingPhase();
+        }
+
+        // ============================================================================
+        // VOTING PHASE
+        // ============================================================================
+        function startVotingPhase() {
+            gameState.currentPhase = 'voting';
+            updatePhaseIndicator();
+            gameState.votes = {};
+            
+            if (gameState.players[gameState.currentLeader].id === gameState.currentUser?.id || DEMO_MODE_ACTIVE) {
+                openVoteModal();
+            }
+        }
+
+        function openVoteModal() {
+            const modal = document.getElementById('vote-modal');
+            const instruction = document.getElementById('vote-instruction');
+            instruction.textContent = `Vote to approve or reject the nominated team of ${gameState.teamMembers.length} players`;
+            modal.classList.add('active');
+        }
+
+        function submitVote(approve) {
+            const modal = document.getElementById('vote-modal');
+            modal.classList.remove('active');
+            
+            gameState.votes[gameState.currentUser?.id] = approve;
+            
+            // In demo mode, auto-generate votes for all players
+            if (DEMO_MODE_ACTIVE) {
+                simulateAllVotes(approve);
+            }
+        }
+
+        function simulateAllVotes(approve) {
+            gameState.players.forEach(player => {
+                gameState.votes[player.id] = Math.random() > 0.3 ? approve : !approve;
+            });
+            
+            setTimeout(() => {
+                const approveCount = Object.values(gameState.votes).filter(v => v).length;
+                const rejectCount = Object.values(gameState.votes).length - approveCount;
+                
+                if (approveCount > rejectCount) {
+                    startQuestPhase();
+                } else {
+                    handleVoteRejection();
+                }
+            }, 1500);
+        }
+
+        function handleVoteRejection() {
+            showContinueModal(
+                'Vote Rejected',
+                'The team was rejected. Leader token passes to the next player.',
+                () => {
+                    gameState.currentLeader++;
+                    if (gameState.currentLeader >= gameState.players.length) {
+                        gameState.currentLeader = 0;
+                    }
+                    startNominationPhase();
+                }
+            );
+        }
+
+        // ============================================================================
+        // QUEST PHASE
+        // ============================================================================
+        function startQuestPhase() {
+            gameState.currentPhase = 'quest';
+            updatePhaseIndicator();
+            gameState.questResults = [];
+            
+            if (gameState.players[gameState.currentLeader].id === gameState.currentUser?.id || DEMO_MODE_ACTIVE) {
+                openQuestModal();
+            }
+        }
+
+        function openQuestModal() {
+            const modal = document.getElementById('quest-modal');
+            const warning = document.getElementById('quest-warning');
+            const user = gameState.currentUser;
+            
+            if (user && isGoodRole(user.role)) {
+                warning.classList.remove('hidden');
+            } else {
+                warning.classList.add('hidden');
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function submitQuestResult(success) {
+            const modal = document.getElementById('quest-modal');
+            modal.classList.remove('active');
+            
+            gameState.questResults.push(success);
+            
+            if (DEMO_MODE_ACTIVE) {
+                simulateQuestResults();
+            } else {
+                startTallyPhase();
+            }
+        }
+
+        function simulateQuestResults() {
+            const missionConfig = MISSION_CONFIG[gameState.players.length] || MISSION_CONFIG[5];
+            const teamSize = missionConfig.missions[gameState.currentMission];
+            const evilPlayersOnTeam = gameState.teamMembers.filter(id => {
+                const player = gameState.players.find(p => p.id === id);
+                return player && !isGoodRole(player.role);
+            }).length;
+            
+            // Simulate quest results based on team composition
+            for (let i = 0; i < teamSize; i++) {
+                const isEvilOnTeam = i < evilPlayersOnTeam;
+                const result = isEvilOnTeam ? (Math.random() > 0.5) : true;
+                gameState.questResults.push(result);
+            }
+            
+            setTimeout(() => {
+                startTallyPhase();
+            }, 1500);
+        }
+
+        // ============================================================================
+        // TALLY PHASE
+        // ============================================================================
+        function startTallyPhase() {
+            gameState.currentPhase = 'tally';
+            updatePhaseIndicator();
+            
+            const missionConfig = MISSION_CONFIG[gameState.players.length] || MISSION_CONFIG[5];
+            const failsRequired = missionConfig.failsRequired[gameState.currentMission];
+            const failCount = gameState.questResults.filter(r => !r).length;
+            
+            if (failCount >= failsRequired) {
+                gameState.questFailures++;
+            } else {
+                gameState.questSuccesses++;
+            }
+            
+            // Show tally animation
+            showQuestTally(failCount, gameState.questResults.length - failCount);
+        }
+
+        function showQuestTally(fails, successes) {
+            const stack = document.getElementById('card-stack');
+            stack.innerHTML = '';
+            
+            const missionConfig = MISSION_CONFIG[gameState.players.length] || MISSION_CONFIG[5];
+            const failsRequired = missionConfig.failsRequired[gameState.currentMission];
+            
+            // Create tally display
+            setTimeout(() => {
+                stack.innerHTML = `
+                    <div class="quest-result-display">
+                        <div class="text-center">
+                            <div class="result-count text-green-500">🛡️ ${successes}</div>
+                            <div class="text-xs">SUCCESS</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="result-count text-red-500">👿 ${fails}</div>
+                            <div class="text-xs">FAIL</div>
+                        </div>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    checkGameEnd();
+                }, 2000);
+            }, 500);
+        }
+
+        // ============================================================================
+        // GAME END CHECK
+        // ============================================================================
+        function checkGameEnd() {
+            const missionConfig = MISSION_CONFIG[gameState.players.length] || MISSION_CONFIG[5];
+            
+            if (gameState.questFailures >= 3) {
+                endGame('evil');
+                return;
+            }
+            
+            if (gameState.questSuccesses >= 3) {
+                endGame('good');
+                return;
+            }
+            
+            // Continue to next mission
+            showContinueModal(
+                'Mission Complete',
+                `Success: ${gameState.questSuccesses} | Fail: ${gameState.questFailures}`,
+                () => {
+                    gameState.currentMission++;
+                    if (gameState.currentMission >= missionConfig.missions.length) {
+                        gameState.currentMission = 0;
+                    }
+                    gameState.currentLeader++;
+                    if (gameState.currentLeader >= gameState.players.length) {
+                        gameState.currentLeader = 0;
+                    }
+                    startNominationPhase();
+                }
+            );
+        }
+
+        // ============================================================================
+        // GAME OVER
+        // ============================================================================
+        function endGame(winner) {
+            gameState.gameEnded = true;
+            const modal = document.getElementById('game-over-modal');
+            const icon = document.getElementById('game-over-icon');
+            const title = document.getElementById('game-over-title');
+            const message = document.getElementById('game-over-message');
+            
+            if (winner === 'good') {
+                icon.textContent = GAME_TEXT_CONFIG.gameOver.goodWins.icon;
+                title.textContent = GAME_TEXT_CONFIG.gameOver.goodWins.title;
+                title.className = 'font-medieval text-3xl mb-2 text-green-500';
+                message.textContent = GAME_TEXT_CONFIG.gameOver.goodWins.message;
+            } else {
+                icon.textContent = GAME_TEXT_CONFIG.gameOver.evilWins.icon;
+                title.textContent = GAME_TEXT_CONFIG.gameOver.evilWins.title;
+                title.className = 'font-medieval text-3xl mb-2 text-red-500';
+                message.textContent = GAME_TEXT_CONFIG.gameOver.evilWins.message;
+            }
+            
+            modal.classList.add('active');
+        }
+
+        // ============================================================================
+        // CONTINUE MODAL
+        // ============================================================================
+        function showContinueModal(title, message, callback) {
+            const modal = document.getElementById('continue-modal');
+            document.getElementById('continue-message').innerHTML = `
+                <h3 class="font-medieval text-xl text-yellow-500 mb-2">${title}</h3>
+                <p class="text-gray-300">${message}</p>
+            `;
+            
+            const btn = document.getElementById('continue-btn');
+            btn.onclick = () => {
+                modal.classList.remove('active');
+                if (callback) callback();
+            };
+            
+            modal.classList.add('active');
+        }
+
+        // ============================================================================
+        // HISTORY PANEL
+        // ============================================================================
+        function addToHistory(text) {
+            const timestamp = new Date().toLocaleTimeString();
+            gameState.history.unshift({ timestamp, text });
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-content');
+            container.innerHTML = gameState.history.map(item => `
+                <div class="history-item">
+                    <div class="text-xs text-gray-500">${item.timestamp}</div>
+                    <div>${item.text}</div>
+                </div>
+            `).join('');
+        }
+
+        // ============================================================================
+        // DISCONNECT HANDLING
+        // ============================================================================
+        function showDisconnectOverlay(playerName) {
+            const overlay = document.getElementById('disconnect-overlay');
+            document.getElementById('disconnect-player').textContent = playerName;
+            overlay.classList.remove('hidden');
+        }
+
+        // ============================================================================
+        // EVENT LISTENERS
+        // ============================================================================
+        function setupEventListeners() {
+            // Demo Panel
+            document.getElementById('bot-all-btn').addEventListener('click', () => {
+                gameState.players.forEach(player => {
+                    console.log(`⚡ Bot action for ${player.name}`);
+                });
+            });
+
+            // Login
+            document.getElementById('google-signin-btn').addEventListener('click', handleGoogleSignIn);
+            document.getElementById('guest-btn').addEventListener('click', handleGuestLogin);
+
+            // Role Screen
+            document.getElementById('reveal-done-btn').addEventListener('click', () => {
+                document.getElementById('role-screen').classList.add('hidden');
+                document.getElementById('game-table').classList.remove('hidden');
+                document.getElementById('phase-indicator').classList.remove('hidden');
+                document.getElementById('history-btn').classList.remove('hidden');
+                renderPlayers();
+                startNominationPhase();
+            });
+
+            // Vote Modal
+            document.getElementById('vote-approve').addEventListener('click', () => submitVote(true));
+            document.getElementById('vote-reject').addEventListener('click', () => submitVote(false));
+
+            // Quest Modal
+            document.getElementById('quest-success').addEventListener('click', () => submitQuestResult(true));
+            document.getElementById('quest-fail').addEventListener('click', () => submitQuestResult(false));
+
+            // Team Modal
+            document.getElementById('submit-team').addEventListener('click', submitTeam);
+
+            // History
+            document.getElementById('history-btn').addEventListener('click', () => {
+                document.getElementById('history-panel').classList.add('active');
+            });
+            document.getElementById('history-close-btn').addEventListener('click', () => {
+                document.getElementById('history-panel').classList.remove('active');
+            });
+
+            // Admin
+            document.getElementById('admin-gear').addEventListener('click', () => {
+                document.getElementById('admin-modal').classList.add('active');
+            });
+            document.getElementById('admin-close-btn').addEventListener('click', () => {
+                document.getElementById('admin-modal').classList.remove('active');
+            });
+
+            // Game Over
+            document.getElementById('play-again-btn').addEventListener('click', () => {
+                location.reload();
+            });
+
+            // Firebase Setup
+            document.getElementById('firebase-save-btn').addEventListener('click', saveFirebaseConfig);
+            document.getElementById('firebase-skip-btn').addEventListener('click', () => {
+                document.getElementById('firebase-setup-modal').classList.remove('active');
+            });
+        }
+
+        // ============================================================================
+        // AUTH HANDLERS
+        // ============================================================================
+        function handleGoogleSignIn() {
+            if (!auth) {
+                showFirebaseSetup();
+                return;
+            }
+            
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).then((result) => {
+                addToHistory(`${result.user.displayName} signed in`);
+                startGame();
+            }).catch((error) => {
+                console.error('Google sign in error:', error);
+                showFirebaseSetup();
+            });
+        }
+
+        function handleGuestLogin() {
+            const nickname = document.getElementById('nickname-input').value.trim();
+            if (!nickname) {
+                alert('Please enter a nickname');
+                return;
+            }
+            
+            gameState.currentUser = {
+                id: generateId(),
+                displayName: nickname,
+                email: null
+            };
+            
+            addToHistory(`${nickname} joined as guest`);
+            startGame();
+        }
+
+        function showFirebaseSetup() {
+            document.getElementById('firebase-setup-modal').classList.add('active');
+        }
+
+        function saveFirebaseConfig() {
+            const apiKey = document.getElementById('firebase-api-key').value;
+            const authDomain = document.getElementById('firebase-auth-domain').value;
+            const projectId = document.getElementById('firebase-project-id').value;
+            
+            if (!apiKey || !authDomain || !projectId) {
+                alert('Please fill in all Firebase fields');
+                return;
+            }
+            
+            firebaseConfig = { apiKey, authDomain, projectId };
+            localStorage.setItem('firebaseConfig', JSON.stringify(firebaseConfig));
+            initializeFirebaseApp();
+            
+            document.getElementById('firebase-setup-modal').classList.remove('active');
+        }
+
+        function startGame() {
+            document.getElementById('login-screen').classList.add('hidden');
+            
+            if (DEMO_MODE_ACTIVE) {
+                setupDemoMode();
+            } else {
+                // In live mode, would wait for room creation/joining
+                document.getElementById('role-screen').classList.remove('hidden');
+            }
+        }
+
+        // ============================================================================
+        // PWA INSTALL HANDLING
+        // ============================================================================
+        let deferredPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-overlay').classList.remove('hidden');
+        });
+
+        document.getElementById('install-btn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                document.getElementById('install-overlay').classList.add('hidden');
+            }
+        });
+
+        // ============================================================================
+        // SERVICE WORKER REGISTRATION
+        // ============================================================================
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then(() => console.log('Service Worker registered'))
+                    .catch((err) => console.error('SW registration failed:', err));
+            }
+        }
+
+        // ============================================================================
+        // INITIALIZATION
+        // ============================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            initFirebase();
+            setupEventListeners();
+            registerServiceWorker();
+            
+            if (!DEMO_MODE_ACTIVE && !firebaseConfig) {
+                showFirebaseSetup();
+            }
+        });
+    </script>
+</body>
+</html>
