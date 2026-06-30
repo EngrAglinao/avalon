@@ -27,9 +27,9 @@
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
     import { getDatabase, ref, set, get, onValue, off, push, update, remove, serverTimestamp, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-    window._firebaseModules = { initializeApp, getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, getDatabase, ref, set, get, onValue, off, push, update, remove, serverTimestamp, onDisconnect };
+    window._firebaseModules = { initializeApp, getAuth, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut, onAuthStateChanged, getDatabase, ref, set, get, onValue, off, push, update, remove, serverTimestamp, onDisconnect };
   </script>
 
   <style>
@@ -1621,13 +1621,13 @@ const GAME_TEXT_CONFIG = {
    FIREBASE CONFIGURATION (Static — no wizard)
 ════════════════════════════════════════════════════════════════ */
 const firebaseConfig = {
-  apiKey: "AIzaSyBguRpCz2sra2EYCe4rdfu4dF-36j5FE7U",
-  authDomain: "the-avalon.firebaseapp.com",
-  databaseURL: "https://the-avalon-default-rtdb.firebaseio.com",
-  projectId: "the-avalon",
-  storageBucket: "the-avalon.firebasestorage.app",
-  messagingSenderId: "593708085855",
-  appId: "1:593708085855:web:cd62340b7b9ebfee6561ea"
+  apiKey:            "AIzaSyDEMO_REPLACE_WITH_YOUR_KEY",
+  authDomain:        "avalon-resistance.firebaseapp.com",
+  databaseURL:       "https://avalon-resistance-default-rtdb.firebaseio.com",
+  projectId:         "avalon-resistance",
+  storageBucket:     "avalon-resistance.appspot.com",
+  messagingSenderId: "123456789012",
+  appId:             "1:123456789012:web:abcdefabcdefabcdef",
 };
 const ADMIN_EMAIL = "buenavistaaglinaodanny@gmail.com";
 
@@ -1635,7 +1635,7 @@ const ADMIN_EMAIL = "buenavistaaglinaodanny@gmail.com";
    === BEGIN DEMO SANDBOX ZONE ===
    DEMO MODE FLAG — set false for production
 ════════════════════════════════════════════════════════════════ */
-const DEMO_MODE_ACTIVE = false;
+const DEMO_MODE_ACTIVE = true;
 /* === END DEMO SANDBOX ZONE === */
 
 /* ════════════════════════════════════════════════════════════════
@@ -1818,22 +1818,40 @@ function setupAuthListener() {
   if(!_state.auth || !window._firebaseModules) return;
   const { onAuthStateChanged } = window._firebaseModules;
   onAuthStateChanged(_state.auth, user => {
-    if(user) {
+    if(user && !user.isAnonymous) {
       _state.currentUser = user;
       _state.isAdmin     = user.email === ADMIN_EMAIL;
       _state.isGuest     = false;
       goToLobby(user.displayName || user.email.split('@')[0]);
     }
+    // Anonymous (guest) sign-ins are handled directly by the guest-enter-btn
+    // handler above, since guests don't have displayName/email on the auth user.
   });
 }
 
 /* ════════════════════════════════════════════════════════════════
    AUTH SCREEN EVENTS
 ════════════════════════════════════════════════════════════════ */
-$('guest-enter-btn').addEventListener('click', () => {
+$('guest-enter-btn').addEventListener('click', async () => {
   const name = $('guest-name').value.trim();
   if(!name || name.length < 2) { showToast('Enter a name (2+ characters)', 'error'); return; }
-  _state.currentUser = { uid: 'guest_'+Date.now(), displayName: name, isAnonymous: true };
+
+  if(!DEMO_MODE_ACTIVE && _state.auth && window._firebaseModules?.signInAnonymously) {
+    $('guest-enter-btn').disabled = true;
+    try {
+      const cred = await window._firebaseModules.signInAnonymously(_state.auth);
+      _state.currentUser = { uid: cred.user.uid, displayName: name, isAnonymous: true };
+    } catch(e) {
+      showToast('Guest sign-in failed: '+e.message, 'error');
+      $('guest-enter-btn').disabled = false;
+      return;
+    }
+    $('guest-enter-btn').disabled = false;
+  } else {
+    // Demo mode / no Firebase configured: local-only fake uid is fine
+    _state.currentUser = { uid: 'guest_'+Date.now(), displayName: name, isAnonymous: true };
+  }
+
   _state.isGuest = true;
   _state.isAdmin = false;
   goToLobby(name);
@@ -3070,6 +3088,9 @@ function updateSidebarMenu() {
 
 function leaveToLogin() {
   closeSidebar();
+  if(_state.auth && window._firebaseModules?.signOut) {
+    window._firebaseModules.signOut(_state.auth).catch(()=>{});
+  }
   _state.currentUser = null;
   _state.isGuest      = true;
   _state.roomCode      = null;
