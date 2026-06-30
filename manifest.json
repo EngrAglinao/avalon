@@ -1,27 +1,57 @@
 {
   "name": "The Resistance: Avalon",
   "short_name": "Avalon",
-  "description": "A social deduction board game of loyalty, deception, and honor.",
-  "start_url": "/",
+  "description": "A mobile-first digital tabletop experience for The Resistance: Avalon — a strategic social deduction game of hidden loyalties, quests, and betrayal set in Arthurian legend.",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#11141a",
-  "theme_color": "#d4af37",
-  "categories": ["games", "entertainment"],
+  "theme_color": "#11141a",
+  "lang": "en-US",
+  "categories": ["games", "entertainment", "social"],
   "icons": [
     {
-      "src": "icons/app_icon.png",
+      "src": "./icons/app_icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icons/app_icon.png",
+      "src": "./icons/app_icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [],
-  "prefer_related_applications": false
+  "screenshots": [
+    {
+      "src": "./icons/app_icon.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Avalon Game Table"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Host a Game",
+      "short_name": "Host",
+      "description": "Quickly create a new game room",
+      "url": "./index.html?action=host",
+      "icons": [{ "src": "./icons/leader_token.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Join a Game",
+      "short_name": "Join",
+      "description": "Join an existing game room",
+      "url": "./index.html?action=join",
+      "icons": [{ "src": "./icons/team_shield.png", "sizes": "96x96" }]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }
