@@ -1974,6 +1974,124 @@
     .history-result-badge.loss { background: rgba(140,26,26,0.15); color: var(--evil-light); border: 1px solid rgba(192,57,43,0.3); }
     .history-empty { font-size: 0.78rem; color: var(--text-muted); text-align: center; padding: 20px 0; }
 
+
+    /* ── In-game FABs ─────────────────────────────────────────── */
+    .game-fabs {
+      position: fixed;
+      bottom: 24px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 120;
+    }
+    .fab {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      font-size: 1.3rem;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .fab:active { transform: scale(0.92); }
+    .fab-role { background: var(--bg-card); border: 1px solid var(--gold-dim); color: var(--gold); }
+    .fab-history { background: var(--bg-card); border: 1px solid rgba(139,90,43,0.4); color: var(--parchment); }
+
+    /* ── Role Reveal Modal ────────────────────────────────────── */
+    .role-reveal-overlay {
+      align-items: flex-end;
+      background: rgba(0,0,0,0.85);
+    }
+    .role-reveal-overlay.visible { display: flex; }
+    .role-reveal-sheet {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 24px 20px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .role-reveal-eyebrow {
+      font-family: var(--font-title);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+    }
+
+    /* ── Match History Modal ──────────────────────────────────── */
+    .match-history-sheet {
+      padding: 0;
+      max-height: 85vh;
+    }
+    .mh-quest-block {
+      background: var(--bg-elevated);
+      border-radius: var(--radius-sm);
+      border: var(--border-subtle);
+      overflow: hidden;
+    }
+    .mh-quest-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border-bottom: var(--border-subtle);
+      font-family: var(--font-title); font-size: 0.8rem;
+    }
+    .mh-quest-icon { font-size: 1.1rem; }
+    .mh-quest-label { flex: 1; color: var(--text-primary); }
+    .mh-quest-result {
+      font-size: 0.68rem; padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-weight: 700; letter-spacing: 0.04em;
+    }
+    .mh-quest-result.success { background: rgba(39,174,96,0.15); color: var(--good-light); border: 1px solid rgba(39,174,96,0.3); }
+    .mh-quest-result.fail { background: rgba(140,26,26,0.15); color: var(--evil-light); border: 1px solid rgba(192,57,43,0.3); }
+    .mh-quest-result.pending { background: rgba(212,175,55,0.1); color: var(--gold-dim); border: 1px solid rgba(212,175,55,0.25); }
+    .mh-proposal {
+      padding: 10px 14px;
+      border-bottom: var(--border-subtle);
+      font-size: 0.78rem;
+    }
+    .mh-proposal:last-child { border-bottom: none; }
+    .mh-proposal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .mh-leader { color: var(--text-secondary); font-size: 0.72rem; }
+    .mh-vote-result {
+      font-size: 0.68rem; padding: 1px 7px;
+      border-radius: var(--radius-full);
+    }
+    .mh-vote-result.approved { background: rgba(39,174,96,0.15); color: var(--good-light); border: 1px solid rgba(39,174,96,0.3); }
+    .mh-vote-result.rejected { background: rgba(140,26,26,0.15); color: var(--evil-light); border: 1px solid rgba(192,57,43,0.3); }
+    .mh-team-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+    .mh-team-chip {
+      background: var(--bg-deep); border: var(--border-subtle);
+      border-radius: var(--radius-full); padding: 2px 10px;
+      font-size: 0.72rem; color: var(--text-secondary);
+    }
+    .mh-votes-row { display: flex; flex-wrap: wrap; gap: 4px; }
+    .mh-vote-chip {
+      font-size: 0.68rem; padding: 1px 7px;
+      border-radius: var(--radius-full); border: var(--border-subtle);
+      color: var(--text-muted); background: var(--bg-deep);
+    }
+    .mh-vote-chip.approve { color: var(--good-light); border-color: rgba(39,174,96,0.3); }
+    .mh-vote-chip.reject { color: var(--evil-light); border-color: rgba(192,57,43,0.3); }
+    .mh-quest-cards { display: flex; gap: 6px; padding: 10px 14px; flex-wrap: wrap; }
+    .mh-card-chip {
+      font-size: 0.72rem; padding: 3px 10px;
+      border-radius: var(--radius-full);
+    }
+    .mh-card-chip.success { background: rgba(39,174,96,0.12); color: var(--good-light); border: 1px solid rgba(39,174,96,0.25); }
+    .mh-card-chip.fail { background: rgba(140,26,26,0.12); color: var(--evil-light); border: 1px solid rgba(192,57,43,0.25); }
+
   </style>
 </head>
 <body>
@@ -2256,31 +2374,10 @@
         <div class="vision-pip"><div class="vision-pip-dot good"></div> Merlin?</div>
         <div class="vision-pip"><div class="vision-pip-dot question"></div> ?</div>
       </div>
-      <div class="night-role-reveal" id="night-role-reveal">
-        <div class="role-flip-scene" id="role-flip-scene">
-          <div class="role-flip-card" id="role-flip-card">
-            <div class="role-flip-front">
-              <div class="role-flip-front-pattern"></div>
-              <div class="role-flip-front-border"></div>
-              <div class="role-flip-front-crest">&#x1F6E1;</div>
-              <div class="role-flip-front-label">Avalon</div>
-            </div>
-            <div class="role-flip-back">
-              <img id="role-card-img" src="" alt="Role Card" />
-            </div>
-          </div>
-        </div>
-        <div class="role-hold-btn" id="role-reveal-btn">
-          <div class="hold-progress"></div>
-          <span style="position:relative;z-index:1;">&#x1F441;</span>
-          <span style="position:relative;z-index:1;">Hold to Reveal Your Role</span>
-        </div>
-        <div class="role-card-reveal" id="role-card-display">
-          <div class="role-card-name" id="role-card-name"></div>
-          <div class="role-card-text" id="role-card-text"></div>
-        </div>
+      <div class="night-role-reveal hidden" id="night-role-reveal">
+        <!-- kept for compatibility, actual reveal is now via floating modal -->
       </div>
-      <button class="btn-gold w-full night-ready-btn" id="btn-night-ready" style="max-width:300px;">
+      <button class="btn-gold w-full night-ready-btn hidden" id="btn-night-ready" style="max-width:300px;">
         ✓ I'm Ready — Wake Up
       </button>
       <div style="font-size:0.68rem;color:var(--text-muted);text-align:center;" id="night-ready-status">
@@ -2318,6 +2415,12 @@
 
     <!-- Dynamic Bottom Panel (nomination/vote/quest) -->
     <div id="game-bottom-panel"></div>
+
+    <!-- Floating Action Buttons (in-game) -->
+    <div class="game-fabs">
+      <button class="fab fab-role hidden" id="fab-view-role" title="View My Role">🎭</button>
+      <button class="fab fab-history" id="fab-match-history" title="Match History">📜</button>
+    </div>
   </div>
 
   <!-- ============================================================
@@ -2439,6 +2542,57 @@
     <div class="profile-section-title">Recent Games</div>
     <div class="profile-history-list" id="profile-history-list">
       <div class="history-empty">Play your first online game to see history here.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     ROLE REVEAL FLOATING MODAL
+================================================================ -->
+<div class="modal-overlay role-reveal-overlay" id="modal-role-reveal">
+  <div class="role-reveal-sheet">
+    <div class="role-reveal-eyebrow">Your Role This Game</div>
+    <div class="role-flip-scene" id="role-flip-scene">
+      <div class="role-flip-card" id="role-flip-card">
+        <div class="role-flip-front">
+          <div class="role-flip-front-pattern"></div>
+          <div class="role-flip-front-border"></div>
+          <div class="role-flip-front-crest">&#x1F6E1;</div>
+          <div class="role-flip-front-label">Avalon</div>
+        </div>
+        <div class="role-flip-back">
+          <img id="role-card-img" src="" alt="Role Card" />
+        </div>
+      </div>
+    </div>
+    <div class="role-hold-btn" id="role-reveal-btn">
+      <div class="hold-progress"></div>
+      <span style="position:relative;z-index:1;">👁</span>
+      <span style="position:relative;z-index:1;">Hold to Reveal Role</span>
+    </div>
+    <div class="role-card-reveal" id="role-card-display">
+      <div class="role-card-name" id="role-card-name"></div>
+      <div class="role-card-text" id="role-card-text"></div>
+    </div>
+    <button class="btn-gold w-full" id="btn-night-ready-modal" style="margin-top:12px;display:none;">
+      ✓ I've Seen My Role — I'm Ready
+    </button>
+    <div style="font-size:0.68rem;color:var(--text-muted);text-align:center;margin-top:6px;" id="night-ready-status-modal"></div>
+    <button class="btn-ghost" id="btn-close-role-modal" style="margin-top:8px;display:none;">Close</button>
+  </div>
+</div>
+
+<!-- ================================================================
+     MATCH HISTORY FLOATING MODAL
+================================================================ -->
+<div class="modal-overlay" id="modal-match-history">
+  <div class="modal-sheet match-history-sheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:var(--border-subtle);">
+      <div style="font-family:var(--font-title);font-size:0.95rem;color:var(--gold);">📜 Match History</div>
+      <button class="modal-close-btn" id="btn-close-match-history" style="position:static;">✕</button>
+    </div>
+    <div id="match-history-content" style="overflow-y:auto;max-height:70vh;padding:12px 16px 24px;display:flex;flex-direction:column;gap:14px;">
+      <div style="color:var(--text-muted);font-size:0.8rem;text-align:center;padding:20px 0;">No history yet</div>
     </div>
   </div>
 </div>
@@ -2606,6 +2760,8 @@ let G = {
   playerVotes: {},       // uid -> 'approve' | 'reject'
   questCards: {},        // uid -> 'success' | 'fail'
   readyPlayers: new Set(),
+  _nightReadyUnsub: null,
+  matchLog: [], // [{quest, proposals:[{leader,team,votes,voteResult,cards}], result}]
 
   // Lady of the Lake
   ladyHolder: -1,
@@ -2741,7 +2897,7 @@ if ('serviceWorker' in navigator) {
 // SECTION 8: SCREEN MANAGEMENT
 // ================================================================
 function closeAllModals() {
-  ['modal-assassin','modal-quest-reveal','modal-lady','admin-panel'].forEach(function(id){
+  ['modal-assassin','modal-quest-reveal','modal-lady','admin-panel','modal-role-reveal','modal-match-history'].forEach(function(id){
     var el=$(id); if(el) el.classList.remove('visible');
   });
 }
@@ -3451,8 +3607,11 @@ function resetGame() {
   G.questResults = []; G.nominated = [];
   G.playerVotes = {}; G.questCards = {};
   G.readyPlayers = new Set();
+  if (G._nightReadyUnsub) { G._nightReadyUnsub(); G._nightReadyUnsub = null; }
+  G.matchLog = [];
   G.ladyHolder = -1; G.ladyUsed = [];
   G._revealingQuest = false; G._resolvingVote = false;
+  hideRolePeekFab();
   closeAllModals();
 }
 
@@ -3470,14 +3629,36 @@ function beginNightPhase(assignments) {
   G._resolvingVote  = false;
   G.ladyHolder = G.ladyEnabled ? 1 : -1;
   G.ladyUsed = G.ladyEnabled ? [1] : [];
-  var btn = $('btn-night-ready');
-  if (btn) { btn.disabled = false; btn.textContent = "✓ I'm Ready — Wake Up"; }
   _cardFlipped = false;
+
+  // Reset flip card state
   var fc = $('role-flip-card'); if (fc) fc.classList.remove('flipped');
   var rcd = $('role-card-display'); if (rcd) rcd.classList.remove('visible');
+
+  // Populate role card content
+  var active = getActivePerspective();
+  if (active) {
+    var rd = getRoleData(active.role);
+    $('role-card-img').src = getCardSrc(active.role);
+    $('role-card-name').textContent = rd.name;
+    $('role-card-text').textContent = rd.visionText;
+  }
+
+  // Hide ready button until role is revealed
+  var readyBtn = $('btn-night-ready-modal');
+  if (readyBtn) { readyBtn.style.display = 'none'; }
+  var closeBtn = $('btn-close-role-modal');
+  if (closeBtn) closeBtn.style.display = 'none';
+
   showScreen('night');
   renderNightPhase();
+
+  // Open role reveal modal automatically
+  $('modal-role-reveal').classList.add('visible');
+
+  subscribeToNightReady();
 }
+
 
 function getActivePerspective() {
   if (G.perspective === -1) return G.players.find(p => p.isLocal);
@@ -3570,39 +3751,206 @@ function getLadyTokenHTML(playerIdx) {
 function renderNightReadyState() {
   const total = G.players.length;
   const ready = G.readyPlayers.size;
-  $('night-ready-status').textContent = `${ready} / ${total} players ready`;
+  const txt = `${ready} / ${total} players ready`;
+  const s1 = $('night-ready-status'); if (s1) s1.textContent = txt;
+  const s2 = $('night-ready-status-modal'); if (s2) s2.textContent = txt;
 }
 
-// Role reveal — hold 600ms to flip, tap scene to flip back
+// Role reveal — hold 600ms to flip; after flip, show ready button in modal
 var _holdTimer = null;
 var _cardFlipped = false;
 function flipCard(show) {
-  var card=$('role-flip-card'), disp=$('role-card-display');
+  var card = $('role-flip-card'), disp = $('role-card-display');
   if (!card) return;
-  if (show) { card.classList.add('flipped'); _cardFlipped=true; if(disp) disp.classList.add('visible'); }
-  else       { card.classList.remove('flipped'); _cardFlipped=false; if(disp) disp.classList.remove('visible'); }
+  if (show) {
+    card.classList.add('flipped');
+    _cardFlipped = true;
+    if (disp) disp.classList.add('visible');
+    // Reveal the ready button and close button now that role is seen
+    var readyBtn = $('btn-night-ready-modal');
+    if (readyBtn) {
+      var active = getActivePerspective();
+      var alreadyReady = active && G.readyPlayers.has(active.uid);
+      readyBtn.style.display = 'block';
+      readyBtn.disabled = alreadyReady;
+      readyBtn.textContent = alreadyReady ? '✓ Ready!' : "✓ I've Seen My Role — I'm Ready";
+    }
+    var closeBtn = $('btn-close-role-modal');
+    if (closeBtn) closeBtn.style.display = 'block';
+  } else {
+    card.classList.remove('flipped');
+    _cardFlipped = false;
+    if (disp) disp.classList.remove('visible');
+  }
 }
-$('role-reveal-btn').addEventListener('pointerdown', function() {
+
+$('role-reveal-btn').addEventListener('pointerdown', function () {
   if (_cardFlipped) return;
   $('role-reveal-btn').classList.add('holding');
-  _holdTimer = setTimeout(function(){ $('role-reveal-btn').classList.remove('holding'); flipCard(true); }, 600);
+  _holdTimer = setTimeout(function () {
+    $('role-reveal-btn').classList.remove('holding');
+    flipCard(true);
+  }, 600);
 });
-$('role-reveal-btn').addEventListener('pointerup', function(){ clearTimeout(_holdTimer); $('role-reveal-btn').classList.remove('holding'); });
-$('role-reveal-btn').addEventListener('pointerleave', function(){ clearTimeout(_holdTimer); $('role-reveal-btn').classList.remove('holding'); });
-$('role-flip-scene').addEventListener('click', function(){ if (_cardFlipped) flipCard(false); });
+$('role-reveal-btn').addEventListener('pointerup', function () { clearTimeout(_holdTimer); $('role-reveal-btn').classList.remove('holding'); });
+$('role-reveal-btn').addEventListener('pointerleave', function () { clearTimeout(_holdTimer); $('role-reveal-btn').classList.remove('holding'); });
+$('role-flip-scene').addEventListener('click', function () { if (_cardFlipped) flipCard(false); });
 
+// Ready button inside role modal
 function _onNightReadyClick() {
   var active = getActivePerspective();
   if (!active || G.readyPlayers.has(active.uid)) return;
   G.readyPlayers.add(active.uid);
-  var btn = $('btn-night-ready');
-  btn.disabled = true; btn.textContent = '✓ Ready!';
+  var mb = $('btn-night-ready-modal');
+  if (mb) { mb.disabled = true; mb.textContent = '✓ Ready!'; }
+  var lb = $('btn-night-ready');
+  if (lb) { lb.disabled = true; lb.textContent = '✓ Ready!'; }
   renderNightReadyState();
   syncFirebaseNightReady(active.uid);
   autoReadyBots();
   checkAllNightReady();
 }
+$('btn-night-ready-modal').addEventListener('click', _onNightReadyClick);
 $('btn-night-ready').addEventListener('click', _onNightReadyClick);
+
+// Close role modal (after role seen)
+$('btn-close-role-modal').addEventListener('click', function () {
+  $('modal-role-reveal').classList.remove('visible');
+});
+
+// ================================================================
+// SECTION 15b: ROLE PEEK FAB + MATCH HISTORY FAB
+// ================================================================
+
+// "View My Role" FAB — visible during gameplay (post-night), lets player re-check their role
+function showRolePeekFab() {
+  const fab = $('fab-view-role');
+  if (fab) fab.classList.remove('hidden');
+}
+function hideRolePeekFab() {
+  const fab = $('fab-view-role');
+  if (fab) fab.classList.add('hidden');
+}
+
+$('fab-view-role').addEventListener('click', function () {
+  const active = getActivePerspective();
+  if (!active) return;
+  const rd = getRoleData(active.role);
+  $('role-card-img').src = getCardSrc(active.role);
+  $('role-card-name').textContent = rd.name;
+  $('role-card-text').textContent = rd.visionText;
+
+  // Show card already flipped (peeking, no need to hold again)
+  const card = $('role-flip-card');
+  card.classList.add('flipped');
+  _cardFlipped = true;
+  $('role-card-display').classList.add('visible');
+
+  // Hide ready/close-for-readiness button — this is just a peek, not the night-phase flow
+  $('btn-night-ready-modal').style.display = 'none';
+  $('night-ready-status-modal').textContent = '';
+  $('btn-close-role-modal').style.display = 'block';
+
+  $('modal-role-reveal').classList.add('visible');
+});
+
+// Match History FAB
+$('fab-match-history').addEventListener('click', function () {
+  renderMatchHistory();
+  $('modal-match-history').classList.add('visible');
+});
+$('btn-close-match-history').addEventListener('click', function () {
+  $('modal-match-history').classList.remove('visible');
+});
+$('modal-match-history').addEventListener('click', function (e) {
+  if (e.target === $('modal-match-history')) $('modal-match-history').classList.remove('visible');
+});
+
+function renderMatchHistory() {
+  const container = $('match-history-content');
+  if (!container) return;
+
+  const entries = (G.matchLog || []).filter(q => q && q.proposals && q.proposals.length);
+
+  if (entries.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem;text-align:center;padding:20px 0;">No history yet</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  entries.forEach((q) => {
+    const block = document.createElement('div');
+    block.className = 'mh-quest-block';
+
+    const resultLabel = q.result === 'success' ? 'SUCCESS' : q.result === 'fail' ? 'FAIL' : 'IN PROGRESS';
+    const resultClass = q.result === 'success' ? 'success' : q.result === 'fail' ? 'fail' : 'pending';
+    const icon = q.result === 'success' ? '🛡️' : q.result === 'fail' ? '⚔️' : '⏳';
+
+    let html = `
+      <div class="mh-quest-header">
+        <span class="mh-quest-icon">${icon}</span>
+        <span class="mh-quest-label">Quest ${q.quest}</span>
+        <span class="mh-quest-result ${resultClass}">${resultLabel}</span>
+      </div>
+    `;
+
+    q.proposals.forEach((p) => {
+      const voteResultClass = p.voteResult === 'approved' ? 'approved' : p.voteResult === 'rejected' ? 'rejected' : '';
+      html += `
+        <div class="mh-proposal">
+          <div class="mh-proposal-header">
+            <span class="mh-leader">👑 ${p.leader} proposed:</span>
+            ${p.voteResult ? `<span class="mh-vote-result ${voteResultClass}">${p.voteResult === 'approved' ? '✓ ' + (p.approves||0) + '-' + (p.rejects||0) : '✗ ' + (p.approves||0) + '-' + (p.rejects||0)}</span>` : ''}
+          </div>
+          <div class="mh-team-chips">
+            ${p.team.map(name => `<span class="mh-team-chip">${name}</span>`).join('')}
+          </div>
+          ${p.votes && Object.keys(p.votes).length ? `
+            <div class="mh-votes-row">
+              ${Object.entries(p.votes).map(([name, v]) =>
+                `<span class="mh-vote-chip ${v === 'approve' ? 'approve' : v === 'reject' ? 'reject' : ''}">${name}: ${v === 'approve' ? '✓' : v === 'reject' ? '✗' : '…'}</span>`
+              ).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    });
+
+    if (q.cards && q.cards.length) {
+      html += `<div class="mh-quest-cards">` +
+        q.cards.map(c => `<span class="mh-card-chip ${c === 'success' ? 'success' : 'fail'}">${c === 'success' ? '✓ Success' : '✗ Fail'}</span>`).join('') +
+        `</div>`;
+    }
+
+    block.innerHTML = html;
+    container.appendChild(block);
+  });
+
+  // Scroll to most recent quest
+  container.scrollTop = container.scrollHeight;
+}
+
+
+
+// subscribeToNightReady also syncs ready button inside modal
+function subscribeToNightReady() {
+  if (!window._fb || !G.roomCode) return;
+  if (G._nightReadyUnsub) { G._nightReadyUnsub(); G._nightReadyUnsub = null; }
+  G._nightReadyUnsub = roomSubscribe(G.roomCode, (data) => {
+    if (!data || G.phase !== 'night') return;
+    G.readyPlayers = new Set(data.readyPlayers || []);
+    var active = getActivePerspective();
+    var alreadyReady = active && G.readyPlayers.has(active.uid);
+    if (alreadyReady) {
+      var mb = $('btn-night-ready-modal');
+      if (mb && mb.style.display !== 'none') { mb.disabled = true; mb.textContent = '✓ Ready!'; }
+      var lb = $('btn-night-ready');
+      if (lb) { lb.disabled = true; lb.textContent = '✓ Ready!'; }
+    }
+    renderNightReadyState();
+    checkAllNightReady();
+  });
+}
 
 function autoReadyBots() {
   G.players.forEach(function(p) { if (p.isBot) G.readyPlayers.add(p.uid); });
@@ -3611,8 +3959,13 @@ function autoReadyBots() {
 
 function checkAllNightReady() {
   if (G.readyPlayers.size >= G.players.length) {
+    if (G._nightReadyUnsub) { G._nightReadyUnsub(); G._nightReadyUnsub = null; }
+    // Clear readyPlayers in Firestore so it doesn't interfere with future rounds
+    if (window._fb && G.roomCode) roomUpdate(G.roomCode, { readyPlayers: [] }).catch(() => {});
     setTimeout(function() {
+      $('modal-role-reveal').classList.remove('visible');
       G.phase = 'nomination'; showScreen('game'); renderGameTable();
+      showRolePeekFab();
     }, 800);
   }
 }
@@ -3891,11 +4244,17 @@ function proposeTeam() {
   if (G.nominated.length !== QUEST_SIZES[G.players.length][G.currentQuest]) return;
   G.phase = 'voting';
   G.playerVotes = {};
-  renderGameTable();
-  // Auto-vote bots after a brief delay
-  if (DEMO_MODE_ACTIVE || G.players.some(p => p.isBot)) {
-    setTimeout(botVote, 600);
+
+  // Log this proposal attempt
+  if (!G.matchLog[G.currentQuest]) {
+    G.matchLog[G.currentQuest] = { quest: G.currentQuest + 1, proposals: [], result: null, cards: [] };
   }
+  const leaderName = G.players[G.currentLeader]?.name || '?';
+  const teamNames = G.nominated.map(i => G.players[i]?.name || '?');
+  G.matchLog[G.currentQuest].proposals.push({ leader: leaderName, team: teamNames, votes: {}, voteResult: null, cards: [] });
+
+  renderGameTable();
+  if (DEMO_MODE_ACTIVE || G.players.some(p => p.isBot)) setTimeout(botVote, 600);
 }
 
 function castVote(vote) {
@@ -3916,6 +4275,19 @@ function resolveVoting() {
   G._resolvingVote = true;
   var total    = G.players.length;
   var approves = Object.values(G.playerVotes).filter(function(v){return v==='approve';}).length;
+
+  // Log votes into current proposal
+  var qLog = G.matchLog[G.currentQuest];
+  if (qLog && qLog.proposals.length) {
+    var prop = qLog.proposals[qLog.proposals.length - 1];
+    prop.votes = Object.fromEntries(
+      G.players.map(p => [p.name, G.playerVotes[p.uid] || 'pending'])
+    );
+    prop.voteResult = approves > total / 2 ? 'approved' : 'rejected';
+    prop.approves = approves;
+    prop.rejects = total - approves;
+  }
+
   setTimeout(function() {
     G._resolvingVote = false;
     if (approves > total / 2) {
@@ -3966,6 +4338,14 @@ function revealQuestResults() {
   const needsDouble = n >= 7 && DOUBLE_FAIL_QUESTS.includes(G.currentQuest);
   const fails = cards.filter(c => c === 'fail').length;
   const questSuccess = needsDouble ? fails < 2 : fails === 0;
+
+  // Log shuffled (anonymous) cards + final result into match log
+  const qLog = G.matchLog[G.currentQuest];
+  if (qLog) {
+    qLog.cards = cards.slice();
+    qLog.failCount = fails;
+    qLog.result = questSuccess ? 'success' : 'fail';
+  }
 
   openQuestRevealModal(cards, questSuccess, fails);
 }
