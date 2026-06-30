@@ -1,0 +1,467 @@
+# ⚔️ The Resistance: Avalon — Mobile PWA
+
+> A fully self-contained, mobile-first Progressive Web App (PWA) companion for the tabletop board game **The Resistance: Avalon**.  
+> Built with pure HTML5, Tailwind CSS CDN, Firebase Realtime Database, and a zero-dependency vanilla JavaScript game engine.
+
+---
+
+## 📋 Table of Contents
+
+1. [Project Overview](#project-overview)
+2. [Workspace Directory Layout](#workspace-directory-layout)
+3. [Firebase Configuration Guide](#firebase-configuration-guide)
+4. [PWA Setup & Installation](#pwa-setup--installation)
+5. [Developer Testing Sandbox (DEMO_MODE)](#developer-testing-sandbox)
+6. [AI Art Generation Prompts](#ai-art-generation-prompts)
+7. [🐙 GitHub Source Control & Lifecycle Deployment Workflow](#-github-source-control--lifecycle-deployment-workflow)
+
+---
+
+## Project Overview
+
+This application digitizes the complete **Resistance: Avalon** game loop:
+
+| Feature | Status |
+|---|---|
+| 🌙 Night Phase role reveal (tap-and-hold) | ✅ Complete |
+| ⚔️ Quest nomination with team size enforcement | ✅ Complete |
+| 🗳️ Blind team voting system | ✅ Complete |
+| 🔮 Quest card submission (anonymous shuffle) | ✅ Complete |
+| 📊 Quest result reveal (card-by-card) | ✅ Complete |
+| 🔮 Lady of the Lake investigation phase | ✅ Complete |
+| 🗡️ Assassination endgame phase | ✅ Complete |
+| 📱 PWA install gate & offline caching | ✅ Complete |
+| 🤖 Strategic bot AI (demo sandbox) | ✅ Complete |
+| 🔥 Firebase realtime multiplayer sync | ✅ Ready (needs config) |
+| ⚙️ Master Admin control panel | ✅ Complete |
+| 📓 In-game investigation notepad | ✅ Complete |
+| 🌐 Circular table seating layout | ✅ Complete |
+
+---
+
+## 📁 Workspace Directory Layout
+
+```
+/  (project root)
+├── index.html              ← Single-file PWA engine (all game logic + UI)
+├── manifest.json           ← PWA configuration manifest
+├── sw.js                   ← Service Worker (offline caching)
+├── README.md               ← This file
+│
+├── cards/                  ← Character & Decision Card Assets (640×960px, 2:3 ratio)
+│   ├── merlin.png
+│   ├── percival.png
+│   ├── good_generic.png
+│   ├── good_generic_alt.png
+│   ├── assassin.png
+│   ├── morgana.png
+│   ├── mordred.png
+│   ├── oberon.png
+│   ├── evil_generic.png
+│   ├── evil_generic_alt.png
+│   ├── quest_success.png
+│   └── quest_fail.png
+│
+└── icons/                  ← Board Tokens & Badge Assets (512×512px, 1:1 ratio)
+    ├── vote_approve.png
+    ├── vote_reject.png
+    ├── leader_token.png
+    ├── quest_marker_good.png
+    ├── quest_marker_evil.png
+    ├── vote_tracker_token.png
+    ├── team_shield.png
+    ├── lady_token.png
+    └── app_icon.png
+```
+
+> **Important:** If any image file is missing, the engine automatically renders a styled CSS/typography placeholder. No broken image icons will ever appear.
+
+---
+
+## 🔥 Firebase Configuration Guide
+
+### Step 1: Create a Firebase Project
+1. Go to [https://console.firebase.google.com](https://console.firebase.google.com)
+2. Create a new project (e.g., `avalon-pwa`)
+3. Enable **Authentication** → Google Sign-In provider
+4. Enable **Realtime Database** → Start in **test mode**
+
+### Step 2: Get Your Web App Config
+In Firebase Console → Project Settings → Your Apps → Add Web App → Copy the config object.
+
+### Step 3: Paste Into index.html
+Open `index.html` and find the `firebaseConfig` object near the top of the `<script>` block:
+
+```javascript
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+```
+
+### Step 4: Firebase Realtime Database Rules
+Paste these rules in Firebase Console → Realtime Database → Rules:
+
+```json
+{
+  "rules": {
+    "rooms": {
+      "$roomCode": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "assets": {
+      ".read": true,
+      ".write": "auth.token.email === 'buenavistaaglinaodanny@gmail.com'"
+    }
+  }
+}
+```
+
+### Admin Account
+The email `buenavistaaglinaodanny@gmail.com` automatically receives:
+- ⚙️ Floating Admin Gear icon in lobby & game views
+- Access to the Master Admin Panel (force phase, re-open voting, terminate rooms)
+- Card Asset Uploader (Base64 → Firebase → real-time hot-swap)
+- Lady of the Lake global toggle
+
+---
+
+## 📱 PWA Setup & Installation
+
+### Manifest & Service Worker
+Both `manifest.json` and `sw.js` are pre-configured. Ensure they are served from the **same root directory** as `index.html`.
+
+### HTTPS Requirement
+PWAs require HTTPS. GitHub Pages, Firebase Hosting, and Vercel all provide free HTTPS.
+
+### Adding to Home Screen
+- **iOS Safari:** Share button → "Add to Home Screen"
+- **Android Chrome:** Browser menu → "Install app" / "Add to Home Screen"
+- **The in-app PWA install banner** will fire automatically on supported browsers.
+
+### App Icons
+Place a square PNG at `./icons/app_icon.png` (minimum 512×512px). This is used for home screen icons.
+
+---
+
+## 🛠️ Developer Testing Sandbox
+
+### Enabling Demo Mode
+Open `index.html` and change line at the very top of the `<script>` block:
+
+```javascript
+// Default (production):
+const DEMO_MODE_ACTIVE = false;
+
+// Testing/staging:
+const DEMO_MODE_ACTIVE = true;
+```
+
+### Demo Mode Features
+When `DEMO_MODE_ACTIVE = true`:
+
+| Control | Function |
+|---|---|
+| 👥 Player Slider | Adjust game size from 5–10 players |
+| Lady checkbox | Toggle Lady of the Lake expansion |
+| Perspective dropdown | Switch between all player viewpoints |
+| ⚡ Bot Complete | Execute strategic bot AI for current phase |
+| ↺ Restart | Reset and re-deal with current settings |
+
+### Vision Rules (verified via Perspective Switcher)
+| Role | Sees |
+|---|---|
+| Merlin | Morgana ⚠️, Assassin ⚠️, Oberon ⚠️, Minion ⚠️ — NOT Mordred |
+| Percival | Merlin ❓ and Morgana ❓ (both appear as "Merlin?") |
+| Evil team | Each other 🔴 (except Oberon is isolated) |
+| Oberon | No allies visible; no allies see Oberon |
+
+---
+
+## 🎨 AI Art Generation Prompts
+
+### Character Cards (`./cards/` — 640×960px, 2:3 ratio)
+Style suffix: `"...high-fantasy tarot card illustration, dark mood lighting, rich canvas textures, intricate metadata borders, cinematic game UI art, photorealistic detail, detailed face, symmetrical framing --ar 2:3"`
+
+| File | Prompt |
+|---|---|
+| `merlin.png` | An old wise wizard with glowing blue eyes, clutching an ancient staff, staring into a swirling starlight crystal ball. |
+| `percival.png` | A noble knight in gleaming silver plate armor, a brilliant blue cloak flowing behind him, vigilant expression. |
+| `good_generic.png` | A brave young medieval knight in polished chainmail, golden sun emblem on chest, determined expression. |
+| `good_generic_alt.png` | A wise medieval lady in royal blue robes, holding a glowing scroll, serene and noble expression. |
+| `assassin.png` | A hooded figure cloaked in shadows, holding a gleaming poisoned dagger, glowing malicious amber eyes peering through the dark. |
+| `morgana.png` | A deceptive sorceress clad in velvet dark crimson robes, manipulating a deceptive illusion of blue light in her hands. |
+| `mordred.png` | A towering, menacing warlord in jagged black spiked armor, a glowing dark fire aura radiating from his crown. |
+| `oberon.png` | A chaotic, feral dark fairy king draped in wild thorns, glowing pale green eyes, smiling ominously from the brush. |
+| `evil_generic.png` | A sinister medieval spy in dark leather armor, a serpent ring on his finger, eyes gleaming with treachery. |
+| `evil_generic_alt.png` | A corrupt medieval courtier in deep purple robes, whispering into a black raven's ear, smiling malevolently. |
+| `quest_success.png` | A magnificent holy grail chalice overflowing with golden starlight energy, a blue banner stating SUCCESS underneath. |
+| `quest_fail.png` | A broken medieval longsword shattered on jagged dark rocks, engulfed in red smoke and ash, a crimson banner stating FAIL underneath. |
+
+### Board Tokens (`./icons/` — 512×512px, 1:1 ratio)
+Style suffix: `"...isolated 2D game asset token, thick physical 3D dimension, rich textures, studio lighting, clear asset edges, transparent background look --ar 1:1"`
+
+| File | Prompt |
+|---|---|
+| `vote_approve.png` | A heavy circular wooden token with a deeply engraved royal blue wax seal featuring a golden medieval thumbs-up gesture. |
+| `vote_reject.png` | A heavy circular dark slate stone token with a deeply carved crimson red wax seal featuring a cracked shield gesture. |
+| `leader_token.png` | An intricate, heavy metallic gold crown crest badge with high-relief details, polished brass highlights, and a central sapphire. |
+| `quest_marker_good.png` | A circular enamel badge in royal blue with a gold sword emblem, heavy tactile tabletop token feel. |
+| `quest_marker_evil.png` | A circular dark iron token with a crimson flame emblem, ominous glow, heavy tabletop feel. |
+| `vote_tracker_token.png` | A small wooden disc with a black number carved into it, varnished surface, medieval board game aesthetic. |
+| `team_shield.png` | A beautiful knight's buckler shield asset, deep royal blue velvet lining on the left, dark crimson iron studs on the right. |
+| `lady_token.png` | A glowing mystical amulet featuring the Lady of the Lake, a pristine aqua-marine sapphire stone set into delicate swirling silver filigree loops. |
+| `app_icon.png` | A bold medieval crest icon — gold crown above a blue and red divided shield, black background, heraldic style. |
+
+---
+
+## 🐙 GITHUB SOURCE CONTROL & LIFECYCLE DEPLOYMENT WORKFLOW
+
+### 1. Git Initialization
+
+```bash
+# Navigate to your project root
+cd /path/to/your/avalon-project
+
+# Initialize git repository
+git init
+
+# Create .gitignore
+cat > .gitignore << 'EOF'
+# macOS system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V*
+.Trashes
+
+# Windows system files
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Linux system files
+*~
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node (if using local tooling)
+node_modules/
+npm-debug.log*
+
+# Environment / secrets (NEVER commit Firebase keys in plain text)
+.env
+.env.local
+*.env
+
+# Build artifacts
+dist/
+build/
+
+# Logs
+*.log
+
+# Track assets (cards and icons ARE committed with the project)
+# cards/ and icons/ are intentionally NOT in .gitignore
+EOF
+
+# Initial commit
+git add .
+git commit -m "feat: initial Avalon PWA project structure"
+```
+
+### 2. GitHub Repository Synchronization
+
+```bash
+# Create a repository on GitHub (via github.com UI), then:
+
+# Link to remote repository
+git remote add origin https://github.com/YOUR_USERNAME/avalon-pwa.git
+
+# Push main branch
+git push -u origin main
+
+# Verify remote connection
+git remote -v
+```
+
+### 3. Safe Single-File Branch Management
+
+This project uses a **two-branch architecture** to separate production from development:
+
+```bash
+# ── PRODUCTION BRANCH (main) ──
+# DEMO_MODE_ACTIVE = false
+# Contains live Firebase config
+# Deployed to GitHub Pages at HTTPS domain
+
+git checkout main
+# Edit index.html: ensure DEMO_MODE_ACTIVE = false
+git add index.html
+git commit -m "release: v1.x — production build"
+git push origin main
+
+
+# ── STAGING / SANDBOX BRANCH (sandbox-staging) ──
+# DEMO_MODE_ACTIVE = true
+# Firebase config may be blank or use test project
+# Used for visual QA, bot testing, and UX review
+
+git checkout -b sandbox-staging
+# Edit index.html: set DEMO_MODE_ACTIVE = true
+git add index.html
+git commit -m "sandbox: enable demo mode for staging review"
+git push origin sandbox-staging
+```
+
+**Branch protection rules** (set in GitHub → Settings → Branches):
+- `main` → Require pull request reviews before merging
+- `main` → Require status checks to pass
+- Never force-push to `main`
+
+**Merging staging → production:**
+```bash
+git checkout main
+git merge --no-ff sandbox-staging -m "merge: promote sandbox to production"
+# Remember to flip DEMO_MODE_ACTIVE back to false
+git push origin main
+```
+
+### 4. Automated CDN & Static Hosting via GitHub Pages
+
+```bash
+# Ensure GitHub Pages is enabled in repository Settings → Pages
+# Source: Deploy from a branch → main → / (root)
+
+# After push, your app will be live at:
+# https://YOUR_USERNAME.github.io/avalon-pwa/
+```
+
+**GitHub Pages Configuration Checklist:**
+- [ ] Repository is public (or you have GitHub Pro for private pages)
+- [ ] Settings → Pages → Source: `main` branch, `/ (root)` folder
+- [ ] `manifest.json` references use relative paths (`./`)
+- [ ] `sw.js` is in root and uses relative paths
+- [ ] HTTPS is enforced (automatic with GitHub Pages)
+- [ ] Firebase `authDomain` is updated to include the GitHub Pages domain
+
+**Custom Domain (Optional):**
+```bash
+# Create CNAME file in root
+echo "avalon.yourdomain.com" > CNAME
+git add CNAME
+git commit -m "config: custom domain CNAME"
+git push origin main
+# Then configure DNS A records to point to GitHub Pages IPs
+```
+
+### 5. Automated Deployment Workflow (GitHub Actions)
+
+Create `.github/workflows/deploy.yml` for automated staging validation:
+
+```yaml
+name: Avalon PWA — Validate & Deploy
+
+on:
+  push:
+    branches: [main, sandbox-staging]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Validate HTML Structure
+        run: |
+          if grep -q "DEMO_MODE_ACTIVE = true" index.html && [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "ERROR: DEMO_MODE_ACTIVE must be false on main branch!"
+            exit 1
+          fi
+          echo "✅ Demo mode flag check passed."
+      
+      - name: Check required files exist
+        run: |
+          for f in index.html manifest.json sw.js README.md; do
+            [ -f "$f" ] || { echo "MISSING: $f"; exit 1; }
+          done
+          echo "✅ All required files present."
+      
+      - name: Verify Firebase config placeholder
+        run: |
+          if grep -q '"YOUR_API_KEY"' index.html; then
+            echo "WARNING: Firebase config still contains placeholder values."
+          fi
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          publish_branch: gh-pages
+```
+
+### 6. Git Workflow Summary
+
+```
+main (production)
+  └── sandbox-staging (QA / DEMO_MODE = true)
+        └── feature/new-role-ui (individual features)
+        └── fix/vote-tracker-bug (bug patches)
+```
+
+```bash
+# Daily workflow for feature development
+git checkout sandbox-staging
+git pull origin sandbox-staging
+git checkout -b feature/my-new-feature
+
+# ... make changes ...
+
+git add .
+git commit -m "feat: description of change"
+git push origin feature/my-new-feature
+
+# Open Pull Request on GitHub: feature → sandbox-staging
+# Review, test in demo mode
+# Merge to sandbox-staging
+# Final review → merge sandbox-staging → main (flip DEMO flag)
+```
+
+---
+
+## 🔒 Security Notes
+
+1. **Never commit real Firebase API keys to public repositories** — use GitHub Secrets or environment injection for CI/CD pipelines.
+2. The `firebaseConfig` object in `index.html` should have Firebase Security Rules configured to restrict write access.
+3. The admin email check (`buenavistaaglinaodanny@gmail.com`) is enforced server-side via Firebase Security Rules — client-side checks are UI-only.
+4. Service Worker caches are versioned — update `CACHE_NAME` in `sw.js` to force cache refresh on deployments.
+
+---
+
+## 📞 Support & Contact
+
+For deployment issues, Firebase configuration help, or game rule questions, open an issue on the GitHub repository.
+
+---
+
+*The Resistance: Avalon is a board game by Don Eskridge, published by Indie Boards & Cards. This application is a fan-made digital companion tool.*
