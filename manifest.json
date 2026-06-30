@@ -1,12 +1,13 @@
 {
-  "name": "THE RESISTANCE: AVALON",
+  "name": "The Resistance: Avalon",
   "short_name": "Avalon",
-  "description": "A mobile-first social deduction game for 5-10 players",
-  "start_url": "./index.html",
+  "description": "A social deduction board game of loyalty, deception, and honor.",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#11141a",
-  "theme_color": "#11141a",
+  "theme_color": "#d4af37",
+  "categories": ["games", "entertainment"],
   "icons": [
     {
       "src": "icons/app_icon.png",
@@ -21,32 +22,6 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["games", "entertainment", "social"],
-  "lang": "en-US",
-  "dir": "ltr",
-  "scope": "./",
-  "prefer_related_applications": false,
-  "shortcuts": [
-    {
-      "name": "Start New Game",
-      "short_name": "New Game",
-      "description": "Start a new game of Avalon",
-      "url": "./index.html?action=new_game",
-      "icons": [
-        {
-          "src": "icons/app_icon.png",
-          "sizes": "96x96"
-        }
-      ]
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "icons/app_icon.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Game Table View"
-    }
-  ]
+  "screenshots": [],
+  "prefer_related_applications": false
 }
