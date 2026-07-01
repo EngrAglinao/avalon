@@ -119,61 +119,51 @@
     /* ── Top Navbar ──────────────────────────────────────────── */
     #top-navbar {
       display: flex; align-items: center; justify-content: space-between;
-      background: linear-gradient(180deg, #080b10 0%, #0d1018 60%, #11141a 100%);
-      border-bottom: 1px solid rgba(212,175,55,0.25);
-      padding: 10px 14px;
+      background: linear-gradient(180deg, #0d1018 0%, #11141a 100%);
+      border-bottom: 1px solid var(--gold-dim);
+      padding: 8px 12px;
       flex-shrink: 0;
       position: relative;
       z-index: 50;
-      min-height: 58px;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.5);
+      min-height: 52px;
     }
     #top-navbar .nav-title {
       font-family: 'Cinzel Decorative', cursive;
-      font-size: clamp(12px, 4vw, 17px);
+      font-size: clamp(10px, 3.5vw, 15px);
       color: var(--gold);
-      text-shadow: 0 0 16px rgba(212,175,55,0.6), 0 0 4px rgba(212,175,55,0.3);
-      letter-spacing: 1.5px;
+      text-shadow: 0 0 12px rgba(212,175,55,0.5);
+      letter-spacing: 1px;
       line-height: 1.2;
     }
     #top-navbar .nav-sub {
-      font-size: 10px; color: var(--parchment-dim);
+      font-size: 9px; color: var(--parchment-dim);
       font-family: 'Cinzel', serif;
-      letter-spacing: 3px;
-      margin-top: 1px;
+      letter-spacing: 2px;
     }
     .nav-phase-badge {
-      font-size: 10px; padding: 5px 11px;
-      border-radius: 20px; border: 1px solid rgba(212,175,55,0.35);
+      font-size: 9px; padding: 3px 8px;
+      border-radius: 20px; border: 1px solid var(--gold-dim);
       background: rgba(212,175,55,0.1);
       color: var(--gold-light);
-      font-family: 'Cinzel', serif;
-      max-width: 110px; text-align: center;
+      font-family: 'Inter', sans-serif;
+      max-width: 100px; text-align: center;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      letter-spacing: 0.5px;
     }
     .hamburger-btn {
-      width: 40px; height: 40px;
-      background: transparent;
-      border: none;
-      border-radius: 10px;
+      width: 36px; height: 36px;
+      background: rgba(212,175,55,0.1);
+      border: 1px solid var(--gold-dim);
+      border-radius: 8px;
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 5px;
+      align-items: center; justify-content: center; gap: 4px;
       cursor: pointer; flex-shrink: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
     }
-    .hamburger-btn:active { opacity: 0.7; }
     .hamburger-btn span {
-      width: 22px; height: 2px;
+      width: 16px; height: 2px;
       background: var(--gold);
       border-radius: 2px;
       display: block;
-      transition: transform 0.2s, opacity 0.2s;
     }
-    .hamburger-btn span:first-child { width: 22px; }
-    .hamburger-btn span:nth-child(2) { width: 16px; }
-    .hamburger-btn span:last-child { width: 22px; }
 
     /* ── Main Content ────────────────────────────────────────── */
     #main-content {
@@ -322,11 +312,11 @@
     .seat-avatar.selected-aura { border-color: var(--gold); box-shadow: 0 0 14px rgba(212,175,55,0.9); }
     .seat-avatar img { width: 100%; height: 100%; object-fit: cover; }
     .seat-name {
-      font-size: 10px; color: var(--parchment-dim);
-      text-align: center; margin-top: 4px;
-      max-width: 72px;
+      font-size: 8px; color: var(--parchment-dim);
+      text-align: center; margin-top: 3px;
+      max-width: 68px;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      font-weight: 500; letter-spacing: 0.2px;
+      break-words: break-all;
     }
     .seat-name.is-you { color: var(--gold); font-weight: 700; }
 
@@ -384,9 +374,9 @@
     .vote-pip.active { background: var(--amber); border-color: var(--amber); }
     .board-label {
       font-family: 'Cinzel', serif;
-      font-size: 8px; color: var(--gold-dim);
-      letter-spacing: 1.5px; text-transform: uppercase;
-      margin-bottom: 3px;
+      font-size: 7px; color: var(--gold-dim);
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 2px;
     }
 
     /* ── Bottom Action Strip ─────────────────────────────────── */
@@ -401,52 +391,47 @@
 
     /* ── Buttons ─────────────────────────────────────────────── */
     .btn-primary {
-      background: linear-gradient(135deg, #8a6e22 0%, #d4af37 45%, #c49a28 100%);
-      color: #0a0a0a; font-weight: 800;
-      border: none; border-radius: 12px;
-      padding: 15px 20px; font-size: 15px;
+      background: linear-gradient(135deg, #8a6e22, #d4af37, #8a6e22);
+      color: #0a0a0a; font-weight: 700;
+      border: none; border-radius: 10px;
+      padding: 12px 20px; font-size: 13px;
       font-family: 'Cinzel', serif;
       cursor: pointer; width: 100%;
-      box-shadow: 0 4px 18px rgba(212,175,55,0.35), 0 1px 3px rgba(0,0,0,0.4);
-      transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
-      letter-spacing: 0.8px;
+      box-shadow: 0 2px 12px rgba(212,175,55,0.3);
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.5px;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn-primary:active { transform: scale(0.97); opacity: 0.85; box-shadow: 0 2px 8px rgba(212,175,55,0.2); }
+    .btn-primary:active { transform: scale(0.97); opacity: 0.85; }
     .btn-secondary {
-      background: rgba(212,175,55,0.06);
-      border: 1px solid rgba(212,175,55,0.3);
+      background: transparent;
+      border: 1px solid var(--gold-dim);
       color: var(--parchment-dim);
-      border-radius: 12px;
-      padding: 14px 20px; font-size: 14px;
+      border-radius: 10px;
+      padding: 10px 20px; font-size: 12px;
       cursor: pointer; width: 100%;
       font-family: 'Inter', sans-serif;
-      font-weight: 500;
-      transition: border-color 0.2s, color 0.2s, background 0.2s;
-      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.2s, color 0.2s;
     }
-    .btn-secondary:active { border-color: var(--gold); color: var(--gold); background: rgba(212,175,55,0.1); }
+    .btn-secondary:active { border-color: var(--gold); color: var(--gold); }
     .btn-danger {
       background: linear-gradient(135deg, #5c0a0a, #8c1a1a);
       color: var(--parchment); font-weight: 700;
-      border: 1px solid var(--red-evil-l); border-radius: 12px;
-      padding: 14px 20px; font-size: 14px;
+      border: 1px solid var(--red-evil-l); border-radius: 10px;
+      padding: 10px 20px; font-size: 12px;
       cursor: pointer; width: 100%;
       font-family: 'Inter', sans-serif;
-      -webkit-tap-highlight-color: transparent;
     }
     .btn-success {
       background: linear-gradient(135deg, #14532d, #22c55e);
       color: #fff; font-weight: 700;
-      border: none; border-radius: 12px;
-      padding: 15px 20px; font-size: 15px;
+      border: none; border-radius: 10px;
+      padding: 12px 20px; font-size: 13px;
       cursor: pointer; width: 100%;
       font-family: 'Cinzel', serif;
-      box-shadow: 0 4px 16px rgba(34,197,94,0.3);
-      -webkit-tap-highlight-color: transparent;
     }
     .btn-small {
-      padding: 10px 16px; font-size: 13px; border-radius: 10px;
+      padding: 6px 14px; font-size: 11px; border-radius: 8px;
     }
 
     /* ── Input Fields ────────────────────────────────────────── */
@@ -528,34 +513,30 @@
     /* Floating History Button */
     #history-fab {
       position: absolute;
-      bottom: 16px; right: 16px;
-      width: 52px; height: 52px;
+      bottom: 14px; right: 14px;
+      width: 46px; height: 46px;
       border-radius: 50%;
       background: linear-gradient(135deg, #8a6e22, #d4af37);
       border: none;
       display: flex; align-items: center; justify-content: center;
-      font-size: 22px; cursor: pointer;
-      box-shadow: 0 6px 20px rgba(212,175,55,0.5), 0 2px 6px rgba(0,0,0,0.4);
+      font-size: 20px; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(212,175,55,0.4);
       z-index: 20;
-      -webkit-tap-highlight-color: transparent;
     }
-    #history-fab:active { transform: scale(0.93); }
     /* Floating "Show My Role" Button */
     #role-peek-fab {
       position: absolute;
-      bottom: 78px; right: 16px;
-      width: 52px; height: 52px;
+      bottom: 68px; right: 14px;
+      width: 46px; height: 46px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #1e2d5a, #3a5498);
+      background: linear-gradient(135deg, #2a3a6e, #4a5fa8);
       border: none;
       display: flex; align-items: center; justify-content: center;
-      font-size: 22px; cursor: pointer;
-      box-shadow: 0 6px 20px rgba(58,84,152,0.5), 0 2px 6px rgba(0,0,0,0.4);
+      font-size: 20px; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(74,95,168,0.4);
       z-index: 20;
       display: none;
-      -webkit-tap-highlight-color: transparent;
     }
-    #role-peek-fab:active { transform: scale(0.93); }
 
     /* ── Card Flip ───────────────────────────────────────────── */
     .card-3d-wrap {
@@ -645,12 +626,11 @@
 
     /* Vote buttons */
     .vote-btn {
-      flex: 1; padding: 16px 10px;
-      border-radius: 14px; font-size: 16px;
+      flex: 1; padding: 14px 10px;
+      border-radius: 12px; font-size: 14px;
       font-weight: 700; font-family: 'Cinzel', serif;
       cursor: pointer; border: 2px solid transparent;
       transition: all 0.2s;
-      -webkit-tap-highlight-color: transparent;
     }
     .vote-btn.approve {
       background: linear-gradient(135deg, #14532d, #22c55e);
@@ -670,33 +650,32 @@
 
     /* Roster row */
     .roster-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px; border-radius: 10px;
-      margin-bottom: 6px;
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px; border-radius: 8px;
+      margin-bottom: 4px;
       border: 1px solid transparent;
       transition: background 0.2s, border-color 0.2s;
     }
     .roster-row.mark-good { background: rgba(42,74,140,0.2); border-color: var(--blue-good-l); }
     .roster-row.mark-bad { background: rgba(140,26,26,0.2); border-color: var(--red-evil-l); }
     .roster-avatar {
-      width: 38px; height: 38px; border-radius: 50%;
+      width: 32px; height: 32px; border-radius: 50%;
       background: var(--bg-card-2);
       border: 1px solid var(--gold-dim);
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px; flex-shrink: 0; overflow: hidden;
+      font-size: 14px; flex-shrink: 0; overflow: hidden;
     }
     .roster-avatar img { width: 100%; height: 100%; object-fit: cover; }
     .roster-name {
-      flex: 1; font-size: 14px; color: var(--parchment);
+      flex: 1; font-size: 12px; color: var(--parchment);
       overflow: hidden; text-overflow: ellipsis;
-      white-space: nowrap; font-weight: 500;
+      white-space: nowrap; break-words: break-all;
     }
     .mark-btn {
-      font-size: 12px; padding: 6px 10px;
-      border-radius: 8px; border: 1px solid var(--gold-dim);
+      font-size: 11px; padding: 3px 7px;
+      border-radius: 6px; border: 1px solid var(--gold-dim);
       background: transparent; color: var(--parchment-dim);
-      cursor: pointer; font-weight: 600;
-      -webkit-tap-highlight-color: transparent;
+      cursor: pointer;
     }
     .mark-btn.g { border-color: var(--blue-good-l); color: var(--blue-good-l); }
     .mark-btn.b { border-color: var(--red-evil-l); color: var(--red-evil-l); }
@@ -714,22 +693,21 @@
     /* Phase banner */
     .phase-banner {
       background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.05));
-      border: 1px solid rgba(212,175,55,0.3);
-      border-radius: 12px;
-      padding: 12px 16px;
+      border: 1px solid var(--gold-dim);
+      border-radius: 10px;
+      padding: 10px 14px;
       text-align: center;
       font-family: 'Cinzel', serif;
-      font-size: 14px;
-      color: var(--parchment);
-      letter-spacing: 0.3px;
+      font-size: 12px;
+      color: var(--parchment-dim);
     }
 
     /* ── Toggle Switch ───────────────────────────────────────── */
     .toggle-wrap {
       display: flex; align-items: center;
-      gap: 12px; padding: 10px 0;
+      gap: 10px; padding: 8px 0;
     }
-    .toggle-label { flex: 1; font-size: 13px; color: var(--parchment-dim); font-weight: 500; }
+    .toggle-label { flex: 1; font-size: 12px; color: var(--parchment-dim); }
     .toggle-switch {
       width: 40px; height: 22px;
       background: #333; border-radius: 11px;
@@ -793,9 +771,9 @@
 
     /* Status badge */
     .status-badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 5px 11px; border-radius: 20px;
-      font-size: 12px; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 20px;
+      font-size: 10px; font-weight: 600;
       font-family: 'Inter', sans-serif;
     }
     .badge-waiting { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid var(--amber); }
@@ -840,25 +818,24 @@
     .admin-section {
       background: rgba(255,255,255,0.03);
       border: 1px solid var(--gold-dim);
-      border-radius: 12px; padding: 14px; margin-bottom: 10px;
+      border-radius: 10px; padding: 12px; margin-bottom: 10px;
     }
     .admin-section-title {
       font-family: 'Cinzel', serif;
-      font-size: 12px; color: var(--gold);
+      font-size: 11px; color: var(--gold);
       letter-spacing: 1px; text-transform: uppercase;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .admin-btn {
-      width: 100%; padding: 11px 14px;
-      border-radius: 10px; font-size: 13px;
+      width: 100%; padding: 8px 12px;
+      border-radius: 8px; font-size: 11px;
       font-family: 'Inter', sans-serif; font-weight: 600;
-      cursor: pointer; margin-bottom: 6px;
+      cursor: pointer; margin-bottom: 5px;
       border: 1px solid var(--gold-dim);
       background: rgba(212,175,55,0.08);
       color: var(--parchment-dim);
       text-align: left;
       transition: background 0.2s;
-      -webkit-tap-highlight-color: transparent;
     }
     .admin-btn:hover, .admin-btn:active {
       background: rgba(212,175,55,0.18);
@@ -893,15 +870,15 @@
 
     /* log entry */
     .log-entry {
-      padding: 10px 0;
+      padding: 8px 0;
       border-bottom: 1px solid rgba(212,175,55,0.1);
-      font-size: 13px; color: var(--parchment-dim);
+      font-size: 11px; color: var(--parchment-dim);
     }
     .log-entry:last-child { border-bottom: none; }
     .log-quest-num {
       font-family: 'Cinzel', serif;
-      font-size: 12px; color: var(--gold);
-      margin-bottom: 4px;
+      font-size: 10px; color: var(--gold);
+      margin-bottom: 3px;
     }
 
     /* Confetti overlay */
@@ -938,22 +915,21 @@
     }
     /* Lobby player list item */
     .lobby-player {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 8px; border-bottom: 1px solid rgba(212,175,55,0.1);
-      font-size: 14px;
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px; border-bottom: 1px solid rgba(212,175,55,0.1);
     }
     .lobby-player-avatar {
-      width: 40px; height: 40px; border-radius: 50%;
+      width: 36px; height: 36px; border-radius: 50%;
       background: var(--bg-card-2);
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
+      font-size: 16px; flex-shrink: 0;
       border: 1px solid var(--gold-dim); overflow: hidden;
     }
 
     /* Nomination counter */
     .nom-counter {
       font-family: 'Cinzel', serif;
-      font-size: 13px; color: var(--gold-dim);
+      font-size: 11px; color: var(--gold-dim);
       text-align: center;
     }
 
@@ -1023,10 +999,10 @@
 
     /* Phase indicator pill row */
     .phase-pill-row {
-      display: flex; gap: 5px; flex-wrap: wrap; justify-content: center;
+      display: flex; gap: 4px; flex-wrap: wrap; justify-content: center;
     }
     .phase-pill {
-      font-size: 10px; padding: 4px 10px; border-radius: 20px;
+      font-size: 8px; padding: 2px 7px; border-radius: 20px;
       font-family: 'Inter', sans-serif; font-weight: 600;
       border: 1px solid rgba(212,175,55,0.3);
       color: rgba(212,175,55,0.5);
@@ -1034,7 +1010,7 @@
     .phase-pill.current {
       border-color: var(--gold);
       color: var(--gold);
-      background: rgba(212,175,55,0.12);
+      background: rgba(212,175,55,0.1);
     }
 
     /* Floating particles — global ambient layer */
@@ -1078,125 +1054,19 @@
     /* Settings row */
     .setting-row {
       display: flex; justify-content: space-between;
-      align-items: center; padding: 10px 0;
+      align-items: center; padding: 8px 0;
       border-bottom: 1px solid rgba(212,175,55,0.08);
     }
-    .setting-label { font-size: 14px; color: var(--parchment-dim); }
+    .setting-label { font-size: 12px; color: var(--parchment-dim); }
 
     /* Asset uploader */
     .asset-select { 
       background: rgba(255,255,255,0.05); color: var(--parchment);
       border: 1px solid var(--gold-dim); border-radius: 8px;
-      padding: 8px 10px; font-size: 13px; width: 100%;
+      padding: 6px 8px; font-size: 11px; width: 100%;
       margin-bottom: 6px;
     }
     .asset-select option { background: #1e2535; }
-
-    /* ── Caution text improved ──────────────────────────────── */
-    .caution-text {
-      font-size: 12px !important;
-    }
-
-    /* ── Room card improved text ─────────────────────────────── */
-    .room-card {
-      padding: 14px !important;
-    }
-
-    /* ── Bottom strip better padding ────────────────────────── */
-    #bottom-strip {
-      padding: 10px 14px 12px;
-    }
-
-    /* ── Assassin pick row bigger ────────────────────────────── */
-    .assassin-pick-row {
-      padding: 12px !important;
-    }
-
-    /* ── Modal improvements ─────────────────────────────────── */
-    .modal-title {
-      font-size: clamp(15px, 4.5vw, 20px) !important;
-      margin-bottom: 20px !important;
-    }
-
-    /* ── Reveal card bigger ─────────────────────────────────── */
-    .reveal-card {
-      width: 90px; height: 124px;
-    }
-
-    /* ── Responsive layout improvements ─────────────────────── */
-    @media (max-height: 700px) {
-      #top-navbar { min-height: 50px; padding: 7px 14px; }
-      .btn-primary { padding: 12px 16px; font-size: 14px; }
-      .btn-secondary { padding: 11px 16px; font-size: 13px; }
-    }
-    @media (max-height: 600px) {
-      #top-navbar { min-height: 46px; padding: 6px 12px; }
-      .btn-primary { padding: 11px 14px; font-size: 13px; }
-    }
-    @media (min-height: 800px) {
-      .btn-primary { padding: 17px 20px; font-size: 16px; }
-      .roster-name { font-size: 15px; }
-      .lobby-player { font-size: 15px; }
-    }
-
-    /* ── Sidebar improvements ───────────────────────────────── */
-    #sidebar-header { padding: 18px 16px 12px; }
-    #sidebar-roster { padding: 10px 12px; }
-    #sidebar-footer { padding: 10px 12px; }
-
-    /* ── Improved input field ───────────────────────────────── */
-    .input-field {
-      font-size: 15px !important;
-      padding: 13px 14px !important;
-    }
-
-    /* ── Guest name specific ───────────────────────────────── */
-    #guest-name {
-      font-size: 16px !important;
-    }
-
-    /* ── Join code input ────────────────────────────────────── */
-    #join-code-input {
-      font-size: 18px !important;
-      letter-spacing: 3px;
-      text-align: center;
-    }
-
-    /* ── Avalon lore / decorative gradient overlay for screens */
-    #screen-lobby::before,
-    #screen-staging::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.05) 0%, transparent 55%),
-        radial-gradient(ellipse at 100% 100%, rgba(42,74,140,0.07) 0%, transparent 45%);
-      z-index: -1;
-      pointer-events: none;
-    }
-
-    /* ── Sidebar logout/leave buttons ─────────────────────────── */
-    #sidebar-leave-btn, #sidebar-logout-btn {
-      font-size: 14px !important;
-      padding: 13px 16px !important;
-    }
-
-    /* ── Admin circle btn bigger ─────────────────────────────── */
-    #sidebar-admin-circle-btn {
-      width: 46px !important; height: 46px !important;
-      font-size: 18px !important;
-    }
-
-    /* ── sidebar-admin-btn in footer ─────────────────────────── */
-    #sidebar-admin-btn {
-      padding: 13px !important;
-      font-size: 14px !important;
-    }
-
-    /* ── Ensure screens always fill full available height ──────── */
-    #screen-auth, #screen-lobby, #screen-staging {
-      min-height: 100%;
-    }
   </style>
 </head>
 <body>
@@ -1324,70 +1194,98 @@
   <main id="main-content">
 
     <!-- ── SCREEN: Auth / Login ──────────────────────────────── -->
-    <section id="screen-auth" class="screen active" style="overflow-y:auto;padding:0 20px 24px;display:flex;flex-direction:column;justify-content:space-between;">
-      <!-- Hero top section -->
-      <div style="padding-top:clamp(20px,6vh,44px);text-align:center;flex-shrink:0;">
-        <!-- Crest emblem -->
-        <div style="position:relative;width:72px;height:72px;margin:0 auto 16px;">
-          <div style="position:absolute;inset:0;border-radius:50%;border:2px solid rgba(212,175,55,0.4);animation:crest-spin 10s linear infinite;"></div>
-          <div style="position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(212,175,55,0.2);animation:crest-spin 6s linear infinite reverse;"></div>
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:32px;">⚔️</div>
-        </div>
-        <h1 class="font-cinzel" style="color:var(--gold);font-size:clamp(24px,7.5vw,36px);line-height:1.1;text-shadow:0 0 30px rgba(212,175,55,0.5),0 0 8px rgba(212,175,55,0.2);">
+    <section id="screen-auth" class="screen active" style="overflow-y:auto;padding:0 20px 24px;">
+      <div style="padding-top:32px;text-align:center;">
+        <h1 class="font-cinzel" style="color:var(--gold);font-size:clamp(22px,7vw,32px);line-height:1.2;text-shadow:0 0 30px rgba(212,175,55,0.4);">
           The Resistance
         </h1>
-        <h2 class="font-cinzel" style="color:var(--parchment);font-size:clamp(18px,5.5vw,26px);margin-top:4px;letter-spacing:6px;">
-          AVALON
+        <h2 class="font-cinzel" style="color:var(--parchment);font-size:clamp(16px,5vw,22px);margin-top:4px;">
+          ✦ AVALON ✦
         </h2>
-        <div class="rune-divider" style="margin:10px auto;max-width:200px;"><span>✦</span></div>
-        <p style="color:var(--parchment-dim);font-size:12px;letter-spacing:3px;font-family:'Cinzel',serif;">
+        <p style="color:var(--parchment-dim);font-size:11px;letter-spacing:2px;font-family:'Cinzel',serif;margin-top:6px;">
           ARTHURIAN DECEPTION
         </p>
       </div>
 
-      <!-- Auth form section — grows to fill -->
-      <div style="margin:clamp(16px,3vh,32px) auto 0;max-width:340px;width:100%;flex:1;display:flex;flex-direction:column;justify-content:center;">
-        <!-- Guest Entry -->
-        <div style="background:var(--bg-card);border:1px solid rgba(212,175,55,0.3);border-radius:16px;padding:22px;margin-bottom:14px;box-shadow:0 4px 24px rgba(0,0,0,0.4);">
-          <p style="font-family:'Cinzel',serif;font-size:13px;color:var(--gold);margin-bottom:14px;text-align:center;letter-spacing:1.5px;">
-            ⚔️ PLAY AS GUEST
-          </p>
-          <input id="guest-name" class="input-field" type="text" maxlength="18" placeholder="Enter your knight name…" autocomplete="off" style="font-size:15px;" />
-          <button id="guest-enter-btn" class="btn-primary" style="margin-top:12px;">
-            Enter the Round Table
-          </button>
+      <div style="margin:28px auto;max-width:320px;">
+
+        <!-- ── Sub-view: Choice (Use Existing / Create) ─────────────── -->
+        <div id="auth-choice-view">
+          <div style="background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:14px;padding:20px;margin-bottom:14px;">
+            <p style="font-family:'Cinzel',serif;font-size:12px;color:var(--gold);margin-bottom:16px;text-align:center;letter-spacing:1px;">
+              ⚔️ WELCOME, TRAVELER
+            </p>
+            <button id="show-login-btn" class="btn-primary" style="margin-bottom:10px;">
+              🗝️ Use Existing Account
+            </button>
+            <button id="show-create-btn" class="btn-secondary">
+              ✨ Create Your Account
+            </button>
+          </div>
+          <p id="auth-error" style="color:var(--red-evil-l);font-size:11px;text-align:center;margin-top:10px;display:none;"></p>
         </div>
 
-        <!-- Divider -->
-        <div class="rune-divider"><span>✦</span></div>
+        <!-- ── Sub-view: Use Existing Account (login) ───────────────── -->
+        <div id="auth-login-view" style="display:none;">
+          <div style="background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:14px;padding:20px;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+              <button class="auth-back-btn" data-target="login" style="background:none;border:none;color:var(--parchment-dim);font-size:16px;cursor:pointer;padding:0;">←</button>
+              <p style="font-family:'Cinzel',serif;font-size:12px;color:var(--gold);text-align:center;letter-spacing:1px;flex:1;margin:0;">
+                🗝️ USE EXISTING ACCOUNT
+              </p>
+              <span style="width:16px;"></span>
+            </div>
+            <input id="login-username" class="input-field" type="text" maxlength="18" placeholder="Username" autocomplete="off" />
+            <input id="login-code" class="input-field" style="margin-top:8px;letter-spacing:6px;text-align:center;" type="tel" inputmode="numeric" maxlength="4" placeholder="4-Digit Code" autocomplete="off" />
+            <button id="login-enter-btn" class="btn-primary" style="margin-top:14px;">
+              Enter the Round Table
+            </button>
+          </div>
+          <p id="auth-error-login" style="color:var(--red-evil-l);font-size:11px;text-align:center;margin-top:10px;display:none;"></p>
+        </div>
 
-        <!-- Google Sign In -->
-        <button id="google-signin-btn" class="btn-secondary" style="display:flex;align-items:center;justify-content:center;gap:12px;">
-          <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-          Sign in with Google
-        </button>
+        <!-- ── Sub-view: Create Your Account ─────────────────────────── -->
+        <div id="auth-create-view" style="display:none;">
+          <div style="background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:14px;padding:20px;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+              <button class="auth-back-btn" data-target="create" style="background:none;border:none;color:var(--parchment-dim);font-size:16px;cursor:pointer;padding:0;">←</button>
+              <p style="font-family:'Cinzel',serif;font-size:12px;color:var(--gold);text-align:center;letter-spacing:1px;flex:1;margin:0;">
+                ✨ CREATE YOUR ACCOUNT
+              </p>
+              <span style="width:16px;"></span>
+            </div>
+            <input id="account-username" class="input-field" type="text" maxlength="18" placeholder="Username (e.g. KnightXV)" autocomplete="off" />
+            <input id="account-code" class="input-field" style="margin-top:8px;letter-spacing:6px;text-align:center;" type="tel" inputmode="numeric" maxlength="4" placeholder="4-Digit Code" autocomplete="off" />
 
-        <p id="auth-error" style="color:var(--red-evil-l);font-size:12px;text-align:center;margin-top:12px;display:none;"></p>
+            <!-- Hero Icon Picker -->
+            <p style="font-family:'Cinzel',serif;font-size:11px;color:var(--gold);margin:14px 0 8px;text-align:center;letter-spacing:1px;">
+              🎭 CHOOSE YOUR HERO ICON
+            </p>
+            <div id="hero-icon-picker" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
+
+            <button id="account-enter-btn" class="btn-primary" style="margin-top:14px;">
+              Enter the Round Table
+            </button>
+          </div>
+          <p id="auth-error-create" style="color:var(--red-evil-l);font-size:11px;text-align:center;margin-top:10px;display:none;"></p>
+        </div>
+
       </div>
-
-      <!-- Footer lore text -->
-      <p style="text-align:center;font-size:10px;color:rgba(200,184,154,0.25);letter-spacing:1px;font-family:'Cinzel',serif;padding:16px 0 4px;flex-shrink:0;">THE KNIGHTS OF THE ROUND TABLE</p>
     </section>
 
     <!-- ── SCREEN: Lobby ──────────────────────────────────────── -->
     <section id="screen-lobby" class="screen" style="overflow-y:auto;padding:12px 14px 24px;">
-      <!-- Welcome header -->
-      <div style="text-align:center;margin-bottom:14px;padding:12px 0 8px;">
-        <p class="font-cinzel-sm" style="color:var(--gold);font-size:16px;letter-spacing:0.5px;">Welcome, <span id="lobby-username" style="color:var(--gold-light);"></span></p>
-        <p style="font-size:12px;color:var(--parchment-dim);margin-top:4px;letter-spacing:1px;font-family:'Cinzel',serif;">Choose your path to the Round Table</p>
+      <div style="text-align:center;margin-bottom:16px;">
+        <p class="font-cinzel-sm" style="color:var(--gold);font-size:13px;">Welcome, <span id="lobby-username"></span></p>
+        <p style="font-size:10px;color:var(--parchment-dim);margin-top:2px;">Choose your path to the Round Table</p>
       </div>
 
       <!-- Create Room -->
-      <div style="background:var(--bg-card);border:1px solid rgba(212,175,55,0.3);border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-        <p class="font-cinzel-sm" style="color:var(--gold);font-size:13px;margin-bottom:12px;letter-spacing:1px;">⚔️ HOST A GAME</p>
-        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;">
-          <label style="font-size:13px;color:var(--parchment-dim);white-space:nowrap;font-weight:500;">Players:</label>
-          <select id="player-count-select" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(212,175,55,0.3);border-radius:10px;color:var(--parchment);padding:10px 12px;font-size:14px;font-family:'Inter',sans-serif;">
+      <div style="background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:14px;padding:16px;margin-bottom:12px;">
+        <p class="font-cinzel-sm" style="color:var(--gold);font-size:12px;margin-bottom:10px;">⚔️ HOST A GAME</p>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+          <label style="font-size:11px;color:var(--parchment-dim);white-space:nowrap;">Players:</label>
+          <select id="player-count-select" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--gold-dim);border-radius:8px;color:var(--parchment);padding:6px 8px;font-size:12px;">
             <option value="5">5 Players</option>
             <option value="6">6 Players</option>
             <option value="7">7 Players</option>
@@ -1396,58 +1294,50 @@
             <option value="10">10 Players</option>
           </select>
         </div>
-        <button id="create-room-btn" class="btn-primary">⚔️ Create Room</button>
-        <div class="toggle-wrap" style="margin-top:12px;">
-          <span class="toggle-label" style="font-size:13px;">💧 Include Lady of the Lake</span>
+        <button id="create-room-btn" class="btn-primary btn-small">Create Room ✦</button>
+        <div class="toggle-wrap" style="margin-top:10px;">
+          <span class="toggle-label">💧 Include Lady of the Lake</span>
           <div class="toggle-switch on" id="create-lady-toggle"></div>
         </div>
       </div>
 
       <!-- Join Room -->
-      <div style="background:var(--bg-card);border:1px solid rgba(212,175,55,0.3);border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-        <p class="font-cinzel-sm" style="color:var(--gold);font-size:13px;margin-bottom:12px;letter-spacing:1px;">🚪 JOIN A ROOM</p>
-        <div style="display:flex;gap:10px;">
-          <input id="join-code-input" class="input-field" type="text" maxlength="6" placeholder="Enter Room Code" style="flex:1;text-transform:uppercase;font-size:16px;letter-spacing:2px;font-family:'Cinzel',serif;" autocomplete="off" />
-          <button id="join-room-btn" class="btn-primary" style="width:auto;padding:0 20px;font-size:15px;">Join</button>
+      <div style="background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:14px;padding:16px;margin-bottom:12px;">
+        <p class="font-cinzel-sm" style="color:var(--gold);font-size:12px;margin-bottom:10px;">🚪 JOIN A ROOM</p>
+        <div style="display:flex;gap:8px;">
+          <input id="join-code-input" class="input-field" type="text" maxlength="6" placeholder="Room Code (e.g. AV1234)" style="flex:1;text-transform:uppercase;" autocomplete="off" />
+          <button id="join-room-btn" class="btn-primary" style="width:auto;padding:10px 14px;font-size:12px;">Join</button>
         </div>
       </div>
 
       <!-- Available Rooms -->
-      <div style="background:var(--bg-card);border:1px solid rgba(212,175,55,0.3);border-radius:16px;padding:18px;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-        <p class="font-cinzel-sm" style="color:var(--gold);font-size:13px;margin-bottom:12px;letter-spacing:1px;">📡 AVAILABLE ROOMS</p>
+      <div style="background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:14px;padding:16px;">
+        <p class="font-cinzel-sm" style="color:var(--gold);font-size:12px;margin-bottom:10px;">📡 AVAILABLE ROOMS</p>
         <div id="available-rooms-list">
-          <p style="font-size:13px;color:var(--parchment-dim);text-align:center;padding:16px 0;">Scanning for nearby games...</p>
+          <p style="font-size:11px;color:var(--parchment-dim);text-align:center;padding:12px 0;">Scanning for nearby games...</p>
         </div>
       </div>
     </section>
 
     <!-- ── SCREEN: Staging Room ───────────────────────────────── -->
     <section id="screen-staging" class="screen" style="overflow-y:auto;padding:12px 14px 80px;">
-
-      <!-- Room code header card - compact, no wasted space -->
-      <div style="background:linear-gradient(135deg,rgba(212,175,55,0.08),rgba(212,175,55,0.03));border:1px solid rgba(212,175,55,0.3);border-radius:16px;padding:14px 16px;margin-bottom:12px;">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <!-- QR left side -->
-          <canvas id="staging-qr" width="72" height="72" style="display:block;border-radius:8px;flex-shrink:0;"></canvas>
-          <!-- Code + status right side -->
-          <div style="flex:1;min-width:0;">
-            <p class="font-cinzel-sm" style="color:var(--gold-dim);font-size:10px;letter-spacing:2px;margin-bottom:4px;text-transform:uppercase;">Room Code</p>
-            <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(212,175,55,0.4);border-radius:8px;padding:6px 12px;display:inline-block;margin-bottom:6px;">
-              <span id="staging-room-code" style="font-family:'Cinzel',serif;font-size:26px;color:var(--gold);letter-spacing:5px;"></span>
-            </div>
-            <p id="staging-status" style="font-size:12px;color:var(--parchment-dim);margin:0;line-height:1.4;">Waiting for players...</p>
-          </div>
+      <div style="text-align:center;margin-bottom:8px;">
+        <p class="font-cinzel-sm" style="color:var(--gold);font-size:14px;">Room Code:</p>
+        <div style="display:inline-block;background:rgba(212,175,55,0.1);border:2px solid var(--gold-dim);border-radius:10px;padding:8px 20px;margin-top:4px;">
+          <span id="staging-room-code" style="font-family:'Cinzel',serif;font-size:22px;color:var(--gold);letter-spacing:4px;"></span>
         </div>
+        <canvas id="staging-qr" width="80" height="80" style="display:block;margin:8px auto 4px;border-radius:8px;"></canvas>
+        <p id="staging-status" style="font-size:11px;color:var(--parchment-dim);margin:0;">Waiting for players...</p>
       </div>
 
-      <div style="background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:14px;padding:14px;margin-bottom:12px;">
-        <p class="font-cinzel-sm" style="color:var(--gold);font-size:12px;margin-bottom:10px;">👥 PLAYERS IN ROOM</p>
+      <div style="background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:12px;padding:12px;margin-bottom:12px;">
+        <p class="font-cinzel-sm" style="color:var(--gold);font-size:11px;margin-bottom:8px;">👥 PLAYERS IN ROOM</p>
         <div id="staging-player-list"></div>
       </div>
 
-      <div id="staging-role-config" style="background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:14px;padding:14px;margin-bottom:12px;display:none;">
-        <p class="font-cinzel-sm" style="color:var(--gold);font-size:12px;margin-bottom:10px;">🎭 ROLE CONFIGURATION</p>
-        <div id="role-config-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div id="staging-role-config" style="background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:12px;padding:12px;margin-bottom:12px;display:none;">
+        <p class="font-cinzel-sm" style="color:var(--gold);font-size:11px;margin-bottom:8px;">🎭 ROLE CONFIGURATION</p>
+        <div id="role-config-list" style="display:flex;flex-direction:column;gap:6px;"></div>
       </div>
 
       <div id="staging-host-controls" style="display:none;">
@@ -1498,11 +1388,11 @@
 <div id="sidebar-overlay"></div>
 <aside id="left-sidebar">
   <div id="sidebar-header">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-      <p class="font-cinzel-sm" id="sidebar-title" style="color:var(--gold);font-size:15px;letter-spacing:0.5px;">🛡️ War Council</p>
-      <button id="sidebar-close" style="background:none;border:none;color:var(--parchment-dim);font-size:22px;cursor:pointer;padding:0 4px;line-height:1;-webkit-tap-highlight-color:transparent;">✕</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <p class="font-cinzel-sm" id="sidebar-title" style="color:var(--gold);font-size:13px;">🛡️ War Council</p>
+      <button id="sidebar-close" style="background:none;border:none;color:var(--parchment-dim);font-size:18px;cursor:pointer;">✕</button>
     </div>
-    <p id="sidebar-subtitle" style="font-size:12px;color:var(--parchment-dim);margin-top:5px;">Mark your suspicions privately.</p>
+    <p id="sidebar-subtitle" style="font-size:10px;color:var(--parchment-dim);margin-top:4px;">Mark your suspicions privately.</p>
   </div>
 
   <!-- IN-GAME: War Council roster (mark suspicious players) -->
@@ -1511,11 +1401,17 @@
   <!-- OUTSIDE GAME: Account menu -->
   <div id="sidebar-menu" style="flex:1;overflow-y:auto;padding:16px 14px;display:none;flex-direction:column;">
     <div id="sidebar-profile-block" style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:18px;">
-      <div id="sidebar-profile-avatar" style="width:72px;height:72px;border-radius:50%;background:var(--bg-card-2);border:2px solid var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;margin-bottom:12px;box-shadow:0 0 16px rgba(212,175,55,0.2);"></div>
-      <p id="sidebar-profile-name" class="font-cinzel-sm" style="color:var(--gold);font-size:16px;"></p>
-      <p id="sidebar-profile-sub" style="font-size:12px;color:var(--parchment-dim);margin-top:4px;"></p>
+      <div id="sidebar-profile-avatar" style="width:64px;height:64px;border-radius:50%;background:var(--bg-card-2);border:2px solid var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;margin-bottom:10px;"></div>
+      <p id="sidebar-profile-name" class="font-cinzel-sm" style="color:var(--gold);font-size:14px;"></p>
+      <p id="sidebar-profile-sub" style="font-size:10px;color:var(--parchment-dim);margin-top:2px;"></p>
     </div>
     <div id="sidebar-menu-actions" style="display:flex;flex-direction:column;gap:8px;"></div>
+
+    <!-- Previous Games (persisted per account) -->
+    <div id="sidebar-previous-games-block" style="margin-top:20px;">
+      <p class="font-cinzel-sm" style="color:var(--gold);font-size:11px;margin-bottom:8px;letter-spacing:1px;">📜 PREVIOUS GAMES</p>
+      <div id="sidebar-previous-games-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
   </div>
 
   <!-- Footer for menu mode (guest: leave; signed: logout + admin circle) -->
@@ -1850,7 +1746,8 @@ const firebaseConfig = {
   messagingSenderId: "593708085855",
   appId: "1:593708085855:web:cd62340b7b9ebfee6561ea"
 };
-const ADMIN_EMAIL = "buenavistaaglinaodanny@gmail.com";
+const ADMIN_USERNAME = "adminDan";
+const ADMIN_CODE     = "0597";
 
 /* ════════════════════════════════════════════════════════════════
    === BEGIN DEMO SANDBOX ZONE ===
@@ -1893,6 +1790,8 @@ let _state = {
   playerMarks:      {},       // local only: {playerId: 'good'|'bad'|null}
   createdRooms:     [],       // admin only: rooms this admin has created [{code,maxPlayers,createdAt}]
   matchHistory:     [],
+  heroIcon:         "🧙",     // chosen hero icon at account creation
+  previousGames:    [],       // persisted per-account match log [{code,date,result,role}]
   demoPlayerIndex:  0,
   // Firebase
   db:               null,
@@ -2098,18 +1997,13 @@ function initFirebase() {
 }
 
 function setupAuthListener() {
+  // Account system is now username/4-digit-code based (stored in Realtime DB
+  // under accounts/{username}), not Firebase Auth identity. We still sign in
+  // anonymously under the hood so Realtime Database rules that require auth
+  // continue to work, but the app-level identity is the account record.
   if(!_state.auth || !window._firebaseModules) return;
-  const { onAuthStateChanged } = window._firebaseModules;
-  onAuthStateChanged(_state.auth, user => {
-    if(user && !user.isAnonymous) {
-      _state.currentUser = user;
-      _state.isAdmin     = user.email === ADMIN_EMAIL;
-      _state.isGuest     = false;
-      goToLobby(user.displayName || user.email.split('@')[0]);
-    }
-    // Anonymous (guest) sign-ins are handled directly by the guest-enter-btn
-    // handler above, since guests don't have displayName/email on the auth user.
-  });
+  const { signInAnonymously } = window._firebaseModules;
+  signInAnonymously(_state.auth).catch(e => console.warn('Silent auth failed:', e.message));
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -2138,54 +2032,187 @@ function setLoading(btn, loading, label='') {
   }
 }
 
-$('guest-enter-btn').addEventListener('click', async () => {
-  const name = $('guest-name').value.trim();
-  if(!name || name.length < 2) { showToast('Enter a name (2+ characters)', 'error'); return; }
-
-  const btn = $('guest-enter-btn');
-  if(!DEMO_MODE_ACTIVE && _state.auth && window._firebaseModules?.signInAnonymously) {
-    setLoading(btn, true, 'Entering…');
-    try {
-      const cred = await window._firebaseModules.signInAnonymously(_state.auth);
-      _state.currentUser = { uid: cred.user.uid, displayName: name, isAnonymous: true };
-    } catch(e) {
-      showToast('Guest sign-in failed: '+e.message, 'error');
-      setLoading(btn, false);
-      return;
-    }
-    setLoading(btn, false);
-  } else {
-    _state.currentUser = { uid: 'guest_'+Date.now(), displayName: name, isAnonymous: true };
-  }
-
-  _state.isGuest = true;
-  _state.isAdmin = false;
-  goToLobby(name);
+/* ── Auth Sub-View Switching ──────────────────────────────────── */
+function showAuthView(view) {
+  $('auth-choice-view').style.display = view==='choice' ? 'block' : 'none';
+  $('auth-login-view').style.display  = view==='login'  ? 'block' : 'none';
+  $('auth-create-view').style.display = view==='create' ? 'block' : 'none';
+  // Clear any stale error messages when switching views
+  ['auth-error','auth-error-login','auth-error-create'].forEach(id=>{
+    const el = $(id); if(el){ el.style.display='none'; el.textContent=''; }
+  });
+}
+$('show-login-btn')?.addEventListener('click', ()=> showAuthView('login'));
+$('show-create-btn')?.addEventListener('click', ()=> showAuthView('create'));
+document.querySelectorAll('.auth-back-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> showAuthView('choice'));
 });
 
-$('guest-name').addEventListener('keydown', e => { if(e.key==='Enter') $('guest-enter-btn').click(); });
+/* ── Hero Icon Picker ─────────────────────────────────────────── */
+let _selectedHeroIcon = avatarEmojis[0];
 
-$('google-signin-btn').addEventListener('click', async () => {
-  const btn = $('google-signin-btn');
-  if(DEMO_MODE_ACTIVE) {
-    _state.currentUser = { uid:'demo_admin', displayName:'Admin', email: ADMIN_EMAIL, isAnonymous:false };
-    _state.isAdmin = true; _state.isGuest = false;
-    goToLobby('Admin');
+function renderHeroIconPicker() {
+  const wrap = $('hero-icon-picker');
+  if(!wrap) return;
+  wrap.innerHTML = avatarEmojis.map(icon => `
+    <button type="button" class="hero-icon-choice" data-icon="${icon}" style="
+      font-size:22px;padding:10px 0;border-radius:10px;
+      background:rgba(255,255,255,0.04);border:2px solid ${icon===_selectedHeroIcon?'var(--gold)':'var(--gold-dim)'};
+      cursor:pointer;transition:all 0.15s;
+    ">${icon}</button>
+  `).join('');
+  wrap.querySelectorAll('.hero-icon-choice').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _selectedHeroIcon = btn.dataset.icon;
+      wrap.querySelectorAll('.hero-icon-choice').forEach(b=>{
+        b.style.border = b.dataset.icon===_selectedHeroIcon ? '2px solid var(--gold)' : '2px solid var(--gold-dim)';
+      });
+    });
+  });
+}
+renderHeroIconPicker();
+
+/* ── Account: Device Persistence ──────────────────────────────── */
+function saveAccountToDevice(username, code) {
+  try { localStorage.setItem('avalon_account', JSON.stringify({ username, code })); } catch(e){}
+}
+function loadAccountFromDevice() {
+  try {
+    const raw = localStorage.getItem('avalon_account');
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+function clearAccountFromDevice() {
+  try { localStorage.removeItem('avalon_account'); } catch(e){}
+}
+
+/* ── Account: Log in to an existing account (or admin) ────────── */
+async function performAccountLogin(username, code) {
+  // Special-cased admin login — not stored as a normal account.
+  if(username === ADMIN_USERNAME) {
+    if(code !== ADMIN_CODE) throw new Error('Incorrect code');
+    _state.currentUser = { uid:'admin_'+ADMIN_USERNAME, displayName:ADMIN_USERNAME, isAnonymous:false };
+    _state.isAdmin   = true;
+    _state.isGuest   = false;
+    _state.heroIcon  = '⚙️';
+    _state.previousGames = [];
     return;
   }
-  if(!window._firebaseModules || !_state.auth) { showToast('Firebase not configured','error'); return; }
-  setLoading(btn, true, 'Signing in…');
+
+  if(DEMO_MODE_ACTIVE || !_state.db || !window._firebaseModules) {
+    throw new Error('Not connected — cannot verify account');
+  }
+
+  const { get, ref } = window._firebaseModules;
+  const acctRef = ref(_state.db, `accounts/${username}`);
+  const snap = await get(acctRef);
+
+  if(!snap.exists()) throw new Error('Account not found');
+  const data = snap.val();
+  if(String(data.code) !== String(code)) throw new Error('Incorrect code');
+
+  _state.currentUser = { uid:'user_'+username, displayName:username, isAnonymous:false };
+  _state.isAdmin  = false;
+  _state.isGuest  = false;
+  _state.heroIcon = data.icon || avatarEmojis[0];
+  _state.previousGames = data.matchHistory ? Object.values(data.matchHistory) : [];
+}
+
+/* ── Account: Create a brand-new account ──────────────────────── */
+async function performAccountCreate(username, code, chosenIcon) {
+  if(username === ADMIN_USERNAME) throw new Error('That username is reserved');
+
+  if(DEMO_MODE_ACTIVE || !_state.db || !window._firebaseModules) {
+    // Fallback (no Firebase) — treat as local-only account
+    _state.currentUser = { uid:'local_'+username, displayName:username, isAnonymous:false };
+    _state.isAdmin  = false;
+    _state.isGuest  = false;
+    _state.heroIcon = chosenIcon || avatarEmojis[0];
+    _state.previousGames = [];
+    return;
+  }
+
+  const { get, ref, set } = window._firebaseModules;
+  const acctRef = ref(_state.db, `accounts/${username}`);
+  const snap = await get(acctRef);
+  if(snap.exists()) throw new Error('Username already taken — try logging in instead');
+
+  const icon = chosenIcon || avatarEmojis[0];
+  await set(acctRef, { code: String(code), icon, createdAt: Date.now() });
+  _state.currentUser = { uid:'user_'+username, displayName:username, isAnonymous:false };
+  _state.isAdmin  = false;
+  _state.isGuest  = false;
+  _state.heroIcon = icon;
+  _state.previousGames = [];
+}
+
+/* ── Login form handler ───────────────────────────────────────── */
+$('login-enter-btn').addEventListener('click', async () => {
+  const username = $('login-username').value.trim();
+  const code     = $('login-code').value.trim();
+  const errEl    = $('auth-error-login');
+  errEl.style.display='none';
+
+  if(!username || username.length < 2) { showToast('Enter a username (2+ characters)', 'error'); return; }
+  if(!/^\d{4}$/.test(code)) { showToast('Code must be exactly 4 digits', 'error'); return; }
+
+  const btn = $('login-enter-btn');
+  setLoading(btn, true, 'Entering…');
   try {
-    const { signInWithPopup, GoogleAuthProvider } = window._firebaseModules;
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(_state.auth, provider);
-    // onAuthStateChanged will take over from here
+    await performAccountLogin(username, code);
+    saveAccountToDevice(username, code);
+    setLoading(btn, false);
+    goToLobby(username);
   } catch(e) {
     setLoading(btn, false);
-    $('auth-error').textContent = e.message;
-    $('auth-error').style.display='block';
+    errEl.textContent = e.message || 'Login failed';
+    errEl.style.display='block';
   }
 });
+$('login-code').addEventListener('keydown', e => { if(e.key==='Enter') $('login-enter-btn').click(); });
+$('login-username').addEventListener('keydown', e => { if(e.key==='Enter') $('login-code').focus(); });
+
+/* ── Create form handler ──────────────────────────────────────── */
+$('account-enter-btn').addEventListener('click', async () => {
+  const username = $('account-username').value.trim();
+  const code     = $('account-code').value.trim();
+  const errEl    = $('auth-error-create');
+  errEl.style.display='none';
+
+  if(!username || username.length < 2) { showToast('Enter a username (2+ characters)', 'error'); return; }
+  if(!/^\d{4}$/.test(code)) { showToast('Code must be exactly 4 digits', 'error'); return; }
+
+  const btn = $('account-enter-btn');
+  setLoading(btn, true, 'Creating…');
+  try {
+    await performAccountCreate(username, code, _selectedHeroIcon);
+    saveAccountToDevice(username, code);
+    setLoading(btn, false);
+    showToast(`Account created! Welcome, ${username}.`, 'success');
+    goToLobby(username);
+  } catch(e) {
+    setLoading(btn, false);
+    errEl.textContent = e.message || 'Account creation failed';
+    errEl.style.display='block';
+  }
+});
+$('account-code').addEventListener('keydown', e => { if(e.key==='Enter') $('account-enter-btn').click(); });
+$('account-username').addEventListener('keydown', e => { if(e.key==='Enter') $('account-code').focus(); });
+
+/* ── Auto-login from saved device account ─────────────────────── */
+async function tryAutoLogin() {
+  const saved = loadAccountFromDevice();
+  if(!saved || !saved.username || !saved.code) return false;
+  try {
+    await performAccountLogin(saved.username, saved.code, null);
+    goToLobby(saved.username);
+    return true;
+  } catch(e) {
+    // Saved credentials no longer valid — clear and fall back to manual login
+    clearAccountFromDevice();
+    return false;
+  }
+}
 
 /* ════════════════════════════════════════════════════════════════
    LOBBY SCREEN
@@ -2274,7 +2301,7 @@ function createRoom() {
   set(ref(_state.db, `rooms/${code}`), {
     hostId: uid, maxPlayers, phase:'staging',
     createdAt: Date.now(), ladyEnabled,
-    players: { [uid]: { name:_state.currentUser.displayName, emoji:getPlayerEmoji(0), isHost:true, connected:true } }
+    players: { [uid]: { name:_state.currentUser.displayName, emoji:_state.heroIcon||getPlayerEmoji(0), isHost:true, connected:true } }
   }).then(()=>{
     if(_state.isAdmin) _state.createdRooms.push({code, maxPlayers, createdAt:Date.now()});
     setLoading(btn, false);
@@ -2305,7 +2332,7 @@ function joinRoom(code) {
     const uid = _state.currentUser.uid;
     update(ref(_state.db, `rooms/${code}/players/${uid}`), {
       name: _state.currentUser.displayName,
-      emoji: getPlayerEmoji(count),
+      emoji: _state.heroIcon||getPlayerEmoji(count),
       isHost: false, connected:true
     }).then(()=>{
       setLoading($('join-room-btn'), false);
@@ -3261,6 +3288,41 @@ function endGame(result) {
   });
 
   overlay.classList.add('active');
+  persistMatchResultToAccount(result);
+}
+
+/* ── Persist this match's outcome to the account's Previous Games ── */
+function persistMatchResultToAccount(result) {
+  const me = _state.players[_state.myIndex];
+  if(!me) return;
+  const myRoleKey = _state.roles[me.id] || 'good_generic';
+  const roleDef   = GAME_TEXT_CONFIG.roles[myRoleKey] || {};
+  const myAlignGood = isGoodRole(myRoleKey);
+
+  // 'good' = good team won normally, 'merlin' = evil won via assassination, else evil won
+  const goodWon = (result === 'good');
+  const iWon = myAlignGood ? goodWon : !goodWon;
+
+  const entry = {
+    code:   _state.roomCode || '—',
+    date:   Date.now(),
+    result: iWon ? 'win' : 'loss',
+    role:   roleDef.name || myRoleKey,
+  };
+
+  _state.previousGames = [entry, ...(_state.previousGames||[])].slice(0, 50);
+  renderSidebarPreviousGames();
+
+  // Admin and demo/local accounts aren't stored in accounts/ — skip DB write.
+  if(_state.isAdmin || DEMO_MODE_ACTIVE || !_state.db || !window._firebaseModules) return;
+  const username = _state.currentUser?.displayName;
+  if(!username) return;
+  try {
+    const { ref, push, set } = window._firebaseModules;
+    const historyRef = ref(_state.db, `accounts/${username}/matchHistory`);
+    const newRef = push(historyRef);
+    set(newRef, entry).catch(e=>console.warn('Match history save failed:', e.message));
+  } catch(e) { console.warn('Match history save failed:', e.message); }
 }
 
 $('endgame-lobby-btn')?.addEventListener('click',()=>{
@@ -3319,7 +3381,7 @@ function openSidebar() {
     updateSidebar();
   } else {
     $('sidebar-title').textContent='👤 Account';
-    $('sidebar-subtitle').textContent = _state.isGuest ? 'Playing as guest' : 'Manage your profile';
+    $('sidebar-subtitle').textContent = 'Manage your profile';
     $('sidebar-roster').style.display='none';
     $('sidebar-menu').style.display='flex';
     $('sidebar-footer').style.display='none';
@@ -3372,38 +3434,51 @@ function updateSidebarMenu() {
   const signedRow  = $('sidebar-signedin-footer-row');
   const adminCircle= $('sidebar-admin-circle-btn');
 
-  if(_state.isGuest) {
-    // GUEST: icon + name centered at top, Leave Game pinned at bottom
-    avatarEl.innerHTML = `<span>${getPlayerEmoji(0)}</span>`;
-    nameEl.textContent = user?.displayName || 'Guest';
-    subEl.textContent = 'Guest Player';
+  // All accounts (including admin) share the same profile display now —
+  // Hero icon + username. Admin only differs by the extra Admin Panel button.
+  avatarEl.innerHTML = `<span>${_state.heroIcon || '🧙'}</span>`;
+  nameEl.textContent = user?.displayName || 'Player';
+  subEl.textContent = _state.isAdmin ? 'Administrator' : 'Knight of the Round Table';
 
-    leaveBtn.style.display='block';
-    signedRow.style.display='none';
-  } else {
-    // SIGNED-IN: profile + name centered at top
-    if(user?.photoURL) {
-      avatarEl.innerHTML = `<img src="${user.photoURL}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentNode.innerHTML='👤'" />`;
-    } else {
-      avatarEl.innerHTML = `<span>👤</span>`;
-    }
-    nameEl.textContent = user?.displayName || 'Player';
-    subEl.textContent = user?.email || 'Signed in';
-
-    if(_state.isAdmin) {
-      // Admin: show rooms created + terminate, instead of game history
-      const roomsBtn = document.createElement('button');
-      roomsBtn.className='btn-secondary';
-      roomsBtn.style.fontSize='12px';
-      roomsBtn.textContent=`🏰 Rooms Created (${_state.createdRooms.length})`;
-      roomsBtn.addEventListener('click', openAdminRoomsSheet);
-      actions.appendChild(roomsBtn);
-    }
-
-    leaveBtn.style.display='none';
-    signedRow.style.display='flex';
-    adminCircle.style.display = _state.isAdmin ? 'flex' : 'none';
+  if(_state.isAdmin) {
+    // Admin: show rooms created, in addition to their own game history below
+    const roomsBtn = document.createElement('button');
+    roomsBtn.className='btn-secondary';
+    roomsBtn.style.fontSize='12px';
+    roomsBtn.textContent=`🏰 Rooms Created (${_state.createdRooms.length})`;
+    roomsBtn.addEventListener('click', openAdminRoomsSheet);
+    actions.appendChild(roomsBtn);
   }
+
+  leaveBtn.style.display='none';
+  signedRow.style.display='flex';
+  adminCircle.style.display = _state.isAdmin ? 'flex' : 'none';
+
+  renderSidebarPreviousGames();
+}
+
+/* ── Previous Games list (persisted per account) ─────────────────── */
+function renderSidebarPreviousGames() {
+  const list = $('sidebar-previous-games-list');
+  if(!list) return;
+  const games = _state.previousGames || [];
+  if(!games.length) {
+    list.innerHTML = `<p style="font-size:10px;color:var(--parchment-dim);text-align:center;padding:10px 0;">No games played yet.</p>`;
+    return;
+  }
+  // Most recent first
+  const sorted = [...games].sort((a,b)=>(b.date||0)-(a.date||0));
+  list.innerHTML = sorted.slice(0, 20).map(g => {
+    const win = g.result === 'win';
+    const dateStr = g.date ? new Date(g.date).toLocaleDateString(undefined,{month:'short',day:'numeric'}) : '';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 9px;background:rgba(255,255,255,0.03);border:1px solid var(--gold-dim);border-radius:8px;font-size:10px;">
+      <div style="display:flex;flex-direction:column;gap:1px;overflow:hidden;">
+        <span style="color:var(--parchment);font-family:'Cinzel',serif;">${g.code||'—'}</span>
+        <span style="color:var(--parchment-dim);">${dateStr} · ${g.role||'—'}</span>
+      </div>
+      <span style="flex-shrink:0;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:700;background:${win?'rgba(34,197,94,0.15)':'rgba(239,68,68,0.15)'};color:${win?'var(--success-green)':'var(--fail-red)'};">${win?'WIN':'LOSS'}</span>
+    </div>`;
+  }).join('');
 }
 
 function leaveToLogin() {
@@ -3423,12 +3498,12 @@ $('sidebar-leave-btn')?.addEventListener('click', leaveToLogin);
 
 function logoutUser() {
   closeSidebar();
-  if(_state.auth && window._firebaseModules?.signOut) {
-    window._firebaseModules.signOut(_state.auth).catch(()=>{});
-  }
+  clearAccountFromDevice();
   _state.currentUser = null;
   _state.isGuest      = true;
   _state.isAdmin      = false;
+  _state.heroIcon     = avatarEmojis[0];
+  _state.previousGames = [];
   _state.roomCode      = null;
   _state.players        = [];
   _state.myRole          = null;
@@ -3823,6 +3898,8 @@ function bootApp() {
   initFirebase();
   showScreen('screen-auth');
   setNavPhase('Auth');
+  // Attempt silent auto-login using a device-saved account, if any.
+  tryAutoLogin();
 }
 
 /* ════════════════════════════════════════════════════════════════
