@@ -1099,11 +1099,25 @@
   </button>
 
   <!-- Android/Chrome fallback: manual browser-menu steps -->
-  <div id="pwa-browser-hint" style="display:none;color:var(--parchment-dim);font-size:12px;max-width:280px;line-height:1.9;background:var(--bg-card);border:1px solid var(--gold-dim);border-radius:12px;padding:16px 18px;text-align:left;">
-    <p style="margin:0 0 10px;color:var(--gold);font-family:'Cinzel',serif;font-size:12px;text-align:center;">How to Install</p>
-    <p style="margin:0 0 4px;">1. Tap the browser <strong style="color:var(--parchment);">⋮ Menu</strong></p>
-    <p style="margin:0 0 4px;">2. Select <strong style="color:var(--parchment);">"Add to Home Screen"</strong></p>
-    <p style="margin:0;">3. Tap <strong style="color:var(--parchment);">"Install"</strong></p>
+  <div id="pwa-browser-hint" style="display:none;width:280px;border-radius:14px;overflow:hidden;margin-bottom:8px;">
+    <div style="background:rgba(212,175,55,0.15);border:1px solid var(--gold-dim);border-radius:14px;padding:16px 18px;">
+      <p style="margin:0 0 12px;color:var(--gold);font-family:'Cinzel',serif;font-size:13px;text-align:center;">Install via Chrome Menu</p>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div style="width:28px;height:28px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#0a0a0a;">1</div>
+        <p style="margin:0;color:var(--parchment-dim);font-size:12px;">Tap <strong style="color:var(--parchment);">⋮</strong> in the top-right of Chrome</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div style="width:28px;height:28px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#0a0a0a;">2</div>
+        <p style="margin:0;color:var(--parchment-dim);font-size:12px;">Select <strong style="color:var(--parchment);">"Add to Home screen"</strong></p>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#0a0a0a;">3</div>
+        <p style="margin:0;color:var(--parchment-dim);font-size:12px;">Tap <strong style="color:var(--parchment);">"Add"</strong> to install</p>
+      </div>
+    </div>
+    <p style="margin:10px 0 0;font-size:10px;color:rgba(200,184,154,0.4);text-align:center;">
+      If "Add to Home screen" is missing, the app may already be installed.
+    </p>
   </div>
 
   <!-- iOS Safari instructions -->
@@ -1864,9 +1878,17 @@ function showPwaDebug() {
 
 function showPwaGateIfNeeded() {
   if(DEMO_MODE_ACTIVE) { proceedPastPwaGate(); return; }
-
-  // If already running as installed PWA, skip gate
   if(isAppInstalled()) { proceedPastPwaGate(); return; }
+
+  // Check if Chrome already has this app registered (suppresses beforeinstallprompt)
+  if(navigator.getInstalledRelatedApps) {
+    navigator.getInstalledRelatedApps().then(apps => {
+      if(apps && apps.length > 0) {
+        // Chrome considers app installed — skip gate
+        proceedPastPwaGate();
+      }
+    }).catch(()=>{});
+  }
 
   $('pwa-gate').style.display = 'flex';
   $('app-shell').style.display = 'none';
@@ -1894,19 +1916,24 @@ function showPwaGateIfNeeded() {
   const visits = parseInt(localStorage.getItem('avalon_visits') || '0') + 1;
   localStorage.setItem('avalon_visits', visits);
 
-  const deadline = Date.now() + 6000;
-  const poll = setInterval(() => {
-    if(_pwaGateResolved) { clearInterval(poll); return; }
-    if(window._deferredInstallPrompt) {
-      clearInterval(poll);
-      $('pwa-install-btn').style.display = 'block';
-      $('pwa-browser-hint').style.display = 'none';
-    } else if(Date.now() > deadline) {
-      clearInterval(poll);
-      $('pwa-install-btn').style.display = 'none';
-      $('pwa-browser-hint').style.display = 'block';
-    }
-  }, 200);
+  if(window._deferredInstallPrompt) {
+    // Prompt already captured — native button
+    $('pwa-install-btn').style.display = 'block';
+    $('pwa-browser-hint').style.display = 'none';
+  } else {
+    // Show manual instructions immediately — don't make user wait
+    $('pwa-install-btn').style.display = 'none';
+    $('pwa-browser-hint').style.display = 'block';
+    // Still poll in background in case prompt arrives late
+    const poll = setInterval(() => {
+      if(_pwaGateResolved) { clearInterval(poll); return; }
+      if(window._deferredInstallPrompt) {
+        clearInterval(poll);
+        $('pwa-install-btn').style.display = 'block';
+        $('pwa-browser-hint').style.display = 'none';
+      }
+    }, 500);
+  }
 }
 
 function proceedPastPwaGate() {
