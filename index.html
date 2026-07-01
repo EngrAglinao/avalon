@@ -950,17 +950,29 @@
 
     /* Auth screen ambient background */
     #screen-auth {
+      background: transparent;
+      position: relative;
+    }
+    #screen-auth::before {
+      content: '';
+      position: fixed;
+      inset: 0;
       background:
         radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.08) 0%, transparent 60%),
         radial-gradient(ellipse at 0% 100%, rgba(42,74,140,0.12) 0%, transparent 50%),
         radial-gradient(ellipse at 100% 80%, rgba(140,26,26,0.10) 0%, transparent 50%),
         var(--bg-deep);
+      z-index: -1;
+      pointer-events: none;
     }
 
     /* Spinning crest on splash */
     @keyframes crest-spin {
       0%   { transform: rotate(0deg);   }
       100% { transform: rotate(360deg); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
     .crest-loader {
       width: 40px; height: 40px;
@@ -1877,63 +1889,7 @@ function showPwaDebug() {
 }
 
 function showPwaGateIfNeeded() {
-  if(DEMO_MODE_ACTIVE) { proceedPastPwaGate(); return; }
-  if(isAppInstalled()) { proceedPastPwaGate(); return; }
-
-  // Check if Chrome already has this app registered (suppresses beforeinstallprompt)
-  if(navigator.getInstalledRelatedApps) {
-    navigator.getInstalledRelatedApps().then(apps => {
-      if(apps && apps.length > 0) {
-        // Chrome considers app installed — skip gate
-        proceedPastPwaGate();
-      }
-    }).catch(()=>{});
-  }
-
-  $('pwa-gate').style.display = 'flex';
-  $('app-shell').style.display = 'none';
-
-  // Wire triple-tap on castle emoji to reveal debug panel
-  let _tapCount = 0, _tapTimer;
-  const castle = $('pwa-gate').querySelector('div[style*="font-size:64px"]');
-  if(castle) {
-    castle.style.cursor = 'default';
-    castle.addEventListener('click', () => {
-      _tapCount++;
-      clearTimeout(_tapTimer);
-      _tapTimer = setTimeout(() => _tapCount = 0, 800);
-      if(_tapCount >= 3) { _tapCount = 0; showPwaDebug(); }
-    });
-  }
-
-  if(isIOSDevice()) {
-    $('pwa-install-btn').style.display = 'none';
-    $('pwa-browser-hint').style.display = 'none';
-    $('pwa-ios-instructions').style.display = 'block';
-    return;
-  }
-
-  const visits = parseInt(localStorage.getItem('avalon_visits') || '0') + 1;
-  localStorage.setItem('avalon_visits', visits);
-
-  if(window._deferredInstallPrompt) {
-    // Prompt already captured — native button
-    $('pwa-install-btn').style.display = 'block';
-    $('pwa-browser-hint').style.display = 'none';
-  } else {
-    // Show manual instructions immediately — don't make user wait
-    $('pwa-install-btn').style.display = 'none';
-    $('pwa-browser-hint').style.display = 'block';
-    // Still poll in background in case prompt arrives late
-    const poll = setInterval(() => {
-      if(_pwaGateResolved) { clearInterval(poll); return; }
-      if(window._deferredInstallPrompt) {
-        clearInterval(poll);
-        $('pwa-install-btn').style.display = 'block';
-        $('pwa-browser-hint').style.display = 'none';
-      }
-    }, 500);
-  }
+  proceedPastPwaGate();
 }
 
 function proceedPastPwaGate() {
@@ -1998,23 +1954,46 @@ function setupAuthListener() {
 /* ════════════════════════════════════════════════════════════════
    AUTH SCREEN EVENTS
 ════════════════════════════════════════════════════════════════ */
+/* ─── Loading state helper ───────────────────────────────────────
+   setLoading(btn, true, 'Loading…') disables + shows spinner text.
+   setLoading(btn, false)            restores original label.
+──────────────────────────────────────────────────────────────── */
+function setLoading(btn, loading, label='') {
+  if(!btn) return;
+  if(loading) {
+    btn._origHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span style="display:inline-flex;align-items:center;gap:8px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+        style="animation:spin 0.8s linear infinite;flex-shrink:0;">
+        <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+        <path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/>
+      </svg>
+      ${label}
+    </span>`;
+  } else {
+    btn.disabled = false;
+    if(btn._origHTML !== undefined) btn.innerHTML = btn._origHTML;
+  }
+}
+
 $('guest-enter-btn').addEventListener('click', async () => {
   const name = $('guest-name').value.trim();
   if(!name || name.length < 2) { showToast('Enter a name (2+ characters)', 'error'); return; }
 
+  const btn = $('guest-enter-btn');
   if(!DEMO_MODE_ACTIVE && _state.auth && window._firebaseModules?.signInAnonymously) {
-    $('guest-enter-btn').disabled = true;
+    setLoading(btn, true, 'Entering…');
     try {
       const cred = await window._firebaseModules.signInAnonymously(_state.auth);
       _state.currentUser = { uid: cred.user.uid, displayName: name, isAnonymous: true };
     } catch(e) {
       showToast('Guest sign-in failed: '+e.message, 'error');
-      $('guest-enter-btn').disabled = false;
+      setLoading(btn, false);
       return;
     }
-    $('guest-enter-btn').disabled = false;
+    setLoading(btn, false);
   } else {
-    // Demo mode / no Firebase configured: local-only fake uid is fine
     _state.currentUser = { uid: 'guest_'+Date.now(), displayName: name, isAnonymous: true };
   }
 
@@ -2026,20 +2005,22 @@ $('guest-enter-btn').addEventListener('click', async () => {
 $('guest-name').addEventListener('keydown', e => { if(e.key==='Enter') $('guest-enter-btn').click(); });
 
 $('google-signin-btn').addEventListener('click', async () => {
+  const btn = $('google-signin-btn');
   if(DEMO_MODE_ACTIVE) {
-    // Demo: simulate admin login
     _state.currentUser = { uid:'demo_admin', displayName:'Admin', email: ADMIN_EMAIL, isAnonymous:false };
-    _state.isAdmin = true;
-    _state.isGuest = false;
+    _state.isAdmin = true; _state.isGuest = false;
     goToLobby('Admin');
     return;
   }
   if(!window._firebaseModules || !_state.auth) { showToast('Firebase not configured','error'); return; }
+  setLoading(btn, true, 'Signing in…');
   try {
     const { signInWithPopup, GoogleAuthProvider } = window._firebaseModules;
     const provider = new GoogleAuthProvider();
     await signInWithPopup(_state.auth, provider);
+    // onAuthStateChanged will take over from here
   } catch(e) {
+    setLoading(btn, false);
     $('auth-error').textContent = e.message;
     $('auth-error').style.display='block';
   }
@@ -2106,6 +2087,7 @@ $('create-lady-toggle')?.addEventListener('click', function(){
 $('join-room-btn').addEventListener('click', () => {
   const code = $('join-code-input').value.trim().toUpperCase();
   if(!code || code.length<4) { showToast('Enter a valid room code','error'); return; }
+  setLoading($('join-room-btn'), true, 'Joining…');
   joinRoom(code);
 });
 
@@ -2113,6 +2095,7 @@ $('join-room-btn').addEventListener('click', () => {
    ROOM MANAGEMENT
 ════════════════════════════════════════════════════════════════ */
 function createRoom() {
+  const btn = $('create-room-btn');
   const code = genCode();
   const maxPlayers = parseInt($('player-count-select').value)||5;
   _state.roomCode = code;
@@ -2123,42 +2106,52 @@ function createRoom() {
     return;
   }
   if(!_state.db || !window._firebaseModules) { showToast('Not connected','error'); return; }
+  setLoading(btn, true, 'Creating…');
   const { ref, set } = window._firebaseModules;
   const uid = _state.currentUser.uid;
   const ladyEnabled = $('create-lady-toggle')?.classList.contains('on') ?? true;
   set(ref(_state.db, `rooms/${code}`), {
     hostId: uid, maxPlayers, phase:'staging',
-    createdAt: Date.now(),
-    ladyEnabled,
+    createdAt: Date.now(), ladyEnabled,
     players: { [uid]: { name:_state.currentUser.displayName, emoji:getPlayerEmoji(0), isHost:true, connected:true } }
   }).then(()=>{
     if(_state.isAdmin) _state.createdRooms.push({code, maxPlayers, createdAt:Date.now()});
+    setLoading(btn, false);
     joinRoom(code);
-  }).catch(e=>showToast(e.message,'error'));
+  }).catch(e=>{ setLoading(btn, false); showToast(e.message,'error'); });
 }
 
 function joinRoom(code) {
   if(DEMO_MODE_ACTIVE) { setupDemoRoom(code, 5); return; }
   if(!_state.db || !window._firebaseModules) return;
-  const { ref, get, push, update } = window._firebaseModules;
+  const { ref, get, update } = window._firebaseModules;
   const roomRef = ref(_state.db, `rooms/${code}`);
   get(roomRef).then(snap=>{
-    if(!snap.exists()) { showToast('Room not found','error'); return; }
+    if(!snap.exists()) {
+      setLoading($('join-room-btn'), false);
+      showToast('Room not found','error'); return;
+    }
     const data = snap.val();
-    if(data.phase !== 'staging') { showToast('This room is already in-game','error'); return; }
+    if(data.phase !== 'staging') {
+      setLoading($('join-room-btn'), false);
+      showToast('This room is already in-game','error'); return;
+    }
     const count = Object.keys(data.players||{}).length;
-    if(count >= data.maxPlayers) { showToast('Room is full','error'); return; }
+    if(count >= data.maxPlayers) {
+      setLoading($('join-room-btn'), false);
+      showToast('Room is full','error'); return;
+    }
     const uid = _state.currentUser.uid;
-    const pCount = count;
     update(ref(_state.db, `rooms/${code}/players/${uid}`), {
       name: _state.currentUser.displayName,
-      emoji: getPlayerEmoji(pCount),
+      emoji: getPlayerEmoji(count),
       isHost: false, connected:true
     }).then(()=>{
+      setLoading($('join-room-btn'), false);
       _state.roomCode = code;
       enterStagingScreen(code, data.hostId === uid);
     });
-  }).catch(e=>showToast(e.message,'error'));
+  }).catch(e=>{ setLoading($('join-room-btn'), false); showToast(e.message,'error'); });
 }
 
 function joinDemoRoom() {
