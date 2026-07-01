@@ -92,9 +92,10 @@
     #app-shell {
       display: flex; flex-direction: column;
       width: 100%; height: 100%;
-      background: var(--bg-deep);
+      background: transparent;
       overflow: hidden;
       position: relative;
+      z-index: 1;
     }
 
     /* ── Demo Panel ──────────────────────────────────────────── */
@@ -1012,7 +1013,13 @@
       background: rgba(212,175,55,0.1);
     }
 
-    /* Floating particles on auth screen */
+    /* Floating particles — global ambient layer */
+    #particle-layer {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
     .auth-particle {
       position: absolute;
       width: 3px; height: 3px; border-radius: 50%;
@@ -1067,6 +1074,9 @@
 <!-- ═══════════════════════════════════════════════════════════════
      SPLASH SCREEN
 ═══════════════════════════════════════════════════════════════ -->
+<!-- Global ambient particle layer — visible on all screens -->
+<div id="particle-layer"></div>
+
 <div id="splash">
   <div style="position:relative;width:80px;height:80px;margin-bottom:16px;">
     <div style="position:absolute;inset:0;border-radius:50%;border:2px solid var(--gold-dim);animation:crest-spin 8s linear infinite;opacity:0.4;"></div>
@@ -3595,20 +3605,27 @@ $('demo-reset')?.addEventListener('click',()=>{
 /* === END DEMO SANDBOX ZONE === */
 
 /* ════════════════════════════════════════════════════════════════
-   AMBIENT PARTICLE SYSTEM (Auth screen background)
+   AMBIENT PARTICLE SYSTEM (global — all screens)
 ════════════════════════════════════════════════════════════════ */
 function spawnAuthParticles() {
-  const screen = $('screen-auth');
-  if(!screen) return;
-  screen.style.position='relative'; screen.style.overflow='hidden';
+  const layer = $('particle-layer');
+  if(!layer) return;
   setInterval(()=>{
-    if(!screen.classList.contains('active')) return;
     const p = document.createElement('div');
     p.className = 'auth-particle';
-    p.style.cssText = `left:${Math.random()*100}%;bottom:0;animation-duration:${6+Math.random()*8}s;animation-delay:${Math.random()*2}s;`;
-    screen.appendChild(p);
-    setTimeout(()=>p.remove(), 14000);
-  }, 1800);
+    // Vary size slightly for depth
+    const size = 2 + Math.random() * 2;
+    p.style.cssText = `
+      left:${Math.random()*100}%;
+      bottom:0;
+      width:${size}px;
+      height:${size}px;
+      animation-duration:${7+Math.random()*9}s;
+      animation-delay:${Math.random()*1.5}s;
+    `;
+    layer.appendChild(p);
+    setTimeout(()=>p.remove(), 16000);
+  }, 1600);
 }
 
 /* ════════════════════════════════════════════════════════════════
