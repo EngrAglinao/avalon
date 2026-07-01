@@ -1800,9 +1800,33 @@ function checkDesktopBlock() {
    PWA SERVICE WORKER & INSTALL GATE
 ════════════════════════════════════════════════════════════════ */
 function initServiceWorker() {
-  if('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  if(!('serviceWorker' in navigator)) {
+    showPwaGateIfNeeded();
+    return;
   }
+  navigator.serviceWorker.register('./sw.js')
+    .then(reg => {
+      // If a SW is already active and controlling this page, proceed immediately
+      if(navigator.serviceWorker.controller) {
+        showPwaGateIfNeeded();
+        return;
+      }
+      // Wait for the SW to become active and take control
+      const awaitControl = new Promise(resolve => {
+        navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true });
+        // Timeout fallback — don't block forever
+        setTimeout(resolve, 4000);
+      });
+      // Also wait for the SW to finish installing/activating
+      const awaitReady = navigator.serviceWorker.ready;
+      Promise.all([awaitReady, awaitControl]).then(() => {
+        showPwaGateIfNeeded();
+      });
+    })
+    .catch(() => {
+      // SW failed to register — still show gate
+      showPwaGateIfNeeded();
+    });
 }
 
 function isAppInstalled() {
@@ -1828,28 +1852,30 @@ function showPwaGateIfNeeded() {
   $('app-shell').style.display = 'none';
 
   if(isIOSDevice()) {
-    // iOS: always show manual Share instructions
     $('pwa-install-btn').style.display = 'none';
     $('pwa-browser-hint').style.display = 'none';
     $('pwa-ios-instructions').style.display = 'block';
-  } else if(window._deferredInstallPrompt) {
-    // Prompt already captured — show native install button immediately
-    $('pwa-install-btn').style.display = 'block';
-    $('pwa-browser-hint').style.display = 'none';
-  } else {
-    // Prompt not yet available — show browser-menu hint and poll in background
-    $('pwa-install-btn').style.display = 'none';
-    $('pwa-browser-hint').style.display = 'block';
-    const poll = setInterval(() => {
-      if(_pwaGateResolved) { clearInterval(poll); return; }
-      if(window._deferredInstallPrompt) {
-        clearInterval(poll);
-        // Native prompt arrived — upgrade to install button
-        $('pwa-install-btn').style.display = 'block';
-        $('pwa-browser-hint').style.display = 'none';
-      }
-    }, 300);
+    return;
   }
+
+  // Track visits so we can show smarter messaging
+  const visits = parseInt(localStorage.getItem('avalon_visits') || '0') + 1;
+  localStorage.setItem('avalon_visits', visits);
+
+  // Poll for prompt — it fires fast on returning visits, slow on first visit
+  const deadline = Date.now() + (visits === 1 ? 3000 : 6000);
+  const poll = setInterval(() => {
+    if(_pwaGateResolved) { clearInterval(poll); return; }
+    if(window._deferredInstallPrompt) {
+      clearInterval(poll);
+      $('pwa-install-btn').style.display = 'block';
+      $('pwa-browser-hint').style.display = 'none';
+    } else if(Date.now() > deadline) {
+      clearInterval(poll);
+      $('pwa-install-btn').style.display = 'none';
+      $('pwa-browser-hint').style.display = 'block';
+    }
+  }, 200);
 }
 
 function proceedPastPwaGate() {
@@ -1869,15 +1895,16 @@ async function triggerPwaInstall() {
   window._deferredInstallPrompt.prompt();
   const { outcome } = await window._deferredInstallPrompt.userChoice;
   window._deferredInstallPrompt = null;
-  if(outcome === 'accepted') proceedPastPwaGate();
+  if(outcome === 'accepted') {
+    localStorage.removeItem('avalon_visits');
+    proceedPastPwaGate();
+  }
 }
 
 $('pwa-install-btn')?.addEventListener('click', triggerPwaInstall);
 $('pwa-skip-btn')?.addEventListener('click', proceedPastPwaGate);
 
-function hidePwaGate() {
-  proceedPastPwaGate();
-}
+function hidePwaGate() { proceedPastPwaGate(); }
 
 /* ════════════════════════════════════════════════════════════════
    FIREBASE INIT (Live Mode)
@@ -3545,17 +3572,13 @@ function renderPhasePills(currentPhase) {
    INITIALIZATION
 ════════════════════════════════════════════════════════════════ */
 function init() {
-  initServiceWorker();
-
-  // Hide splash after brief delay
+  // Hide splash after brief delay, then let SW registration drive the gate
   setTimeout(()=>{
     $('splash').style.opacity='0';
     setTimeout(()=>{
       $('splash').style.display='none';
-      // Desktop block check
       if(checkDesktopBlock()) return;
-      // Show install gate (if applicable) then boot the app
-      showPwaGateIfNeeded();
+      initServiceWorker(); // registers SW, waits for it to control page, then shows gate
     }, 500);
   }, 1400);
 }
