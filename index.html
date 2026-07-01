@@ -1114,6 +1114,9 @@
     <p style="margin:0;">3. Tap <strong style="color:var(--parchment);">"Add"</strong></p>
   </div>
 
+  <!-- Debug panel — tap 3× on the castle emoji to reveal -->
+  <div id="pwa-debug" style="display:none;margin-top:20px;width:280px;background:#0a0c12;border:1px solid rgba(212,175,55,0.3);border-radius:10px;padding:12px;font-size:10px;font-family:monospace;color:#aaa;line-height:1.8;text-align:left;"></div>
+
   <button id="pwa-skip-btn" style="display:none;"></button>
 </div>
 
@@ -1842,14 +1845,44 @@ function isIOSDevice() {
 
 let _pwaGateResolved = false;
 
+function showPwaDebug() {
+  const el = $('pwa-debug');
+  if(!el) return;
+  const swState = navigator.serviceWorker?.controller?.state || 'none';
+  el.style.display = 'block';
+  el.innerHTML = [
+    `display-mode standalone: ${window.matchMedia('(display-mode: standalone)').matches}`,
+    `navigator.standalone: ${window.navigator.standalone}`,
+    `isAppInstalled(): ${isAppInstalled()}`,
+    `isIOSDevice(): ${isIOSDevice()}`,
+    `_deferredInstallPrompt: ${!!window._deferredInstallPrompt}`,
+    `SW controller: ${swState}`,
+    `visits: ${localStorage.getItem('avalon_visits')||0}`,
+    `userAgent: ${navigator.userAgent.slice(0,60)}...`,
+  ].map(s=>`<div>${s}</div>`).join('');
+}
+
 function showPwaGateIfNeeded() {
-  if(DEMO_MODE_ACTIVE || isAppInstalled()) {
-    proceedPastPwaGate();
-    return;
-  }
+  if(DEMO_MODE_ACTIVE) { proceedPastPwaGate(); return; }
+
+  // If already running as installed PWA, skip gate
+  if(isAppInstalled()) { proceedPastPwaGate(); return; }
 
   $('pwa-gate').style.display = 'flex';
   $('app-shell').style.display = 'none';
+
+  // Wire triple-tap on castle emoji to reveal debug panel
+  let _tapCount = 0, _tapTimer;
+  const castle = $('pwa-gate').querySelector('div[style*="font-size:64px"]');
+  if(castle) {
+    castle.style.cursor = 'default';
+    castle.addEventListener('click', () => {
+      _tapCount++;
+      clearTimeout(_tapTimer);
+      _tapTimer = setTimeout(() => _tapCount = 0, 800);
+      if(_tapCount >= 3) { _tapCount = 0; showPwaDebug(); }
+    });
+  }
 
   if(isIOSDevice()) {
     $('pwa-install-btn').style.display = 'none';
@@ -1858,12 +1891,10 @@ function showPwaGateIfNeeded() {
     return;
   }
 
-  // Track visits so we can show smarter messaging
   const visits = parseInt(localStorage.getItem('avalon_visits') || '0') + 1;
   localStorage.setItem('avalon_visits', visits);
 
-  // Poll for prompt — it fires fast on returning visits, slow on first visit
-  const deadline = Date.now() + (visits === 1 ? 3000 : 6000);
+  const deadline = Date.now() + 6000;
   const poll = setInterval(() => {
     if(_pwaGateResolved) { clearInterval(poll); return; }
     if(window._deferredInstallPrompt) {
